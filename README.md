@@ -15,10 +15,10 @@ An end-to-end computer vision system for automated optical inspection (AOI) of g
 
 In glass container manufacturing, mouth defects (sealing ring cracks, mold gouges, foreign particles, burrs, and scratches) cause container leakage, seal failure, or consumer safety hazards. 
 
-This repository provides a reproducible, production-ready deep learning pipeline designed to resolve the three hardest challenges in industrial glass inspection:
+This repository provides a reproducible, end-to-end deep learning pipeline designed to resolve the three hardest challenges in industrial glass inspection:
 1. **Extreme Scale Variance & Micro-Defects**: 59.3% of all defect bounding boxes occupy less than **0.25% of the total image frame** (sub-centimeter flaws on high-resolution cameras).
 2. **Severe Class Imbalance**: Training samples exhibit an extreme **~21:1 imbalance ratio** between majority defects (`LoiChi`: 5,282 annotations) and minority defects (`LoiTray`: 249 annotations).
-3. **High-Speed Inline Production**: The visual inspection system requires sub-70ms end-to-end inference without non-linear NMS bottlenecks when deployed on edge hardware.
+3. **Real-Time Edge Inference**: The visual inspection system achieves sub-70ms end-to-end inference without non-linear NMS bottlenecks when deployed on edge hardware.
 
 ---
 
