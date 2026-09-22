@@ -1,0 +1,18 @@
+{
+  "id": "phtnguyn1ytj/scale-error-yolo26-sahi-train",
+  "title": "scale-error-yolo26-sahi-train",
+  "code_file": "run_sahi.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": [
+    "nguynvntnpht/scale-error-dc-v26-yolov8",
+    "phtnguyn1ytj/scale-error-yolo26-code",
+    "phtnguyn1ytj/scale-error-yolo26-checkpoint"
+  ],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}
