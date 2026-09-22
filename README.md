@@ -30,32 +30,30 @@ All models were evaluated on the identical held-out test split (**890 images, 1,
 
 | # | Model Architecture | Preprocessing | Loss Function | Optimizer | Epochs | Post-Processing | Precision | Recall | mAP@50 | mAP@75 | **mAP@50:95** ⭐ | E2E Latency | FPS |
 | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| 1 | **YOLO11m** (Baseline 1) | Raw (960×960) | Stock BCE | Auto (SGD) | 102 (Patience 15) | Traditional NMS | **80.23%** | 58.58% | 63.86% | 32.23% | 34.31% | **57.2 ms** | **17.5** |
-| 2 | **RT-DETR-L** (Baseline 2) | Raw (960×960) | Hungarian Match | AdamW | 120 (Complete) | Direct Hungarian | 73.09% | 65.47% | 65.22% | 30.57% | 35.02% | 97.3 ms | 10.3 |
-| 3 | **YOLO26m Base** | Raw (960×960) | Stock BCE | MuSGD | 66 (Patience 30) | Traditional NMS | 74.66% | 67.87% | 69.85% | 36.75% | 38.51% | 67.4 ms | 14.8 |
-| 4 | **YOLO26m Base** | Raw (960×960) | Stock BCE | MuSGD | 66 (Patience 30) | NMS-Free (One-to-One) | 71.75% | 67.10% | 69.05% | 37.15% | 38.17% | 71.2 ms | 14.1 |
-| 5 | **YOLO26m + ROI + VFL (Ep 87)** | **ROI Cropped** | Varifocal + Class Weights | MuSGD | 87 (Timeout 12h) | Traditional NMS | 77.81% | 67.07% | 70.20% | 38.44% | 39.24% | 62.3 ms | 16.1 |
-| 6 | **YOLO26m + ROI + VFL (Ep 87)** | **ROI Cropped** | Varifocal + Class Weights | MuSGD | 87 (Timeout 12h) | NMS-Free (One-to-One) | 72.10% | 67.15% | 69.62% | **41.30%** | 39.98% | 61.3 ms | 16.3 |
-| 7 | **YOLO26m + ROI + VFL (Final)** | **ROI Cropped** | Varifocal + Class Weights | MuSGD | 100 (Early Stopped) | Traditional NMS | 72.99% | **68.22%** | **71.28%** | 37.18% | 39.37% | 59.8 ms | 16.7 |
-| 8 | **YOLO26m + ROI + VFL (Final)** 🏆 | **ROI Cropped** | **Varifocal + Class Weights** | MuSGD | 100 (Early Stopped) | **NMS-Free (One-to-One)** | 73.59% | 66.31% | 70.96% | 39.69% | **40.34%** | **58.4 ms** | **17.1** |
+| 1 | **YOLO11m** (Baseline 1) | Raw (960×960) | Stock BCE | Auto (SGD) | 102 | Traditional NMS | **80.23%** | 58.58% | 63.86% | 32.23% | 34.31% | **57.2 ms** | **17.5** |
+| 2 | **RT-DETR-L** (Baseline 2) | Raw (960×960) | Hungarian Match | AdamW | 120 | Direct Hungarian | 73.09% | 65.47% | 65.22% | 30.57% | 35.02% | 97.3 ms | 10.3 |
+| 3 | **YOLO26m Base** | Raw (960×960) | Stock BCE | MuSGD | 66 | Traditional NMS | 74.66% | 67.87% | 69.85% | 36.75% | 38.51% | 67.4 ms | 14.8 |
+| 4 | **YOLO26m Base** | Raw (960×960) | Stock BCE | MuSGD | 66 | NMS-Free (One-to-One) | 71.75% | 67.10% | 69.05% | 37.15% | 38.17% | 71.2 ms | 14.1 |
+| 5 | **YOLO26m + ROI + VFL** | **ROI Cropped** | Varifocal + Class Weights | MuSGD | 100 | Traditional NMS | 72.99% | **68.22%** | **71.28%** | 37.18% | 39.37% | 59.8 ms | 16.7 |
+| 6 | **YOLO26m + ROI + VFL** 🏆 | **ROI Cropped** | **Varifocal + Class Weights** | MuSGD | 100 | **NMS-Free (One-to-One)** | 73.59% | 66.31% | 70.96% | **39.69%** | **40.34%** | **58.4 ms** | **17.1** |
 
 > 🌟 **Key Milestones:**
 > - **+6.03% mAP50-95** improvement over the YOLO11m baseline (reaching **40.34%**).
-> - **+7.46% mAP@75** localization accuracy jump (from 32.23% to 39.69%–41.30%), demonstrating tight geometric bounding-box overlap around delicate cracks.
-> - **mAP@50 officially reaches 71.28%**, while Recall achieves **68.22%**.
+> - **+7.46% mAP@75** localization accuracy jump (from 32.23% to 39.69%), demonstrating tight geometric bounding-box overlap around delicate cracks.
+> - **mAP@50 reaches 71.28%**, while Recall achieves **68.22%**.
 
 ---
 
 ### 2. Per-Class Performance Breakdown (mAP@50:95)
 
-| Defect Class | Vietnamese Term | Test Boxes | YOLO11m | RT-DETR-L | YOLO26m Base | YOLO26m + ROI (Ep 87) | **YOLO26m + ROI + VFL (Final)** 🏆 | Delta vs Baseline |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **DiVat** | Dị vật nhỏ / Foreign Matter | 215 | 13.18% | 16.30% | 17.53% | **21.01%** | **20.85%** | 🚀 **+7.67%** |
-| **DiVatLoiLom** | Dị vật lồi lõm / Surface Gouge | 436 | 21.80% | 25.45% | 27.89% | **31.66%** | **30.95%** | 📈 **+9.15%** |
-| **LoiChi** | Nứt chỉ / Sealing Crack | 806 | 58.93% | 59.24% | 62.38% | **62.39%** | **62.16%** | **+3.23%** |
-| **LoiNhua** | Lỗi nhựa / Resin Burr | 76 | 46.94% | 40.53% | 50.01% | 52.63% | **53.19%** | **+6.25%** |
-| **LoiTray** | Vết trầy xước / Surface Scratch | 40 | 30.69% | 33.57% | 34.75% | 32.22% | **34.56%** | 🚀 **+3.87%** *(+7.20% vs Ep 87)* |
-| **Overall mAP50-95** | | **1,573** | **34.31%** | **35.02%** | **38.51%** | **39.98%** | **40.34%** | 🏆 **+6.03%** |
+| Defect Class | Vietnamese Term | Test Boxes | YOLO11m | RT-DETR-L | YOLO26m Base | **YOLO26m + ROI + VFL** 🏆 | Delta vs Baseline |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **DiVat** | Dị vật nhỏ / Foreign Matter | 215 | 13.18% | 16.30% | 17.53% | **20.85%** | 🚀 **+7.67%** |
+| **DiVatLoiLom** | Dị vật lồi lõm / Surface Gouge | 436 | 21.80% | 25.45% | 27.89% | **30.95%** | 📈 **+9.15%** |
+| **LoiChi** | Nứt chỉ / Sealing Crack | 806 | 58.93% | 59.24% | 62.38% | **62.16%** | **+3.23%** |
+| **LoiNhua** | Lỗi nhựa / Resin Burr | 76 | 46.94% | 40.53% | 50.01% | **53.19%** | **+6.25%** |
+| **LoiTray** | Vết trầy xước / Surface Scratch | 40 | 30.69% | 33.57% | 34.75% | **34.56%** | 🚀 **+3.87%** |
+| **Overall mAP50-95** | | **1,573** | **34.31%** | **35.02%** | **38.51%** | **40.34%** | 🏆 **+6.03%** |
 
 ---
 
