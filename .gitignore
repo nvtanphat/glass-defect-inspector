@@ -25,3 +25,4 @@ kaggle/checkpoint_upload/
 *.pt
 *.onnx
 *.engine
+*.pdf
