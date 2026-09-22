@@ -76,7 +76,7 @@ def find_baseline_checkpoint() -> Path:
 
 
 def pip_install_requirements(repo_root: Path) -> None:
-    subprocess.run([sys.executable, "-m", "pip", "install", "-e", str(repo_root)], check=True)
+    # Directly install external dependencies without editable packaging
     subprocess.run([sys.executable, "-m", "pip", "install", "sahi"], check=True)
 
 
