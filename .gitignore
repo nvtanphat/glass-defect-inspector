@@ -19,6 +19,7 @@ kaggle_output/
 kaggle_output*/
 kaggle_outputs/
 kaggle_outputs*/
+kaggle/checkpoint_upload/
 *.zip
 
 *.pt
