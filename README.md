@@ -128,13 +128,15 @@ python processing/apply_roi_crop.py \
 scale-error train \
   --data data/processed_roi/data.yaml \
   --config configs/train.yaml \
-  --project-dir artifacts/runs
+  --project-dir artifacts/runs \
+  --dataset-report data/processed/dataset_report.json
 ```
 
 Cấu hình huấn luyện chính (`configs/train.yaml`):
 - Model: `yolo26m.pt`
 - Image size: `960`
 - Optimizer: `MuSGD`
+- Loss: Varifocal Loss (VFL) kết hợp trọng số lớp nghịch đảo tần suất (tự động nạp từ `dataset_report.json`)
 - Epochs: 100 (với early stopping 30)
 
 ---

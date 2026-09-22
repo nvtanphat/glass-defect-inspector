@@ -3,10 +3,9 @@ from pathlib import Path
 from scale_error.config import load_yaml
 
 
-def test_exactly_one_training_config():
-    configs = list(Path("configs").glob("*.yaml"))
-    assert len(configs) == 1
-    assert configs[0].name == "train.yaml"
+def test_training_configs_exist():
+    assert Path("configs/train.yaml").exists()
+    assert Path("configs/train_rtdetr.yaml").exists()
 
 
 def test_accuracy_first_config():

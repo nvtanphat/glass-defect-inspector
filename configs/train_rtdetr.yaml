@@ -7,17 +7,18 @@ workers: 4
 
 # Reproducibility / stopping
 seed: 42
-deterministic: false
-patience: 40
+deterministic: true
+patience: 15
 
 # Precision / performance
 amp: true
 cache: false
 
-# RT-DETR has no anchor/mosaic-sensitive small-object failure mode in the same
-# way YOLO does, but this dataset's defects are still tiny, so keep augmentation
-# mild and consistent with the YOLO26m run for a fair ensemble comparison.
-mosaic: 0.0
+# Aligned domain-aware augmentation (same as YOLO26m)
+mosaic: 0.30
+close_mosaic: 10
+mixup: 0.05
+copy_paste: 0.0
 scale: 0.50
 translate: 0.10
 fliplr: 0.50
