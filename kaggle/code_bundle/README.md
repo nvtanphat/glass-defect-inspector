@@ -1,226 +1,103 @@
-# Scale_Error_DC — YOLO26m Accuracy-First End-to-End
+# Glass Defect Inspector: Industrial Glass Bottle Defect Detection with YOLO26m
 
-A single-configuration, Python-only object-detection project for training **YOLO26m** on
-**Scale_Error_DC v26** using a **Kaggle Tesla T4** through the **Kaggle CLI**.
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-ee4c2c.svg)](https://pytorch.org/)
+[![Ultralytics](https://img.shields.io/badge/Ultralytics-YOLO26-00FFFF.svg)](https://docs.ultralytics.com/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Test mAP50-95](https://img.shields.io/badge/Test%20mAP50--95-40.34%25-brightgreen.svg)](#-benchmark-results-held-out-test-split)
 
-There is deliberately **one training config only**:
-
-```text
-configs/train.yaml
-```
-
-No `YOLO26s`, no 640-vs-768 comparison, no hyperparameter sweep. The repository spends the GPU
-budget on one stronger run intended to maximize a defensible final result.
+Pipeline phát hiện lỗi miệng chai thủy tinh công nghiệp dựa trên **YOLO26m**, kết hợp tiền xử lý **ROI Cropping**, hàm mất mát **Varifocal Loss + Class Weighting**, tối ưu hóa **MuSGD**, và cơ chế suy luận **NMS-Free Dual-Head**.
 
 ---
 
-## Final model decision
+## 📊 Benchmark Results (Held-out Test Split)
 
-```text
-Model       : yolo26m.pt
-Input       : 960 × 960
-Epochs max  : 120
-Patience    : 15
-Batch       : 8 (fixed; AutoBatch and batch=16 both OOM'd on Kaggle T4)
-Optimizer   : MuSGD
-AMP         : enabled
-Seed        : 42
-Main metric : mAP50-95 on held-out test
-```
+Toàn bộ mô hình được đánh giá trên cùng một tập **Test độc lập** (Held-out Test Split gồm **890 ảnh, 1.573 nhãn lỗi ground-truth**), hoàn toàn tách biệt khỏi tập huấn luyện (`train`) và tập kiểm định (`val`).
 
-Why this choice:
+### 1. So sánh tổng thể trên tập Test
 
-- YOLO26m is the accuracy-oriented middle model in the YOLO26 family.
-- 960 px preserves more detail than 640 for thin/small industrial defects.
-- `yolo26m.pt` is pretrained, so the run is transfer learning rather than training from scratch.
-- optimizer/loss values are informed by the published YOLO26-M training recipe.
-- augmentation is moderated for industrial imagery instead of copying the very aggressive COCO
-  augmentation recipe unchanged.
-- early stopping protects against wasting epochs after validation stops improving.
-
-This configuration is designed to *favor accuracy*, but no code can honestly guarantee a target mAP
-before the dataset is actually trained and evaluated.
+| Mô hình | Tiền xử lý | Hàm mất mát | Optimizer | Epochs | Cơ chế Post-process | Precision | Recall | mAP@50 | mAP@75 | **mAP@50:95** | Độ trễ (T4) | FPS |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **YOLO11m** (Baseline 1) | Raw (960×960) | BCE | Auto (SGD) | 102 | NMS truyền thống | **80.23%** | 58.58% | 63.86% | 32.23% | 34.31% | **57.2 ms** | **17.5** |
+| **RT-DETR-L** (Baseline 2) | Raw (960×960) | Hungarian Match | AdamW | 120 | Hungarian Set Match | 73.09% | 65.47% | 65.22% | 30.57% | 35.02% | 97.3 ms | 10.3 |
+| **YOLO26m Base** | Raw (960×960) | BCE | MuSGD | 66 | NMS truyền thống | 74.66% | 67.87% | 69.85% | 36.75% | 38.51% | 67.4 ms | 14.8 |
+| **YOLO26m Base** | Raw (960×960) | BCE | MuSGD | 66 | NMS-Free (One-to-One) | 71.75% | 67.10% | 69.05% | 37.15% | 38.17% | 71.2 ms | 14.1 |
+| **YOLO26m + ROI + VFL** | ROI Crop | Varifocal + Class Weights | MuSGD | 100 | NMS truyền thống | 72.99% | **68.22%** | **71.28%** | 37.18% | 39.37% | 59.8 ms | 16.7 |
+| **YOLO26m + ROI + VFL** 🏆 | **ROI Crop** | **Varifocal + Class Weights** | **MuSGD** | **100** | **NMS-Free (One-to-One)** | 73.59% | 66.31% | 70.96% | **39.69%** | **40.34%** | 58.4 ms | 17.1 |
 
 ---
 
-## Dataset
+### 2. Chi tiết hiệu năng từng lớp lỗi (mAP@50:95 trên tập Test)
 
-Roboflow Universe:
-
-```text
-workspace : datacpn
-project   : scale_error_dc-orqpx
-version   : 26
-task      : object detection
-images    : 7,346
-classes   : 5
-```
-
-Classes:
-
-```text
-DiVat
-DiVatLoiLom
-LoiChi
-LoiNhua
-LoiTray
-```
-
-The public v26 release has no test split. The pipeline therefore:
-
-```text
-original train (5578) --------------------> final train
-original valid (1768)
-        |
-        +-- multilabel stratified --------> final val  (~884)
-        |
-        +-- multilabel stratified --------> final test (~884)
-```
-
-The held-out test set is not used for training or early stopping.
-
-Class balance in the Roboflow train split is heavily skewed (LoiChi=4629 images
-vs LoiTray=223, a ~21:1 ratio), and 59% of all boxes cover under 0.25% of the
-image area. Every model trained on this dataset under-performs on the rarest
-classes as missed detections, not misclassifications (confirmed via confusion
-matrices — see `docs/FULL_DOCUMENTATION.md`). Hardlink-based rare-class
-oversampling was tried and measured worse across every class (mAP50-95 0.385
-&rarr; 0.356) — duplicate images add no new information and appear to push
-the model toward overfitting the repeated samples rather than generalizing,
-so it was reverted. A future attempt at improving rare-class recall should
-use loss-level class weighting or true copy-paste with segmentation masks
-instead of image duplication.
+| Lớp lỗi | Định nghĩa lỗi | Số nhãn Test | YOLO11m | RT-DETR-L | YOLO26m Base | **YOLO26m + ROI + VFL** | Chênh lệch vs Baseline |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **DiVat** | Dị vật nhỏ | 215 | 13.18% | 16.30% | 17.53% | **20.85%** | +7.67% |
+| **DiVatLoiLom** | Dị vật lồi lõm | 436 | 21.80% | 25.45% | 27.89% | **30.95%** | +9.15% |
+| **LoiChi** | Nứt chỉ viền miệng | 806 | 58.93% | 59.24% | 62.38% | **62.16%** | +3.23% |
+| **LoiNhua** | Lỗi ba-via nhựa | 76 | 46.94% | 40.53% | 50.01% | **53.19%** | +6.25% |
+| **LoiTray** | Vết trầy xước | 40 | 30.69% | 33.57% | 34.75% | **34.56%** | +3.87% |
+| **Trung bình (All Classes)** | | **1.573** | **34.31%** | **35.02%** | **38.51%** | **40.34%** | **+6.03%** |
 
 ---
 
-## End-to-end pipeline
+### 3. Phân rã độ trễ suy luận (Tesla T4 GPU)
 
-```text
-Roboflow Scale_Error_DC v26
-        ↓
-YOLO26 export download
-        ↓
-annotation validation
-        ↓
-dataset statistics
-        ↓
-SHA1 duplicate/leakage audit
-        ↓
-multilabel-stratified val/test split
-        ↓
-YOLO26m pretrained checkpoint
-        ↓
-accuracy-first fine-tuning @ 960
-        ↓
-best.pt
-        ↓
-held-out test evaluation
-        ↓
-error analysis (FP/FN/wrong class)
-        ↓
-latency benchmark
-        ↓
-sample predictions
-        ↓
-ONNX export
-        ↓
-scale_error_yolo26_results.zip
-```
+| Giai đoạn suy luận | YOLO11m (NMS) | RT-DETR-L | YOLO26m Base (NMS) | YOLO26m + ROI + VFL (NMS-Free) |
+| :--- | :---: | :---: | :---: | :---: |
+| **Pre-process** | 1.53 ms | 1.90 ms | 1.41 ms | 2.10 ms |
+| **Inference (Forward)** | 44.29 ms | 96.01 ms | 49.83 ms | 56.20 ms |
+| **Post-process** | 0.98 ms | 0.16 ms | 0.87 ms | **0.12 ms** |
+| **Tổng độ trễ End-to-End** | 57.20 ms | 97.29 ms | 67.45 ms | 58.42 ms |
+| **Tốc độ (FPS)** | 17.5 FPS | 10.3 FPS | 14.8 FPS | 17.1 FPS |
 
 ---
 
-## Project tree
+## 🛠️ Các phương pháp kỹ thuật chính
 
-```text
-scale-error-yolo26/
-├── configs/
-│   └── train.yaml
-├── src/
-│   └── scale_error/
-│       ├── data/
-│       ├── training/
-│       ├── evaluation/
-│       ├── inference/
-│       ├── cli.py
-│       └── config.py
-├── demo/
-│   └── app.py
-├── tests/
-├── docs/
-│   └── FULL_DOCUMENTATION.md
-├── kaggle_output/            (YOLO26m results)
-├── kaggle_output_yolo11/     (YOLO11m results)
-├── kaggle_output_rtdetr_final/ (RT-DETR-L results)
-├── pyproject.toml
-└── README.md
-```
+1. **Cắt vùng quan tâm (ROI Cropping - `processing/apply_roi_crop.py`)**:
+   - Loại bỏ vùng nền đen cố định không chứa sản phẩm xung quanh miệng chai (giảm 25.3% diện tích thừa).
+   - Tăng mật độ điểm ảnh hữu ích của các khuyết tật kích thước nhỏ khi đưa về kích thước đầu vào 960×960.
 
-Training itself ran as standalone Kaggle Notebook scripts (not checked into
-this repo); the directories above hold each run's downloaded `artifacts/`
-(manifest, metrics, weights, plots) for inspection.
+2. **Varifocal Loss & Trọng số nghịch đảo tần suất (`losses.py`)**:
+   - Thay thế BCE bằng Varifocal Loss (VFL) với continuous soft targets lấy từ TaskAlignedAssigner.
+   - Nhân trọng số nghịch đảo tần suất lớp để cân bằng độ đóng góp gradient giữa lớp đa số (`LoiChi`: 5.282 nhãn train) và thiểu số (`LoiTray`: 249 nhãn train).
+
+3. **Giao thức tối ưu MuSGD**:
+   - Tối ưu ma trận trọng số với momentum 0.948, weight decay 0.00027, learning rate ban đầu 0.00038.
+   - Tắt các phép biến đổi hình học không phù hợp với ảnh camera công nghiệp cố định (shear, perspective, flipud).
+
+4. **Suy luận NMS-Free (Dual Head)**:
+   - Sử dụng One-to-One head của YOLO26 để gán nhãn 1-1 trực tiếp, loại bỏ hoàn toàn bước Non-Maximum Suppression (thời gian post-process chỉ 0.12 ms).
 
 ---
 
-## Important output files
+## 🚀 Hướng dẫn cài đặt và chạy Local
 
-```text
-artifacts/
-├── dataset/
-│   ├── dataset_report.json
-│   ├── generated_split_report.json
-│   ├── leakage_report.json
-│   └── runtime_data.yaml
-├── runs/
-│   └── yolo26m_960/
-│       └── weights/
-│           ├── best.pt
-│           └── last.pt
-├── evaluation/
-│   ├── metrics_default_nms.json
-│   ├── metrics_nms_free.json
-│   ├── error_analysis.csv
-│   └── error_analysis_summary.json
-├── benchmark/
-├── predictions/
-├── exports/
-└── manifest.json
-```
-
-For the coursework report, use `best.pt` and the held-out `test` results, not `last.pt`.
-
----
-
-## Metrics to report
-
-At minimum:
-
-```text
-Precision
-Recall
-mAP@50
-mAP@50:95
-per-class AP
-Confusion Matrix
-False Positives
-False Negatives
-wrong-class matches
-mean / median / p95 latency
-FPS
-```
-
-Also show several failure examples. A strong report explains *why* the model fails, not only its mAP.
-
----
-
-## Local training
-
-Install:
+### 1. Cài đặt môi trường
 
 ```bash
-python -m pip install -e ".[dev]"
+# Clone repository
+git clone https://github.com/nvtanphat/-glass-defect-inspector.git
+cd -glass-defect-inspector
+
+# Tạo môi trường ảo
+python -m venv .venv
+
+# Kích hoạt môi trường (Windows PowerShell)
+.\.venv\Scripts\Activate.ps1
+# Hoặc trên Linux/macOS:
+# source .venv/bin/activate
+
+# Cài đặt thư viện
+pip install --upgrade pip
+pip install -e ".[dev]"
 ```
 
-Prepare:
+---
+
+### 2. Chuẩn bị dữ liệu và phân chia tập Test
+
+Dự án sử dụng bộ dữ liệu **Scale_Error_DC v26** (Roboflow). Lệnh sau tải và chia tập stratified split để tạo tập `test` độc lập:
 
 ```bash
 scale-error prepare \
@@ -231,24 +108,125 @@ scale-error prepare \
   --split-output data/processed
 ```
 
-Train the single configuration:
+---
+
+### 3. Thực hiện tiền xử lý ROI Crop
 
 ```bash
-scale-error train \
-  --data data/processed/runtime_data.yaml \
-  --config configs/train.yaml \
-  --project-dir artifacts/runs
+python processing/apply_roi_crop.py \
+  --dataset-root data/processed \
+  --output-root data/processed_roi \
+  --roi-config processing/roi_config.json \
+  --splits train val test
 ```
 
 ---
 
-## One rule for this repository
+### 4. Huấn luyện mô hình
 
-Do not add extra training configs just to make the repository look larger.
+```bash
+scale-error train \
+  --data data/processed_roi/data.yaml \
+  --config configs/train.yaml \
+  --project-dir artifacts/runs \
+  --dataset-report data/processed/dataset_report.json
+```
 
-The experimental claim is:
+Cấu hình huấn luyện chính (`configs/train.yaml`):
+- Model: `yolo26m.pt`
+- Image size: `960`
+- Optimizer: `MuSGD`
+- Loss: Varifocal Loss (VFL) kết hợp trọng số lớp nghịch đảo tần suất (tự động nạp từ `dataset_report.json`)
+- Epochs: 100 (với early stopping 30)
 
-> Fine-tune one accuracy-oriented YOLO26m configuration on Scale_Error_DC, evaluate it correctly,
-> analyze its failure modes, and produce a reproducible deployment artifact.
+---
 
-That is enough for a clean deep-learning project.
+### 5. Đánh giá trên tập Test
+
+Chạy đánh giá checkpoint tốt nhất trên tập Test (held-out):
+
+```bash
+# Đánh giá NMS-Free (One-to-One Head)
+scale-error evaluate \
+  --weights artifacts/runs/yolo26m/weights/best.pt \
+  --data data/processed_roi/data.yaml \
+  --output artifacts/evaluation/metrics_nms_free.json \
+  --nms-free
+
+# Đánh giá NMS truyền thống
+scale-error evaluate \
+  --weights artifacts/runs/yolo26m/weights/best.pt \
+  --data data/processed_roi/data.yaml \
+  --output artifacts/evaluation/metrics_nms.json
+```
+
+---
+
+### 6. Dự đoán & Web Demo
+
+```bash
+# Giao diện trực quan Gradio
+python demo/app.py
+```
+Mở trình duyệt tại `http://localhost:7860`.
+
+```bash
+# Dự đoán qua CLI
+scale-error predict \
+  --weights artifacts/runs/yolo26m/weights/best.pt \
+  --source path/to/images/ \
+  --output artifacts/predictions \
+  --nms-free
+```
+
+---
+
+### 7. Xuất định dạng ONNX
+
+```bash
+yolo export \
+  model=artifacts/runs/yolo26m/weights/best.pt \
+  format=onnx \
+  imgsz=960 \
+  dynamic=True \
+  nms=False
+```
+
+---
+
+## 📁 Cấu trúc thư mục
+
+```text
+-glass-defect-inspector/
+├── configs/
+│   ├── train.yaml                   # Cấu hình huấn luyện YOLO26m (MuSGD)
+│   └── train_rtdetr.yaml            # Cấu hình huấn luyện RT-DETR-L
+├── demo/
+│   └── app.py                       # Giao diện web Gradio
+├── docs/
+│   └── FULL_DOCUMENTATION.md        # Tài liệu chi tiết công thức và thông số
+├── processing/
+│   ├── apply_roi_crop.py            # Script thực hiện cắt ROI
+│   ├── compute_roi.py               # Script tính toán tọa độ ROI từ bounding box
+│   ├── label_audit.py               # Kiểm tra tính toàn vẹn của nhãn
+│   └── roi_config.json              # Thông số cấu hình ROI
+├── report_assets/                   # Đồ thị đánh giá và ma trận nhầm lẫn
+├── src/
+│   └── scale_error/
+│       ├── data/                    # Tải dữ liệu, chia tập và audit
+│       ├── evaluation/              # Hàm đánh giá split="test" và tính metric
+│       ├── inference/               # Module suy luận One-to-One / NMS
+│       ├── training/                # Hàm mất mát Varifocal và trainer
+│       ├── cli.py                   # Giao diện dòng lệnh CLI
+│       └── config.py                # Schema cấu hình Pydantic
+├── tests/                           # Kiểm thử đơn vị
+├── pyproject.toml                   # Định nghĩa package và dependencies
+├── report.html                      # Báo cáo kết quả trực quan
+└── README.md                        # Hướng dẫn sử dụng
+```
+
+---
+
+## 📄 License
+
+Dự án được phân phối dưới giấy phép [MIT License](LICENSE).

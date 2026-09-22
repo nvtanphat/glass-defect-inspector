@@ -52,9 +52,28 @@ def train(
     model_cls = RTDETR if model_name.startswith("rtdetr") else YOLO
     model = model_cls(model_name)
 
-    if model_cls is YOLO and dataset_report is not None:
-        class_weights = compute_class_weights(dataset_report)
-        model.add_callback("on_train_start", _attach_vfl_criterion(class_weights))
+    if model_cls is YOLO:
+        report_path = None
+        if dataset_report is not None and Path(dataset_report).exists():
+            report_path = Path(dataset_report)
+        else:
+            # Auto-detect dataset_report.json from standard locations
+            data_yaml_p = Path(data_yaml).resolve()
+            candidates = [
+                data_yaml_p.parent / "dataset_report.json",
+                data_yaml_p.parent.parent / "dataset_report.json",
+                Path("data/processed_roi/dataset_report.json"),
+                Path("data/processed/dataset_report.json"),
+                Path("artifacts/dataset_report.json"),
+            ]
+            for cand in candidates:
+                if cand.exists():
+                    report_path = cand
+                    break
+
+        if report_path is not None:
+            class_weights = compute_class_weights(report_path)
+            model.add_callback("on_train_start", _attach_vfl_criterion(class_weights))
 
     return model.train(
         data=str(Path(data_yaml).resolve()),

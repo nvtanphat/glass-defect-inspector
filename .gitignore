@@ -16,6 +16,8 @@ weights/
 # Local caches, credentials and outputs
 kaggle_output*
 kaggle_outputs*
+kaggle_logs/
+repo/
 kaggle.json
 .kaggle/
 *.ps1

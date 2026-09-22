@@ -1,8 +1,9 @@
 """Kaggle script-kernel entrypoint for YOLO26m + ROI + Elementwise VFL.
 
-Clones the latest codebase from GitHub (with fixed elementwise Varifocal Loss
-and per-class inverse-frequency weighting) and uses the attached Roboflow dataset:
-  - nguynvntnpht/scale-error-dc-v26-yolov8 (Raw images + labels)
+Loads codebase directly from the attached Kaggle code bundle dataset:
+  - phtnguyn1ytj/scale-error-yolo26-code
+And raw images from:
+  - nguynvntnpht/scale-error-dc-v26-yolov8
 
 Runs: validate -> split valid->val/test -> ROI crop -> train -> evaluate on test
 """
@@ -13,6 +14,7 @@ import json
 import shutil
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 WORKING = Path("/kaggle/working")
@@ -24,49 +26,61 @@ def log(msg: str) -> None:
     print(f"[scale-error] {msg}", flush=True)
 
 
-def find_code_repo() -> Path:
+def setup_code_repo() -> Path:
     if REPO_COPY.exists():
         shutil.rmtree(REPO_COPY)
-    try:
-        log("Cloning latest code from GitHub (commit with elementwise VFL fix)...")
-        subprocess.run(
-            [
-                "git",
-                "clone",
-                "https://github.com/nvtanphat/-glass-defect-inspector.git",
-                str(REPO_COPY),
-            ],
-            check=True,
-        )
-        log(f"Cloned repository successfully into {REPO_COPY}")
+    REPO_COPY.mkdir(parents=True, exist_ok=True)
+
+    kaggle_input = Path("/kaggle/input")
+    log(f"Inspecting /kaggle/input: {[p.name for p in kaggle_input.iterdir()]}")
+
+    # Check for code bundle zip
+    zip_candidates = list(kaggle_input.rglob("code_bundle.zip"))
+    if zip_candidates:
+        zip_path = zip_candidates[0]
+        log(f"Extracting code bundle from {zip_path} -> {REPO_COPY}")
+        with zipfile.ZipFile(zip_path, "r") as zf:
+            zf.extractall(REPO_COPY)
         return REPO_COPY
-    except Exception as e:
-        log(f"Git clone failed ({e}), searching /kaggle/input for pyproject.toml...")
-        kaggle_input = Path("/kaggle/input")
-        for hit in sorted(kaggle_input.rglob("pyproject.toml")):
-            log(f"Using code repo from input at {hit.parent}")
-            shutil.copytree(hit.parent, REPO_COPY)
+
+    # Check for unpacked pyproject.toml
+    for hit in sorted(kaggle_input.rglob("pyproject.toml")):
+        if "repo" not in str(hit):
+            log(f"Copying code directory from {hit.parent} -> {REPO_COPY}")
+            shutil.copytree(hit.parent, REPO_COPY, dirs_exist_ok=True)
             return REPO_COPY
-    raise FileNotFoundError("Could not obtain code repository.")
+
+    raise FileNotFoundError("Could not locate code bundle in /kaggle/input.")
 
 
 def find_dataset_root(code_repo: Path) -> Path:
     kaggle_input = Path("/kaggle/input")
     for data_yaml in sorted(kaggle_input.rglob("data.yaml")):
-        if code_repo in data_yaml.parents:
+        if code_repo in data_yaml.parents or "repo" in str(data_yaml):
             continue
         log(f"Using attached raw dataset at {data_yaml.parent}")
         return data_yaml.parent
     raise FileNotFoundError("No data.yaml found under /kaggle/input for the image dataset.")
 
 
-def pip_install_repo(repo_root: Path) -> None:
-    subprocess.run([sys.executable, "-m", "pip", "install", "-e", str(repo_root)], check=True)
+def pip_install_requirements() -> None:
+    log("Installing python dependencies...")
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "iterative-stratification==0.1.9",
+            "ultralytics==8.4.147",
+        ],
+        check=True,
+    )
 
 
 def main() -> None:
-    repo_root = find_code_repo()
-    pip_install_repo(repo_root)
+    repo_root = setup_code_repo()
+    pip_install_requirements()
 
     sys.path.insert(0, str(repo_root / "src"))
     from scale_error.data.split import split_original_valid
@@ -183,7 +197,7 @@ def main() -> None:
             nms=nms,
         )
 
-    # 7. Clean up heavy image directories so the final Kaggle artifact zip stays lean (~150MB)
+    # 7. Clean up intermediate image directories so the final Kaggle artifact zip stays lean (~150MB)
     log("Cleaning up intermediate image directories to keep output compact...")
     for redundant in [roi_root, processed_root, REPO_COPY]:
         if redundant.exists():

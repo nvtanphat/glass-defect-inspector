@@ -26,6 +26,7 @@ def build_parser() -> argparse.ArgumentParser:
     tr.add_argument("--data", required=True)
     tr.add_argument("--config", required=True)
     tr.add_argument("--project-dir", default="artifacts/runs")
+    tr.add_argument("--dataset-report", default=None, help="Path to dataset_report.json for class weights")
 
     ev = sub.add_parser("evaluate")
     ev.add_argument("--weights", required=True)
@@ -57,7 +58,7 @@ def main() -> None:
         print(runtime_yaml)
 
     elif args.cmd == "train":
-        train(args.data, args.config, args.project_dir)
+        train(args.data, args.config, args.project_dir, dataset_report=args.dataset_report)
 
     elif args.cmd == "evaluate":
         evaluate(

@@ -28,11 +28,15 @@ from ultralytics.utils.loss import VarifocalLoss, v8DetectionLoss
 
 
 class VFLDetectionLoss(v8DetectionLoss):
-    """v8DetectionLoss with VarifocalLoss classification instead of plain BCE."""
+    """v8DetectionLoss with per-class weighted VarifocalLoss classification."""
 
-    def __init__(self, model, tal_topk: int = 10, tal_topk2: int | None = None):
+    def __init__(self, model, tal_topk: int = 10, tal_topk2: int | None = None, gamma: float = 2.0, alpha: float = 0.75):
         super().__init__(model, tal_topk=tal_topk, tal_topk2=tal_topk2)
-        self.vfl = VarifocalLoss(gamma=2.0, alpha=0.75)
+        self.gamma = gamma
+        self.alpha = alpha
+        cw = getattr(model, "class_weights", None)
+        if cw is not None:
+            self.class_weights = cw
 
     def get_assigned_targets_and_loss(self, preds, batch):
         loss = torch.zeros(3, device=self.device)
@@ -71,9 +75,22 @@ class VFLDetectionLoss(v8DetectionLoss):
         # wherever that score is nonzero, matching ultralytics/models/utils/loss.py.
         target_scores_typed = target_scores.to(dtype)
         one_hot = (target_scores_typed > 0).to(dtype)
-        cls_loss = self.vfl(pred_scores, target_scores_typed, one_hot)
-        if self.class_weights is not None:
-            cls_loss = cls_loss * self.class_weights.mean()
+
+        # Compute elementwise Varifocal Loss across [batch, num_anchors, num_classes]
+        vfl_weight = self.alpha * pred_scores.sigmoid().pow(self.gamma) * (1 - one_hot) + target_scores_typed * one_hot
+        bce = torch.nn.functional.binary_cross_entropy_with_logits(
+            pred_scores.float(), target_scores_typed.float(), reduction="none"
+        )
+        cls_loss_elements = (bce * vfl_weight).to(dtype)
+
+        # Apply per-class inverse-frequency weights element-wise before summing
+        if getattr(self, "class_weights", None) is not None:
+            cw = self.class_weights.to(device=cls_loss_elements.device, dtype=dtype)
+            if cw.ndim == 1:
+                cw = cw.view(1, 1, -1)
+            cls_loss_elements = cls_loss_elements * cw
+
+        cls_loss = cls_loss_elements.sum()
         loss[1] = cls_loss / target_scores_sum
 
         if fg_mask.sum():

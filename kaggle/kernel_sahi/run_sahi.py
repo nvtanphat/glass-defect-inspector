@@ -77,7 +77,19 @@ def find_baseline_checkpoint() -> Path:
 
 def pip_install_requirements(repo_root: Path) -> None:
     # Directly install external dependencies without editable packaging
-    subprocess.run([sys.executable, "-m", "pip", "install", "sahi"], check=True)
+    log("Installing dependencies (sahi, iterative-stratification, ultralytics)...")
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "sahi",
+            "iterative-stratification==0.1.9",
+            "ultralytics==8.4.147",
+        ],
+        check=True,
+    )
 
 
 def main() -> None:
