@@ -5,23 +5,21 @@ __pycache__/
 .venv/
 venv/
 .env
-kaggle.json
-.kaggle/
 .vscode/
-env_kaggle.ps1
 
 data/raw/
 data/processed/
 artifacts/
 runs/
 weights/
-kaggle_output/
-kaggle_output*/
-kaggle_outputs/
-kaggle_outputs*/
-kaggle/checkpoint_upload/
+
+# Local caches, credentials and outputs
+kaggle*
+.kaggle/
+*.ps1
 *.zip
 
+# Model checkpoints and exports
 *.pt
 *.onnx
 *.engine

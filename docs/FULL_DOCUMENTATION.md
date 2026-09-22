@@ -15,7 +15,7 @@ The project uses exactly one model/training configuration:
 YOLO26m pretrained checkpoint
 imgsz = 960
 epochs <= 120
-Kaggle Tesla T4
+NVIDIA GPU (Tesla T4 or equivalent)
 ```
 
 ### 2. Why only one configuration
@@ -532,7 +532,7 @@ The NMS-free export corresponds to YOLO26's end-to-end deployment path.
 
 ### 31. Reproducibility manifest
 
-Every Kaggle run writes:
+Every training run writes:
 
 ```text
 artifacts/manifest.json
@@ -555,29 +555,29 @@ It records:
 - benchmark results
 - elapsed runtime
 
-### 32. Kaggle execution model
+### 32. Execution model
 
-The repository is code-first. Training is not performed in a manually edited notebook.
+The repository is code-first. Training is not performed in an interactive notebook, but via reproducible CLI commands:
 
 Flow:
 
 ```text
-local repo
+local repo / environment
    ↓
-kaggle kernels push
+scale-error prepare
    ↓
-Kaggle Python script kernel
+scale-error train
    ↓
-Tesla T4
+NVIDIA CUDA GPU
    ↓
-artifact outputs
+artifact outputs (runs/weights/best.pt)
    ↓
-kaggle kernels output
+scale-error evaluate
 ```
 
-This makes the submitted training entry point versionable and reproducible.
+This makes the training pipeline versionable, modular, and reproducible.
 
-### 33. Kaggle secret
+### 33. Environment Secrets
 
 Required:
 
@@ -585,7 +585,7 @@ Required:
 ROBOFLOW_API_KEY
 ```
 
-It must be stored in Kaggle Secrets.
+It must be stored in environment variables or `.env`.
 
 Never put:
 

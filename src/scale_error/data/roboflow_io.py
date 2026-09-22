@@ -10,17 +10,9 @@ def get_roboflow_api_key() -> str:
     key = os.environ.get("ROBOFLOW_API_KEY")
     if key:
         return key
-    try:
-        from kaggle_secrets import UserSecretsClient
-
-        key = UserSecretsClient().get_secret("ROBOFLOW_API_KEY")
-    except Exception as exc:
-        raise RuntimeError(
-            "ROBOFLOW_API_KEY not found. Set it as an environment variable or Kaggle Secret."
-        ) from exc
-    if not key:
-        raise RuntimeError("ROBOFLOW_API_KEY is empty.")
-    return key
+    raise RuntimeError(
+        "ROBOFLOW_API_KEY not found. Set it as an environment variable or in .env."
+    )
 
 
 def download_dataset(
