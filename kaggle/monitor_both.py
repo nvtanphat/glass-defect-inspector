@@ -7,18 +7,18 @@ import requests
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-os.environ["KAGGLE_USERNAME"] = "phtnguyn1ytj"
-os.environ["KAGGLE_KEY"] = "16975e4a229dab67962c3f165b86feb1"
+os.environ["KAGGLE_USERNAME"] = "jyang10"
+os.environ["KAGGLE_KEY"] = "083346fbb9da8ad61b964e678d18a71e"
 
 KERNELS = [
-    "scale-error-yolo26-roi-crop-train",
-    "scale-error-yolo26-sahi-train"
+    "scale-error-sahi-finetune",
+    "scale-error-sahi-study"
 ]
 
 def get_status(slug):
     url = f"https://www.kaggle.com/api/v1/kernels/status"
     auth = (os.environ["KAGGLE_USERNAME"], os.environ["KAGGLE_KEY"])
-    params = {"userName": "phtnguyn1ytj", "kernelSlug": slug}
+    params = {"userName": "jyang10", "kernelSlug": slug}
     r = requests.get(url, auth=auth, params=params, timeout=20)
     if r.status_code == 200:
         return r.json().get("status", "UNKNOWN")
@@ -27,7 +27,7 @@ def get_status(slug):
 def get_log(slug):
     url = f"https://www.kaggle.com/api/v1/kernels/output"
     auth = (os.environ["KAGGLE_USERNAME"], os.environ["KAGGLE_KEY"])
-    params = {"userName": "phtnguyn1ytj", "kernelSlug": slug}
+    params = {"userName": "jyang10", "kernelSlug": slug}
     r = requests.get(url, auth=auth, params=params, timeout=20)
     if r.status_code == 200:
         data = r.json()

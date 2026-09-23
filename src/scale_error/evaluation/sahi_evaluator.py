@@ -75,6 +75,7 @@ class SAHIPredictor:
         conf_thresh: float = 0.25,
         iou_thresh: float = 0.50,
         device: int | str = 0,
+        include_full_image: bool = False,
     ):
         self.model = YOLO(str(weights))
         self.slice_w = slice_w
@@ -83,6 +84,7 @@ class SAHIPredictor:
         self.conf_thresh = conf_thresh
         self.iou_thresh = iou_thresh
         self.device = device
+        self.include_full_image = include_full_image
 
     def predict_image(self, img: np.ndarray) -> tuple[np.ndarray, dict[str, float]]:
         """Run sliced inference and merge overlapping predictions.
@@ -128,6 +130,19 @@ class SAHIPredictor:
             shifted_boxes.append(b)
             shifted_scores.append(s)
             shifted_classes.append(c)
+
+        if self.include_full_image:
+            full_res = self.model.predict(
+                img,
+                imgsz=self.slice_w,
+                conf=self.conf_thresh,
+                device=self.device,
+                verbose=False,
+            )
+            if len(full_res) and full_res[0].boxes is not None and len(full_res[0].boxes) > 0:
+                shifted_boxes.append(full_res[0].boxes.xyxy.cpu().numpy())
+                shifted_scores.append(full_res[0].boxes.conf.cpu().numpy())
+                shifted_classes.append(full_res[0].boxes.cls.cpu().numpy())
 
         if not shifted_boxes:
             t_merge = (time.perf_counter() - t2) * 1000.0
@@ -176,6 +191,7 @@ def evaluate_sahi(
     device: int | str = 0,
     num_classes: int = 5,
     class_names: dict[int, str] | None = None,
+    include_full_image: bool = False,
 ) -> dict[str, Any]:
     test_images_dir = Path(test_images_dir)
     test_labels_dir = Path(test_labels_dir)
@@ -193,6 +209,7 @@ def evaluate_sahi(
         conf_thresh=conf_thresh,
         iou_thresh=iou_thresh,
         device=device,
+        include_full_image=include_full_image,
     )
 
     image_files = sorted(list(test_images_dir.glob("*.jpg")) + list(test_images_dir.glob("*.png")))
