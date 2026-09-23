@@ -9,10 +9,11 @@
   "enable_internet": true,
   "dataset_sources": [
     "nguynvntnpht/scale-error-dc-v26-yolov8",
-    "phtnguyn1ytj/scale-error-yolo26-code",
-    "phtnguyn1ytj/scale-error-yolo26-checkpoint"
+    "phtnguyn1ytj/scale-error-yolo26-code"
   ],
   "competition_sources": [],
-  "kernel_sources": [],
+  "kernel_sources": [
+    "phtnguyn1ytj/scale-error-yolo26-roi-crop-train"
+  ],
   "model_sources": []
 }
