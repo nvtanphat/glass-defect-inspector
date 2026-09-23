@@ -6,13 +6,13 @@ import sys
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-os.environ["KAGGLE_USERNAME"] = "phtnguyn1ytj"
-os.environ["KAGGLE_KEY"] = "16975e4a229dab67962c3f165b86feb1"
+os.environ["KAGGLE_USERNAME"] = "jyang10"
+os.environ["KAGGLE_KEY"] = "083346fbb9da8ad61b964e678d18a71e"
 
 def print_log(kernel_slug):
     url = "https://www.kaggle.com/api/v1/kernels/output"
     auth = (os.environ["KAGGLE_USERNAME"], os.environ["KAGGLE_KEY"])
-    params = {"userName": "phtnguyn1ytj", "kernelSlug": kernel_slug}
+    params = {"userName": "jyang10", "kernelSlug": kernel_slug}
     r = requests.get(url, auth=auth, params=params, timeout=30)
     data = r.json()
     log_raw = data.get("logNullable") or data.get("log")
