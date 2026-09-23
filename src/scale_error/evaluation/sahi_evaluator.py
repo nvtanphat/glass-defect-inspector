@@ -237,78 +237,89 @@ def evaluate_sahi(
         if (idx + 1) % 100 == 0 or (idx + 1) == len(image_files):
             print(f"  [{idx+1}/{len(image_files)}] mean latency: {np.mean(e2e_times):.1f} ms")
 
-    # Compute COCO-style metrics
+    # Compute COCO-style metrics (101-point interpolated AP with global sorting)
     iou_thresholds = np.linspace(0.5, 0.95, 10)
     per_class_ap = {c: [] for c in range(num_classes)}
     recalls_50 = []
 
     for c in range(num_classes):
-        # Accumulate detections and ground truths for class c
-        c_preds = []
+        # 1. Collect all GT boxes per image for class c
+        c_gts_per_img = {}
         c_gts_count = 0
-
-        for img_preds, img_gts in zip(all_preds_by_img, all_gts_by_img):
-            p_mask = img_preds[:, 5] == c if len(img_preds) else np.zeros(0, dtype=bool)
-            g_mask = img_gts[:, 4] == c if len(img_gts) else np.zeros(0, dtype=bool)
-
-            cur_p = img_preds[p_mask] if len(img_preds) else np.empty((0, 6))
-            cur_g = img_gts[g_mask, :4] if len(img_gts) else np.empty((0, 4))
-            c_gts_count += len(cur_g)
-
-            if len(cur_p):
-                # Sort detections by confidence descending
-                order = np.argsort(-cur_p[:, 4])
-                c_preds.append((cur_p[order], cur_g))
+        for img_idx, img_gts in enumerate(all_gts_by_img):
+            if len(img_gts):
+                g_mask = img_gts[:, 4] == c
+                cur_g = img_gts[g_mask, :4]
+                c_gts_per_img[img_idx] = cur_g
+                c_gts_count += len(cur_g)
             else:
-                c_preds.append((np.empty((0, 6)), cur_g))
+                c_gts_per_img[img_idx] = np.empty((0, 4), dtype=np.float32)
 
         if c_gts_count == 0:
             per_class_ap[c] = [0.0] * len(iou_thresholds)
             continue
 
+        # 2. Collect ALL detections across all images for class c
+        detections = []
+        for img_idx, img_preds in enumerate(all_preds_by_img):
+            if len(img_preds):
+                p_mask = img_preds[:, 5] == c
+                for p in img_preds[p_mask]:
+                    detections.append((img_idx, float(p[4]), p[:4]))
+
+        if len(detections) == 0:
+            per_class_ap[c] = [0.0] * len(iou_thresholds)
+            continue
+
+        # 3. Sort detections globally across all images by confidence descending
+        detections.sort(key=lambda d: d[1], reverse=True)
+
         class_ap_thresholds = []
         for iou_th in iou_thresholds:
-            tp = []
-            fp = []
+            tp = np.zeros(len(detections), dtype=np.float32)
+            fp = np.zeros(len(detections), dtype=np.float32)
 
-            for cur_p, cur_g in c_preds:
-                if len(cur_p) == 0:
+            matched = {img_idx: np.zeros(len(c_gts_per_img[img_idx]), dtype=bool) for img_idx in c_gts_per_img}
+
+            for det_idx, (img_idx, conf, box) in enumerate(detections):
+                cur_g = c_gts_per_img[img_idx]
+                if len(cur_g) == 0:
+                    fp[det_idx] = 1.0
                     continue
-                matched = np.zeros(len(cur_g), dtype=bool)
-                ious = box_iou(cur_p[:, :4], cur_g)
 
-                for p_idx in range(len(cur_p)):
-                    best_iou = -1.0
-                    best_gt = -1
-                    for g_idx in range(len(cur_g)):
-                        if not matched[g_idx] and ious[p_idx, g_idx] > best_iou:
-                            best_iou = ious[p_idx, g_idx]
-                            best_gt = g_idx
-                    if best_iou >= iou_th:
-                        tp.append(1)
-                        fp.append(0)
-                        matched[best_gt] = True
-                    else:
-                        tp.append(0)
-                        fp.append(1)
+                ious = box_iou(box[None, :], cur_g)[0]
+                best_iou = -1.0
+                best_gt = -1
+                for g_idx in range(len(cur_g)):
+                    if not matched[img_idx][g_idx] and ious[g_idx] > best_iou:
+                        best_iou = ious[g_idx]
+                        best_gt = g_idx
 
-            if len(tp) == 0:
-                class_ap_thresholds.append(0.0)
-                continue
+                if best_iou >= iou_th:
+                    tp[det_idx] = 1.0
+                    matched[img_idx][best_gt] = True
+                else:
+                    fp[det_idx] = 1.0
 
             tp_cumsum = np.cumsum(tp)
             fp_cumsum = np.cumsum(fp)
             rec = tp_cumsum / float(c_gts_count)
             prec = tp_cumsum / np.maximum(tp_cumsum + fp_cumsum, 1e-6)
 
-            # 101-point interpolated AP
+            # Standard 101-point interpolated AP (COCO standard)
+            recall_levels = np.linspace(0.0, 1.0, 101)
             mrec = np.concatenate(([0.0], rec, [1.0]))
             mpre = np.concatenate(([0.0], prec, [0.0]))
             for i in range(len(mpre) - 2, -1, -1):
                 mpre[i] = max(mpre[i], mpre[i + 1])
-            i = np.where(mrec[1:] != mrec[:-1])[0]
-            ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
-            class_ap_thresholds.append(float(ap))
+
+            interpolated_prec = np.zeros(101, dtype=np.float32)
+            for idx_r, r in enumerate(recall_levels):
+                p_at_r = mpre[mrec >= r]
+                interpolated_prec[idx_r] = p_at_r[0] if len(p_at_r) else 0.0
+
+            ap = float(np.mean(interpolated_prec))
+            class_ap_thresholds.append(ap)
 
             if np.isclose(iou_th, 0.5):
                 recalls_50.append(float(rec[-1]) if len(rec) else 0.0)

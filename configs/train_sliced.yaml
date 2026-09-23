@@ -1,14 +1,14 @@
 model: yolo26m.pt
-epochs: 40
+epochs: 15
 imgsz: 960
-batch: 8
+batch: 16
 device: 0
 workers: 4
 
 # Reproducibility
 seed: 42
 deterministic: true
-patience: 15
+patience: 10
 
 # Precision
 amp: true
@@ -16,8 +16,8 @@ cache: false
 
 # Fine-tuning optimizer
 optimizer: MuSGD
-lr0: 0.0001
-lrf: 0.50
+lr0: 0.0003
+lrf: 0.20
 momentum: 0.948
 weight_decay: 0.00027
 warmup_epochs: 1.0
