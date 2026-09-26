@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import os
 import sys
 import time
@@ -10,12 +9,11 @@ from typing import Any
 import cv2
 import numpy as np
 import pandas as pd
-from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-# Attempt loading model weights
+# Candidate paths for model weights
 POSSIBLE_WEIGHTS = [
     ROOT / "kaggle_eval_results" / "best.pt",
     ROOT / "artifacts" / "runs" / "yolo26m" / "weights" / "best.pt",
@@ -39,11 +37,11 @@ CLASS_NAMES = {
 }
 
 CLASS_COLORS = {
-    "DiVat": "#f59e0b",         # Amber
-    "DiVatLoiLom": "#ef4444",   # Red / Coral
-    "LoiChi": "#3b82f6",        # Blue
-    "LoiNhua": "#10b981",       # Emerald Green
-    "LoiTray": "#8b5cf6",       # Purple
+    "DiVat": "#f59e0b",        # Amber
+    "DiVatLoiLom": "#ef4444",  # Red / Coral
+    "LoiChi": "#3b82f6",       # Blue
+    "LoiNhua": "#10b981",      # Emerald Green
+    "LoiTray": "#8b5cf6",      # Purple
 }
 
 ROI_COORDS = (1448, 900, 4228, 2300)  # [x_min, y_min, x_max, y_max]
@@ -90,11 +88,12 @@ def draw_roi_border(image: np.ndarray) -> np.ndarray:
     return annotated
 
 
-def run_standard_yolo(
+def run_yolo_inference(
     image: np.ndarray,
     weights_path: str,
     conf_thresh: float,
     iou_thresh: float,
+    nms_free: bool,
     apply_roi: bool,
 ) -> tuple[np.ndarray, list[dict[str, Any]], float]:
     start_time = time.perf_counter()
@@ -105,7 +104,15 @@ def run_standard_yolo(
     if apply_roi:
         input_img, (offset_x, offset_y, _, _) = crop_roi(image)
 
-    res = model.predict(input_img, imgsz=960, conf=conf_thresh, iou=iou_thresh, verbose=False)[0]
+    # Use nms=False for NMS-Free (One-to-One Head), nms=True for traditional NMS
+    res = model.predict(
+        input_img,
+        imgsz=960,
+        conf=conf_thresh,
+        iou=iou_thresh,
+        nms=not nms_free,
+        verbose=False,
+    )[0]
     annotated = res.plot()
 
     detections = []
@@ -117,7 +124,6 @@ def run_standard_yolo(
         for box, conf, cls_id in zip(boxes_xyxy, confs, classes):
             cname = CLASS_NAMES.get(cls_id, f"Class_{cls_id}")
             bx1, by1, bx2, by2 = box
-            # Absolute coordinates
             abs_x1 = int(bx1 + offset_x)
             abs_y1 = int(by1 + offset_y)
             abs_x2 = int(bx2 + offset_x)
@@ -133,90 +139,6 @@ def run_standard_yolo(
 
     latency_ms = (time.perf_counter() - start_time) * 1000
     return annotated, detections, latency_ms
-
-
-def run_sahi_inference(
-    image: np.ndarray,
-    weights_path: str,
-    conf_thresh: float,
-    iou_thresh: float,
-    slice_size: int,
-    overlap_ratio: float,
-    apply_roi: bool,
-) -> tuple[np.ndarray, list[dict[str, Any]], float]:
-    start_time = time.perf_counter()
-
-    offset_x, offset_y = 0, 0
-    input_img = image
-    if apply_roi:
-        input_img, (offset_x, offset_y, _, _) = crop_roi(image)
-
-    try:
-        from sahi import AutoDetectionModel
-        from sahi.predict import get_sliced_prediction
-
-        detection_model = AutoDetectionModel.from_pretrained(
-            model_type="yolov8",
-            model_path=weights_path,
-            confidence_threshold=conf_thresh,
-            device="cuda:0" if cv2.cuda.getCudaEnabledDeviceCount() > 0 else "cpu",
-        )
-
-        result = get_sliced_prediction(
-            input_img,
-            detection_model,
-            slice_height=slice_size,
-            slice_width=slice_size,
-            overlap_height_ratio=overlap_ratio,
-            overlap_width_ratio=overlap_ratio,
-            postprocess_type="NMM",
-            postprocess_match_metric="IOS",
-            postprocess_match_threshold=iou_thresh,
-            verbose=0,
-        )
-
-        detections = []
-        annotated = input_img.copy()
-
-        for obj in result.object_prediction_list:
-            bbox = obj.bbox.to_xyxy()
-            bx1, by1, bx2, by2 = [int(v) for v in bbox]
-            score = float(obj.score.value)
-            category = obj.category.name
-
-            abs_x1 = bx1 + offset_x
-            abs_y1 = by1 + offset_y
-            abs_x2 = bx2 + offset_x
-            abs_y2 = by2 + offset_y
-            area = (abs_x2 - abs_x1) * (abs_y2 - abs_y1)
-
-            detections.append({
-                "class": category,
-                "confidence": round(score, 4),
-                "bbox": [abs_x1, abs_y1, abs_x2, abs_y2],
-                "area_px": area,
-            })
-
-            # Draw nice boxes
-            color = (0, 165, 255)  # Orange BGR
-            cv2.rectangle(annotated, (bx1, by1), (bx2, by2), color, 2)
-            label_text = f"{category} {score:.2f}"
-            cv2.putText(
-                annotated,
-                label_text,
-                (bx1, max(by1 - 8, 15)),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.6,
-                color,
-                2,
-            )
-
-        latency_ms = (time.perf_counter() - start_time) * 1000
-        return annotated, detections, latency_ms
-
-    except Exception:
-        # Fallback to standard inference if sahi has packaging conflict
-        return run_standard_yolo(image, weights_path, conf_thresh, iou_thresh, apply_roi)
 
 
 def build_app():
@@ -248,13 +170,14 @@ def build_app():
         font-size: 28px;
         font-weight: 700;
         color: #0f172a;
+        margin-top: 4px;
     }
     .kpi-title {
-        font-size: 13px;
+        font-size: 12px;
+        font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.05em;
         color: #64748b;
-        font-weight: 600;
     }
     .badge-pill {
         display: inline-block;
@@ -266,7 +189,7 @@ def build_app():
     }
     """
 
-    with gr.Blocks(title="Glass Defect Inspector - YOLO26m + SAHI") as demo:
+    with gr.Blocks(title="Glass Defect Inspector - YOLO26m") as demo:
         with gr.Row():
             gr.HTML("""
             <div class="header-banner">
@@ -276,15 +199,15 @@ def build_app():
                             <span>🔍</span> Glass Defect Inspector
                         </h1>
                         <p style="font-size: 14px; color: #94a3b8; margin-top: 6px; margin-bottom: 0;">
-                            Industrial Defect Detection System • YOLO26m Architecture + Slicing Aided Hyper Inference (SAHI)
+                            Industrial Bottle Mouth Defect Detection • YOLO26m Architecture + ROI Cropping + Varifocal Loss
                         </p>
                     </div>
                     <div style="display: flex; gap: 8px; margin-top: 10px;">
                         <span style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; border: 1px solid rgba(56, 189, 248, 0.3);">
-                            Benchmark mAP50:95: 39.00%
+                            Test mAP50:95: 40.34%
                         </span>
                         <span style="background: rgba(34, 197, 94, 0.2); color: #4ade80; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; border: 1px solid rgba(34, 197, 94, 0.3);">
-                            Element-wise VFL Active
+                            Dual-Head NMS-Free (17.1 FPS)
                         </span>
                     </div>
                 </div>
@@ -301,29 +224,25 @@ def build_app():
                         placeholder="Path to best.pt",
                     )
                     mode_radio = gr.Radio(
-                        choices=["YOLO26m Standard (Fast)", "SAHI Sliced Inference (Micro-Defects)"],
-                        value="SAHI Sliced Inference (Micro-Defects)",
-                        label="Inspection Mode",
+                        choices=[
+                            "YOLO26m NMS-Free (One-to-One Head)",
+                            "YOLO26m Standard NMS",
+                        ],
+                        value="YOLO26m NMS-Free (One-to-One Head)",
+                        label="Inference Head & Post-Processing",
                     )
                     apply_roi_check = gr.Checkbox(
-                        label="Apply Geometric ROI Crop (Glass Canvas: [1448, 900, 4228, 2300])",
+                        label="Apply Geometric ROI Crop ([1448, 900, 4228, 2300])",
                         value=True,
                     )
 
-                with gr.Accordion("🎛️ Detection & Slicing Parameters", open=False):
+                with gr.Accordion("🎛️ Detection Thresholds", open=False):
                     conf_slider = gr.Slider(
                         minimum=0.05, maximum=0.95, value=0.25, step=0.05, label="Confidence Threshold"
                     )
                     iou_slider = gr.Slider(
-                        minimum=0.10, maximum=0.90, value=0.45, step=0.05, label="NMS / IoU Threshold"
+                        minimum=0.10, maximum=0.90, value=0.45, step=0.05, label="IoU Threshold"
                     )
-                    with gr.Group(visible=True) as sahi_group:
-                        slice_size_slider = gr.Slider(
-                            minimum=480, maximum=1280, value=960, step=160, label="Tile Size (px)"
-                        )
-                        overlap_slider = gr.Slider(
-                            minimum=0.05, maximum=0.50, value=0.20, step=0.05, label="Overlap Ratio"
-                        )
 
                 input_image = gr.Image(type="numpy", label="Upload Inspection Image (5328x3000)")
                 inspect_btn = gr.Button("🚀 Run Defect Inspection", variant="primary", size="lg")
@@ -378,7 +297,7 @@ def build_app():
                     )
                     export_json = gr.JSON(label="Export Inspection JSON Report", visible=False)
 
-        def on_inspect(image, weights, mode, apply_roi, conf, iou, slice_sz, overlap):
+        def on_inspect(image, weights, mode, apply_roi, conf, iou):
             if image is None:
                 return (
                     None,
@@ -395,14 +314,10 @@ def build_app():
             roi_preview = draw_roi_border(image)
 
             # Run inference
-            if "SAHI" in mode:
-                annotated, detections, latency = run_sahi_inference(
-                    image, weights, conf, iou, int(slice_sz), float(overlap), apply_roi
-                )
-            else:
-                annotated, detections, latency = run_standard_yolo(
-                    image, weights, conf, iou, apply_roi
-                )
+            nms_free = "NMS-Free" in mode
+            annotated, detections, latency = run_yolo_inference(
+                image, weights, conf, iou, nms_free, apply_roi
+            )
 
             total_count = len(detections)
             unique_classes = len(set(d["class"] for d in detections))
@@ -493,8 +408,6 @@ def build_app():
                 apply_roi_check,
                 conf_slider,
                 iou_slider,
-                slice_size_slider,
-                overlap_slider,
             ],
             outputs=[
                 output_image,

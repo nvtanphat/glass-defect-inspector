@@ -15,7 +15,6 @@ dependencies = [
     "PyYAML>=6.0.2",
     "numpy>=1.26",
     "pandas>=2.2",
-    "sahi>=0.12",
 ]
 
 [project.optional-dependencies]

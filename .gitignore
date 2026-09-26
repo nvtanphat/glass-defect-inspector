@@ -14,14 +14,7 @@ runs/
 weights/
 
 # Local caches, credentials and outputs
-kaggle_output*
-kaggle_outputs*
-kaggle_eval_results*
-kaggle_sahi_eval_results*
-kaggle_logs/
-*.log
-repo/
-kaggle.json
+kaggle*
 .kaggle/
 *.ps1
 *.zip
