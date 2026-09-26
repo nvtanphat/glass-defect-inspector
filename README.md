@@ -19,8 +19,9 @@ Toàn bộ mô hình được đánh giá trên cùng một tập **Test độc 
 
 | Mô hình | Tiền xử lý | Hàm mất mát | Optimizer | Epochs | Cơ chế Post-process | Precision | Recall | mAP@50 | mAP@75 | **mAP@50:95** | Độ trễ (T4) | FPS |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **YOLO11m** (Baseline 1) | Raw (960×960) | BCE | Auto (SGD) | 102 | NMS truyền thống | **80.23%** | 58.58% | 63.86% | 32.23% | 34.31% | **57.2 ms** | **17.5** |
+| **YOLO11m** (Baseline 1) | Raw (960×960) | BCE | Auto (SGD) | 102 | NMS truyền thống | **80.23%** | 58.58% | 63.86% | 32.23% | 34.31% | 57.2 ms | 17.5 |
 | **RT-DETR-L** (Baseline 2) | Raw (960×960) | Hungarian Match | AdamW | 120 | Hungarian Set Match | 73.09% | 65.47% | 65.22% | 30.57% | 35.02% | 97.3 ms | 10.3 |
+| **D-FINE-M** (ICLR 2025) ⚡ | ROI Crop (640×640) | FDR + VFL + Hungarian | AdamW | 20 | Hungarian Set Match | 71.40% | 61.40% | 67.20% | 33.40% | **36.50%** | **30.6 ms** | **32.7** |
 | **YOLO26m Base** | Raw (960×960) | BCE | MuSGD | 66 | NMS truyền thống | 74.66% | 67.87% | 69.85% | 36.75% | 38.51% | 67.4 ms | 14.8 |
 | **YOLO26m Base** | Raw (960×960) | BCE | MuSGD | 66 | NMS-Free (One-to-One) | 71.75% | 67.10% | 69.05% | 37.15% | 38.17% | 71.2 ms | 14.1 |
 | **YOLO26m + ROI + VFL** | ROI Crop | Varifocal + Class Weights | MuSGD | 100 | NMS truyền thống | 72.99% | **68.22%** | **71.28%** | 37.18% | 39.37% | 59.8 ms | 16.7 |
@@ -43,13 +44,13 @@ Toàn bộ mô hình được đánh giá trên cùng một tập **Test độc 
 
 ### 3. Phân rã độ trễ suy luận (Tesla T4 GPU)
 
-| Giai đoạn suy luận | YOLO11m (NMS) | RT-DETR-L | YOLO26m Base (NMS) | YOLO26m + ROI + VFL (NMS-Free) |
-| :--- | :---: | :---: | :---: | :---: |
-| **Pre-process** | 1.53 ms | 1.90 ms | 1.41 ms | 2.10 ms |
-| **Inference (Forward)** | 44.29 ms | 96.01 ms | 49.83 ms | 56.20 ms |
-| **Post-process** | 0.98 ms | 0.16 ms | 0.87 ms | **0.12 ms** |
-| **Tổng độ trễ End-to-End** | 57.20 ms | 97.29 ms | 67.45 ms | 58.42 ms |
-| **Tốc độ (FPS)** | 17.5 FPS | 10.3 FPS | 14.8 FPS | 17.1 FPS |
+| Giai đoạn suy luận | YOLO11m (NMS) | RT-DETR-L | D-FINE-M (ICLR 2025) | YOLO26m Base (NMS) | YOLO26m + ROI + VFL (NMS-Free) |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Pre-process** | 1.53 ms | 1.90 ms | 1.80 ms | 1.41 ms | 2.10 ms |
+| **Inference (Forward)** | 44.29 ms | 96.01 ms | **30.57 ms** | 49.83 ms | 56.20 ms |
+| **Post-process** | 0.98 ms | 0.16 ms | 0.15 ms | 0.87 ms | **0.12 ms** |
+| **Tổng độ trễ End-to-End** | 57.20 ms | 97.29 ms | **32.52 ms** | 67.45 ms | 58.42 ms |
+| **Tốc độ (FPS)** | 17.5 FPS | 10.3 FPS | **32.7 FPS** | 14.8 FPS | 17.1 FPS |
 
 ---
 
