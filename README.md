@@ -53,33 +53,6 @@ Toàn bộ mô hình được đánh giá trên cùng một tập **Test độc 
 
 ---
 
-### 4. Nghiên cứu thực nghiệm mở rộng & Phân tích thất bại (Failure Analysis: SAHI / Patch Slicing)
-
-Nhằm tìm kiếm giải pháp cải thiện thêm độ chính xác cho các khuyết tật siêu nhỏ, nhóm nghiên cứu đã tiến hành thực nghiệm kỹ thuật **SAHI (Slicing Aided Hyper Inference)** kết hợp cắt nhỏ ảnh (`slice_size=960×960`, `overlap_ratio=0.20`, gom cụm `NMM/IoS`).
-
-Tuy nhiên, kết quả thực nghiệm kiểm chứng độc lập trên 890 ảnh Test cho thấy phương pháp này **hoàn toàn thất bại** đối với bài toán kiểm định miệng chai thủy tinh:
-
-| Tiêu chí | YOLO26m + ROI + VFL (Full-Image ROI) 🏆 | YOLO26m + ROI + SAHI (Patch Slicing) ❌ | Đánh giá suy giảm |
-| :--- | :---: | :---: | :---: |
-| **mAP@50:95** | **40.34%** | **6.81%** | **Tụt 33.53%** (-83.1% tương đối) |
-| **mAP@50** | **70.96%** | **13.33%** | **Tụt 57.63%** |
-| **mAP@75** | **39.69%** | **6.28%** | **Tụt 33.41%** |
-| **Độ trễ suy luận** | **58.4 ms** | **976.4 ms** | **Chậm hơn 16.7 lần** |
-| **Tốc độ khung hình** | **17.1 FPS** (Thời gian thực) | **1.02 FPS** (Nghẽn dây chuyền) | Không khả thi vận hành |
-| *DiVat (mAP50:95)* | 20.85% | 6.94% | Giảm 13.91% |
-| *DiVatLoiLom (mAP50:95)* | 30.95% | 1.76% | Giảm 29.19% |
-| *LoiChi (mAP50:95)* | 62.16% | 20.57% | Giảm 41.59% |
-| *LoiNhua (mAP50:95)* | 53.19% | 0.56% | Giảm 52.63% |
-| *LoiTray (mAP50:95)* | 34.56% | 4.21% | Giảm 30.35% |
-
-#### Nguyên nhân kỹ thuật dẫn đến sự thất bại của Patch Slicing:
-1. **Mất cấu trúc hình học vành tròn toàn cục (Loss of Global Circular Geometry)**: Khuyết tật miệng chai thủy tinh phụ thuộc mật thiết vào độ cong vành tròn và sự phân bố đối xứng quang học. Khi cắt thành từng ô rời rạc 960×960, mô hình mất liên kết tọa độ tương đối với tâm chai, nhầm lẫn các điểm phản chiếu khúc xạ ánh sáng trên viền chai thành lỗi.
-2. **Hiện tượng đứt gãy vết nứt qua ranh giới ô cắt (Boundary Edge Tearing)**: Các vết nứt chỉ viền (`LoiChi`) chạy dài liên tục trên viền miệng chai khi bị đường cắt chia đôi sẽ tạo thành hai mẩu khuyết tật cụt ở rìa mỗi ô. Điều này phá vỡ tỷ lệ khung bao (aspect ratio) và làm IoU với nhãn ground-truth toàn ảnh giảm mạnh, kéo AP của `LoiChi` từ 62.16% xuống 20.57%.
-3. **Bùng nổ dự đoán giả và thất bại trong việc sáp nhập (Merging Failure)**: Thuật toán Non-Maximum Merging (NMM) dựa trên IoS không thể phân biệt chính xác giữa hai vết nứt liền kề và cùng một vết nứt bị chia cắt bởi lát cắt, làm tăng đột biến số lượng False Positives.
-4. **Kết luận**: Pipeline đã loại bỏ toàn bộ mã nguồn thực nghiệm SAHI / Slicing không hiệu quả, giữ nguyên thiết kế cốt lõi **Full-Image ROI Crop + Dual-Head NMS-Free** để bảo đảm tính chuẩn xác cao nhất và tốc độ thực thi công nghiệp ổn định.
-
----
-
 ## 🛠️ Các phương pháp kỹ thuật chính
 
 1. **Cắt vùng quan tâm (ROI Cropping - `processing/apply_roi_crop.py`)**:
