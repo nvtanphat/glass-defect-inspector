@@ -71,18 +71,38 @@ def evaluate_dfine(
             break
 
     # Convert test labels to COCO JSON
-    from scale_error.training.trainer_dfine import _yolo_to_coco_json
+    from scale_error.training.trainer_dfine import (
+        _generate_dataset_config,
+        _generate_experiment_config,
+        _yolo_to_coco_json,
+    )
     eval_dir = output_json.parent / "dfine_eval_data"
     eval_dir.mkdir(parents=True, exist_ok=True)
     test_json = eval_dir / "test.json"
     _yolo_to_coco_json(test_images, test_labels, test_json, class_names)
 
-    # 2. Find model config
-    model_config = dfine_repo / "configs" / "dfine" / "custom" / "dfine_hgnetv2_m_glass_test.yml"
-    if not model_config.exists():
-        model_config = dfine_repo / "configs" / "dfine" / "custom" / "dfine_hgnetv2_m_glass.yml"
-    if not model_config.exists():
-        model_config = dfine_repo / "configs" / "dfine" / "dfine_hgnetv2_m_coco.yml"
+    # 2. Generate an evaluation config that points at this exact test split.
+    # Using the historical glass_test.yml here would silently evaluate the
+    # hard-coded /kaggle/working/data_roi/test directory instead.
+    dataset_config_name = "scale_error_eval_generated.yml"
+    dataset_config = dfine_repo / "configs" / "dataset" / dataset_config_name
+    _generate_dataset_config(
+        test_images,
+        test_json,
+        test_images,
+        test_json,
+        len(class_names),
+        dataset_config,
+    )
+    model_config = _generate_experiment_config(
+        dfine_repo,
+        output_json.parent / "dfine_eval_output",
+        epochs=100,
+        eval_size=eval_size,
+        batch_size=8,
+        dataset_config_name=dataset_config_name,
+        config_name="dfine_hgnetv2_m_scale_error_eval_generated.yml",
+    )
 
     # 3. Run evaluation via D-FINE's train.py --test-only
     print(f"[D-FINE] Evaluating checkpoint: {weights}")
@@ -98,9 +118,19 @@ def evaluate_dfine(
     result = subprocess.run(
         cmd, capture_output=True, text=True, cwd=str(dfine_repo)
     )
+    if result.returncode != 0:
+        raise RuntimeError(
+            "D-FINE evaluation failed with exit code "
+            f"{result.returncode}:\n{result.stderr[-4000:]}"
+        )
 
     # 4. Parse COCO evaluation output
     metrics = _parse_coco_eval_output(result.stdout)
+    if "mAP50_95" not in metrics:
+        raise RuntimeError(
+            "D-FINE evaluation completed but COCO metrics could not be parsed. "
+            f"Output tail:\n{result.stdout[-4000:]}"
+        )
     metrics["model"] = "D-FINE-M"
     metrics["weights"] = str(weights)
     metrics["eval_size"] = eval_size

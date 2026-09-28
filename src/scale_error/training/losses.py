@@ -24,13 +24,20 @@ import json
 from pathlib import Path
 
 import torch
-from ultralytics.utils.loss import VarifocalLoss, v8DetectionLoss
+from ultralytics.utils.loss import v8DetectionLoss
 
 
 class VFLDetectionLoss(v8DetectionLoss):
     """v8DetectionLoss with per-class weighted VarifocalLoss classification."""
 
-    def __init__(self, model, tal_topk: int = 10, tal_topk2: int | None = None, gamma: float = 2.0, alpha: float = 0.75):
+    def __init__(
+        self,
+        model,
+        tal_topk: int = 10,
+        tal_topk2: int | None = None,
+        gamma: float = 2.0,
+        alpha: float = 0.75,
+    ):
         super().__init__(model, tal_topk=tal_topk, tal_topk2=tal_topk2)
         self.gamma = gamma
         self.alpha = alpha
@@ -50,10 +57,20 @@ class VFLDetectionLoss(v8DetectionLoss):
 
         dtype = pred_scores.dtype
         batch_size = pred_scores.shape[0]
-        imgsz = torch.tensor(preds["feats"][0].shape[2:], device=self.device, dtype=dtype) * self.stride[0]
+        imgsz = (
+            torch.tensor(preds["feats"][0].shape[2:], device=self.device, dtype=dtype)
+            * self.stride[0]
+        )
 
-        targets = torch.cat((batch["batch_idx"].view(-1, 1), batch["cls"].view(-1, 1), batch["bboxes"]), 1)
-        targets = self.preprocess(targets.to(self.device), batch_size, scale_tensor=imgsz[[1, 0, 1, 0]])
+        targets = torch.cat(
+            (batch["batch_idx"].view(-1, 1), batch["cls"].view(-1, 1), batch["bboxes"]),
+            1,
+        )
+        targets = self.preprocess(
+            targets.to(self.device),
+            batch_size,
+            scale_tensor=imgsz[[1, 0, 1, 0]],
+        )
         gt_labels, gt_bboxes = targets.split((1, 4), 2)
         mask_gt = gt_bboxes.sum(2, keepdim=True).gt_(0.0)
 
@@ -77,7 +94,10 @@ class VFLDetectionLoss(v8DetectionLoss):
         one_hot = (target_scores_typed > 0).to(dtype)
 
         # Compute elementwise Varifocal Loss across [batch, num_anchors, num_classes]
-        vfl_weight = self.alpha * pred_scores.sigmoid().pow(self.gamma) * (1 - one_hot) + target_scores_typed * one_hot
+        vfl_weight = (
+            self.alpha * pred_scores.sigmoid().pow(self.gamma) * (1 - one_hot)
+            + target_scores_typed * one_hot
+        )
         bce = torch.nn.functional.binary_cross_entropy_with_logits(
             pred_scores.float(), target_scores_typed.float(), reduction="none"
         )
@@ -114,7 +134,7 @@ class VFLDetectionLoss(v8DetectionLoss):
         return (
             (fg_mask, target_gt_idx, target_bboxes, anchor_points, stride_tensor),
             loss,
-            dict(zip(self.loss_names, loss.detach())),
+            dict(zip(self.loss_names, loss.detach(), strict=True)),
         )
 
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import os
+import json
 import sys
 import time
 from pathlib import Path
@@ -44,7 +44,8 @@ CLASS_COLORS = {
     "LoiTray": "#8b5cf6",      # Purple
 }
 
-ROI_COORDS = (1448, 900, 4228, 2300)  # [x_min, y_min, x_max, y_max]
+ROI_CONFIG_PATH = ROOT / "processing" / "roi_config.json"
+ROI_CONFIG = json.loads(ROI_CONFIG_PATH.read_text(encoding="utf-8"))
 
 _loaded_model = None
 _current_weights = None
@@ -62,23 +63,29 @@ def get_model(weights_path: str):
     return _loaded_model
 
 
-def crop_roi(image: np.ndarray) -> tuple[np.ndarray, tuple[int, int, int, int]]:
+def roi_for_image(image: np.ndarray) -> tuple[int, int, int, int]:
     h, w = image.shape[:2]
-    x1, y1, x2, y2 = ROI_COORDS
-    x1 = max(0, min(x1, w - 1))
-    y1 = max(0, min(y1, h - 1))
-    x2 = max(x1 + 1, min(x2, w))
-    y2 = max(y1 + 1, min(y2, h))
+    group = ROI_CONFIG["groups"].get(f"{w}x{h}")
+    if group is None:
+        return 0, 0, w, h
+    x1n, y1n, x2n, y2n = group["roi_xyxyn"]
+    x1, y1 = round(x1n * w), round(y1n * h)
+    x2, y2 = round(x2n * w), round(y2n * h)
+    return x1, y1, max(x1 + 1, x2), max(y1 + 1, y2)
+
+
+def crop_roi(image: np.ndarray) -> tuple[np.ndarray, tuple[int, int, int, int]]:
+    x1, y1, x2, y2 = roi_for_image(image)
     return image[y1:y2, x1:x2].copy(), (x1, y1, x2, y2)
 
 
 def draw_roi_border(image: np.ndarray) -> np.ndarray:
     annotated = image.copy()
-    x1, y1, x2, y2 = ROI_COORDS
+    x1, y1, x2, y2 = roi_for_image(image)
     cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 255, 255), 4)
     cv2.putText(
         annotated,
-        "GLASS INSPECTION ROI [1448, 900, 4228, 2300]",
+        f"GLASS INSPECTION ROI [{x1}, {y1}, {x2}, {y2}]",
         (x1 + 20, max(y1 - 15, 40)),
         cv2.FONT_HERSHEY_SIMPLEX,
         1.0,
@@ -121,7 +128,7 @@ def run_yolo_inference(
         confs = res.boxes.conf.cpu().numpy()
         classes = res.boxes.cls.cpu().numpy().astype(int)
 
-        for box, conf, cls_id in zip(boxes_xyxy, confs, classes):
+        for box, conf, cls_id in zip(boxes_xyxy, confs, classes, strict=True):
             cname = CLASS_NAMES.get(cls_id, f"Class_{cls_id}")
             bx1, by1, bx2, by2 = box
             abs_x1 = int(bx1 + offset_x)
@@ -232,7 +239,7 @@ def build_app():
                         label="Inference Head & Post-Processing",
                     )
                     apply_roi_check = gr.Checkbox(
-                        label="Apply Geometric ROI Crop ([1448, 900, 4228, 2300])",
+                        label="Apply resolution-aware ROI crop",
                         value=True,
                     )
 

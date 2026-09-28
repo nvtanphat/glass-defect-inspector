@@ -2,7 +2,8 @@
   "source_split": "train",
   "dataset_root": "D:\\HOCsauvaufngdung\\scale-error-yolo26\\data\\raw\\scale_error_dc",
   "edge_percentile": 0.5,
-  "margin": 0.45,
+  "margin": null,
+  "reference_run_roi_xyxy": [1448, 900, 4228, 2300],
   "groups": {
     "5328x3000": {
       "raw_envelope_xyxyn": [
@@ -12,13 +13,13 @@
         0.7463542583333332
       ],
       "roi_xyxyn": [
-        0.14113178913288288,
-        0.0,
-        0.8881345303115614,
-        1.0
+        0.271771771771772,
+        0.3,
+        0.793543543543544,
+        0.766666666666667
       ],
-      "roi_width_frac": 0.7470027411786786,
-      "roi_height_frac": 1.0,
+      "roi_width_frac": 0.521771771771772,
+      "roi_height_frac": 0.466666666666667,
       "image_size_wh": [
         5328,
         3000

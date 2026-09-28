@@ -171,6 +171,8 @@ def _generate_experiment_config(
     batch_size: int,
     num_workers: int = 4,
     stop_augment_epoch: int = 88,
+    dataset_config_name: str = "scale_error_generated.yml",
+    config_name: str = "dfine_hgnetv2_m_scale_error_generated.yml",
 ) -> Path:
     """Generate the exact D-FINE-M recipe used by the reference run.
 
@@ -181,7 +183,7 @@ def _generate_experiment_config(
     """
     config = {
         "__include__": [
-            "../../dataset/scale_error_generated.yml",
+            f"../../dataset/{dataset_config_name}",
             "../../runtime.yml",
             "../include/dataloader.yml",
             "../include/optimizer.yml",
@@ -285,7 +287,7 @@ def _generate_experiment_config(
         / "configs"
         / "dfine"
         / "custom"
-        / "dfine_hgnetv2_m_scale_error_generated.yml"
+        / config_name
     )
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(

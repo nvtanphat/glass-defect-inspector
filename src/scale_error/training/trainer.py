@@ -21,7 +21,8 @@ def _attach_vfl_criterion(class_weights):
 
     def _callback(trainer) -> None:
         det_model = trainer.model
-        det_model.class_weights = class_weights.to(next(det_model.parameters()).device)
+        if class_weights is not None:
+            det_model.class_weights = class_weights.to(next(det_model.parameters()).device)
 
         existing_criterion = det_model.init_criterion()
         if isinstance(existing_criterion, E2ELoss):
@@ -46,13 +47,31 @@ def train(
 ):
     cfg = load_yaml(config_path)
     model_name = str(cfg.pop("model"))
+    preprocessing = str(cfg.pop("preprocessing", "raw"))
+    roi_config = cfg.pop("roi_config", None)
+    use_vfl = bool(cfg.pop("use_vfl", False))
+    use_class_weights = bool(cfg.pop("use_class_weights", False))
     project_dir = Path(project_dir).resolve()
     project_dir.mkdir(parents=True, exist_ok=True)
 
     model_cls = RTDETR if model_name.startswith("rtdetr") else YOLO
     model = model_cls(model_name)
 
-    if model_cls is YOLO:
+    if use_vfl and model_cls is not YOLO:
+        raise ValueError("VFLDetectionLoss is only supported for YOLO models")
+    if use_class_weights and not use_vfl:
+        raise ValueError("Class weights require use_vfl=true")
+    if preprocessing not in {"raw", "roi_crop"}:
+        raise ValueError(f"Unsupported preprocessing mode: {preprocessing}")
+    if preprocessing == "roi_crop":
+        if roi_config is None or not Path(roi_config).exists():
+            raise FileNotFoundError(
+                "preprocessing=roi_crop requires an existing roi_config path"
+            )
+    elif roi_config is not None:
+        raise ValueError("roi_config is only valid with preprocessing=roi_crop")
+
+    if use_vfl:
         report_path = None
         if dataset_report is not None and Path(dataset_report).exists():
             report_path = Path(dataset_report)
@@ -71,9 +90,14 @@ def train(
                     report_path = cand
                     break
 
-        if report_path is not None:
-            class_weights = compute_class_weights(report_path)
-            model.add_callback("on_train_start", _attach_vfl_criterion(class_weights))
+        if use_class_weights and report_path is None:
+            raise FileNotFoundError(
+                "use_class_weights=true but dataset_report.json was not found; "
+                "pass --dataset-report explicitly"
+            )
+
+        class_weights = compute_class_weights(report_path) if report_path else None
+        model.add_callback("on_train_start", _attach_vfl_criterion(class_weights))
 
     return model.train(
         data=str(Path(data_yaml).resolve()),

@@ -1,4 +1,7 @@
 model: yolo11m.pt
+preprocessing: raw
+use_vfl: false
+use_class_weights: false
 epochs: 120
 imgsz: 960
 batch: 8
