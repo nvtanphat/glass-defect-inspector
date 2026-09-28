@@ -170,7 +170,7 @@ def _generate_experiment_config(
     eval_size: int,
     batch_size: int,
     num_workers: int = 4,
-    stop_augment_epoch: int = 88,
+    stop_augment_epoch: int = 70,
     dataset_config_name: str = "scale_error_generated.yml",
     config_name: str = "dfine_hgnetv2_m_scale_error_generated.yml",
 ) -> Path:
@@ -236,9 +236,8 @@ def _generate_experiment_config(
             "dataset": {
                 "transforms": {
                     "ops": [
-                        {"type": "RandomPhotometricDistort", "p": 0.5},
-                        {"type": "RandomZoomOut", "fill": 0},
-                        {"type": "RandomIoUCrop", "p": 0.8},
+                        {"type": "RandomPhotometricDistort", "p": 0.3},
+                        {"type": "RandomIoUCrop", "p": 0.5},
                         {"type": "SanitizeBoundingBoxes", "min_size": 1},
                         {"type": "RandomHorizontalFlip"},
                         {"type": "Resize", "size": [eval_size, eval_size]},
@@ -251,7 +250,6 @@ def _generate_experiment_config(
                         "epoch": stop_augment_epoch,
                         "ops": [
                             "RandomPhotometricDistort",
-                            "RandomZoomOut",
                             "RandomIoUCrop",
                         ],
                     },
@@ -382,7 +380,8 @@ def train_dfine(
     output_dir: str | Path,
     epochs: int = 100,
     eval_size: int = 960,
-    batch_size: int = 8,
+    batch_size: int = 4,
+    stop_augment_epoch: int = 70,
     resume_checkpoint: str | Path | None = None,
 ) -> Path:
     """Train D-FINE-M model.
@@ -424,6 +423,7 @@ def train_dfine(
         epochs=epochs,
         eval_size=eval_size,
         batch_size=batch_size,
+        stop_augment_epoch=stop_augment_epoch,
     )
 
     # 4. Run training

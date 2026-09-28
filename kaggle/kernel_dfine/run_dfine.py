@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -15,6 +16,9 @@ ARTIFACTS = WORKING / "artifacts"
 REPO_COPY = WORKING / "repo"
 DFINE_REPO = WORKING / "D-FINE"
 DFINE_WEIGHTS = WORKING / "dfine_m_coco.pth"
+
+# Reduce allocator fragmentation on memory-constrained Tesla T4 workers.
+os.environ.setdefault("PYTORCH_ALLOC_CONF", "expandable_segments:True")
 
 
 def log(message: str) -> None:
@@ -168,7 +172,8 @@ def main() -> None:
         output_dir,
         epochs=100,
         eval_size=960,
-        batch_size=8,
+        batch_size=4,
+        stop_augment_epoch=70,
         resume_checkpoint=resume_checkpoint,
     )
     best = output_dir / "best.pth"

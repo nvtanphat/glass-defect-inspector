@@ -12,13 +12,13 @@ pretrained_weights: dfine_m_coco.pth
 # tuning checkpoint (not from a previous training checkpoint).
 epochs: 100
 eval_spatial_size: [960, 960]
-batch_size: 8
+batch_size: 4
 num_workers: 4
 
 # Two-stage training strategy:
-#   Stage 1 (epochs 1-88):  Multi-scale augmentation with PhotometricDistort, ZoomOut, IoUCrop
-#   Stage 2 (epochs 89-100): FDR refinement — augmentation stopped, fine-grained distribution refinement
-stop_augment_epoch: 88
+#   Stage 1 (epochs 1-70):  Reduced PhotometricDistort and IoUCrop augmentation
+#   Stage 2 (epochs 71-100): FDR refinement — augmentation stopped, fine-grained distribution refinement
+stop_augment_epoch: 70
 
 # Optimizer
 optimizer: AdamW

@@ -60,7 +60,7 @@ def upload_dataset():
     api.authenticate()
     api.dataset_create_version(
         folder=str(UPLOAD_DIR),
-        version_notes="Label-preserving ROI, explicit VFL/class weights, D-FINE evaluation fixes",
+        version_notes="D-FINE T4-safe batch 4, reduced augmentation, 30-epoch refinement",
         dir_mode="zip",
     )
     print("Code dataset version updated successfully!")

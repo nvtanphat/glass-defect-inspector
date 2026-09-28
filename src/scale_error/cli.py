@@ -26,16 +26,24 @@ def build_parser() -> argparse.ArgumentParser:
     tr.add_argument("--data", required=True)
     tr.add_argument("--config", required=True)
     tr.add_argument("--project-dir", default="artifacts/runs")
-    tr.add_argument("--dataset-report", default=None, help="Path to dataset_report.json for class weights")
+    tr.add_argument(
+        "--dataset-report",
+        default=None,
+        help="Path to dataset_report.json for class weights",
+    )
 
     tr_dfine = sub.add_parser("train-dfine", help="Train D-FINE-M (separate framework)")
     tr_dfine.add_argument("--data", required=True, help="Path to runtime_data.yaml")
     tr_dfine.add_argument("--dfine-repo", required=True, help="Path to D-FINE repository")
-    tr_dfine.add_argument("--weights", required=True, help="Path to pretrained weights (dfine_m_coco.pth)")
+    tr_dfine.add_argument(
+        "--weights",
+        required=True,
+        help="Path to pretrained weights (dfine_m_coco.pth)",
+    )
     tr_dfine.add_argument("--output-dir", default="artifacts/runs/dfine_m")
     tr_dfine.add_argument("--epochs", type=int, default=100)
     tr_dfine.add_argument("--eval-size", type=int, default=960)
-    tr_dfine.add_argument("--batch-size", type=int, default=8)
+    tr_dfine.add_argument("--batch-size", type=int, default=4)
     tr_dfine.add_argument("--resume", default=None, help="Resume from a D-FINE checkpoint")
 
     ev = sub.add_parser("evaluate", help="Evaluate YOLO26m / YOLO11m / RT-DETR-L (Ultralytics)")
