@@ -29,8 +29,10 @@ kaggle*
 D-FINE/
 
 # D-FINE local eval workspace (ROI test images extracted from results.zip)
+_dfine_eval/
 _dfine_eval/data_roi/
 _dfine_eval/*.log
+_plot_dfine_curves.py
 
 # One-off environment check scripts
 _check_env.py
