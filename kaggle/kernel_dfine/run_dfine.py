@@ -113,6 +113,7 @@ def main() -> None:
 
     processed_root = ARTIFACTS / "dataset_processed"
     split_original_valid(dataset_root, processed_root)
+    shutil.copy2(dataset_root / "data.yaml", processed_root / "data.yaml")
     roi_root = ARTIFACTS / "dataset_roi"
     for source_root, splits in ((dataset_root, ["train"]), (processed_root, ["val", "test"])):
         subprocess.run(
