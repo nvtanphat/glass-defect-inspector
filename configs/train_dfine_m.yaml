@@ -1,0 +1,38 @@
+# D-FINE-M training configuration
+# Framework: D-FINE (separate from Ultralytics)
+# Repository: https://github.com/Peterande/D-FINE
+
+# Model
+model: dfine_hgnetv2_m
+backbone: HGNetv2-B2
+pretrained_weights: dfine_m_coco.pth
+
+# Training
+epochs: 100
+eval_spatial_size: [960, 960]
+batch_size: 8
+num_workers: 4
+
+# Two-stage training strategy:
+#   Stage 1 (epochs 1-88):  Multi-scale augmentation with PhotometricDistort, ZoomOut, IoUCrop
+#   Stage 2 (epochs 89-100): FDR refinement — augmentation stopped, fine-grained distribution refinement
+stop_augment_epoch: 88
+
+# Optimizer
+optimizer: AdamW
+lr: 0.00025
+backbone_lr: 0.000025
+weight_decay: 0.000125
+betas: [0.9, 0.999]
+
+# Architecture
+num_decoder_layers: 4
+hidden_dim: 256
+depth_mult: 0.67
+in_channels: [384, 768, 1536]
+
+# Notes:
+# - D-FINE uses its own training framework (not Ultralytics)
+# - Dataset must be in COCO JSON format (not YOLO txt format)
+# - Use src/scale_error/training/trainer_dfine.py for training
+# - Use src/scale_error/evaluation/evaluator_dfine.py for evaluation

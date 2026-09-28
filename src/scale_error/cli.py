@@ -22,17 +22,34 @@ def build_parser() -> argparse.ArgumentParser:
     prepare.add_argument("--version", type=int, default=26)
     prepare.add_argument("--split-output", default="data/processed")
 
-    tr = sub.add_parser("train")
+    tr = sub.add_parser("train", help="Train YOLO26m / YOLO11m / RT-DETR-L (Ultralytics)")
     tr.add_argument("--data", required=True)
     tr.add_argument("--config", required=True)
     tr.add_argument("--project-dir", default="artifacts/runs")
     tr.add_argument("--dataset-report", default=None, help="Path to dataset_report.json for class weights")
 
-    ev = sub.add_parser("evaluate")
+    tr_dfine = sub.add_parser("train-dfine", help="Train D-FINE-M (separate framework)")
+    tr_dfine.add_argument("--data", required=True, help="Path to runtime_data.yaml")
+    tr_dfine.add_argument("--dfine-repo", required=True, help="Path to D-FINE repository")
+    tr_dfine.add_argument("--weights", required=True, help="Path to pretrained weights (dfine_m_coco.pth)")
+    tr_dfine.add_argument("--output-dir", default="artifacts/runs/dfine_m")
+    tr_dfine.add_argument("--epochs", type=int, default=100)
+    tr_dfine.add_argument("--eval-size", type=int, default=960)
+    tr_dfine.add_argument("--batch-size", type=int, default=8)
+
+    ev = sub.add_parser("evaluate", help="Evaluate YOLO26m / YOLO11m / RT-DETR-L (Ultralytics)")
     ev.add_argument("--weights", required=True)
     ev.add_argument("--data", required=True)
     ev.add_argument("--output", default="artifacts/evaluation/metrics.json")
     ev.add_argument("--nms-free", action="store_true")
+
+    ev_dfine = sub.add_parser("evaluate-dfine", help="Evaluate D-FINE-M (separate framework)")
+    ev_dfine.add_argument("--weights", required=True, help="Path to D-FINE best.pth")
+    ev_dfine.add_argument("--dfine-repo", required=True, help="Path to D-FINE repository")
+    ev_dfine.add_argument("--data", required=True, help="Path to runtime_data.yaml")
+    ev_dfine.add_argument("--output", default="artifacts/evaluation/metrics_dfine.json")
+    ev_dfine.add_argument("--eval-size", type=int, default=960)
+    ev_dfine.add_argument("--device", default="0")
 
     pr = sub.add_parser("predict")
     pr.add_argument("--weights", required=True)
@@ -60,12 +77,26 @@ def main() -> None:
     elif args.cmd == "train":
         train(args.data, args.config, args.project_dir, dataset_report=args.dataset_report)
 
+    elif args.cmd == "train-dfine":
+        from scale_error.training.trainer_dfine import train_dfine
+        train_dfine(
+            args.data, args.dfine_repo, args.weights, args.output_dir,
+            epochs=args.epochs, eval_size=args.eval_size, batch_size=args.batch_size,
+        )
+
     elif args.cmd == "evaluate":
         evaluate(
             args.weights,
             args.data,
             args.output,
             nms=not args.nms_free,
+        )
+
+    elif args.cmd == "evaluate-dfine":
+        from scale_error.evaluation.evaluator_dfine import evaluate_dfine
+        evaluate_dfine(
+            args.weights, args.dfine_repo, args.data, args.output,
+            eval_size=args.eval_size, device=args.device,
         )
 
     elif args.cmd == "predict":

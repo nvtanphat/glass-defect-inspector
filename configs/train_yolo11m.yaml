@@ -1,0 +1,42 @@
+model: yolo11m.pt
+epochs: 120
+imgsz: 960
+batch: 8
+device: 0
+workers: 4
+
+# Reproducibility / stopping
+seed: 42
+deterministic: true
+patience: 15
+
+# Precision / performance
+amp: true
+cache: false
+
+# YOLO11m uses default auto optimizer (SGD) — its DFL head (reg_max=16)
+# doesn't share YOLO26's loss geometry, so MuSGD is not applicable.
+# VFL loss is also not used here (standard BCE classification).
+
+# Domain-aware augmentation (aligned with YOLO26m for fair comparison)
+mosaic: 0.30
+close_mosaic: 10
+mixup: 0.05
+copy_paste: 0.0
+scale: 0.50
+translate: 0.10
+fliplr: 0.50
+flipud: 0.0
+degrees: 0.0
+shear: 0.0
+perspective: 0.0
+hsv_h: 0.013
+hsv_s: 0.353
+hsv_v: 0.194
+
+# Artifacts
+plots: true
+save: true
+save_period: -1
+val: true
+verbose: true
