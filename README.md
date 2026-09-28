@@ -139,7 +139,7 @@ python processing/apply_roi_crop.py \
 ```bash
 scale-error train \
   --data data/processed_roi/data.yaml \
-  --config configs/train.yaml \
+  --config configs/train_yolo26m.yaml \
   --project-dir artifacts/runs \
   --dataset-report data/processed/dataset_report.json
 ```
@@ -249,7 +249,7 @@ yolo export \
 ```text
 -glass-defect-inspector/
 ├── configs/
-│   ├── train.yaml                   # YOLO26m (MuSGD + VFL)
+│   ├── train_yolo26m.yaml           # YOLO26m (MuSGD + VFL)
 │   ├── train_yolo11m.yaml           # YOLO11m (Auto SGD)
 │   ├── train_rtdetr.yaml            # RT-DETR-L (AdamW)
 │   └── train_dfine_m.yaml           # D-FINE-M (reference config)

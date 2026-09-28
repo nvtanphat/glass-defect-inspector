@@ -219,7 +219,7 @@ The project accepts that compute cost because accuracy is the priority.
 Canonical file:
 
 ```text
-configs/train.yaml
+configs/train_yolo26m.yaml
 ```
 
 Configuration:

@@ -8,6 +8,8 @@ backbone: HGNetv2-B2
 pretrained_weights: dfine_m_coco.pth
 
 # Training
+# Reproduces the reference run recipe, starting at epoch 0 from the COCO
+# tuning checkpoint (not from a previous training checkpoint).
 epochs: 100
 eval_spatial_size: [960, 960]
 batch_size: 8

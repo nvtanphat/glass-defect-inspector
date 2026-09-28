@@ -46,8 +46,6 @@ def evaluate_dfine(
     Returns:
         Dictionary of evaluation metrics.
     """
-    from scale_error.training.trainer_dfine import prepare_coco_data
-
     dfine_repo = Path(dfine_repo).resolve()
     weights = Path(weights).resolve()
     output_json = Path(output_json)
@@ -110,7 +108,7 @@ def evaluate_dfine(
     # 5. Save metrics
     output_json.parent.mkdir(parents=True, exist_ok=True)
     output_json.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
-    print(f"[D-FINE] Metrics saved → {output_json}")
+    print(f"[D-FINE] Metrics saved -> {output_json}")
 
     return metrics
 

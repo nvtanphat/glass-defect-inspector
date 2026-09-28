@@ -30,7 +30,12 @@ from pathlib import Path
 import yaml
 
 
-def _yolo_to_coco_json(images_dir: Path, labels_dir: Path, output_json: Path, class_names: list[str]) -> Path:
+def _yolo_to_coco_json(
+    images_dir: Path,
+    labels_dir: Path,
+    output_json: Path,
+    class_names: list[str],
+) -> Path:
     """Convert YOLO-format labels to COCO JSON format required by D-FINE.
 
     Args:
@@ -97,7 +102,10 @@ def _yolo_to_coco_json(images_dir: Path, labels_dir: Path, output_json: Path, cl
 
     output_json.parent.mkdir(parents=True, exist_ok=True)
     output_json.write_text(json.dumps(coco, indent=2), encoding="utf-8")
-    print(f"[D-FINE] Converted {len(images_list)} images, {len(annotations)} annotations → {output_json}")
+    print(
+        f"[D-FINE] Converted {len(images_list)} images, "
+        f"{len(annotations)} annotations -> {output_json}"
+    )
     return output_json
 
 
@@ -151,8 +159,141 @@ def _generate_dataset_config(
         yaml.safe_dump(config, sort_keys=False, allow_unicode=True),
         encoding="utf-8",
     )
-    print(f"[D-FINE] Generated dataset config → {output_yml}")
+    print(f"[D-FINE] Generated dataset config -> {output_yml}")
     return output_yml
+
+
+def _generate_experiment_config(
+    dfine_repo: Path,
+    output_dir: Path,
+    epochs: int,
+    eval_size: int,
+    batch_size: int,
+    num_workers: int = 4,
+    stop_augment_epoch: int = 88,
+) -> Path:
+    """Generate the exact D-FINE-M recipe used by the reference run.
+
+    The reference artifacts in ``results/output_dfine_m`` were produced with
+    the D-FINE-M HGNetv2-B2 recipe below.  Runtime values are written into the
+    D-FINE config tree so its relative ``__include__`` paths work on both
+    Windows and Linux/Kaggle.
+    """
+    config = {
+        "__include__": [
+            "../../dataset/scale_error_generated.yml",
+            "../../runtime.yml",
+            "../include/dataloader.yml",
+            "../include/optimizer.yml",
+            "../include/dfine_hgnetv2.yml",
+        ],
+        "output_dir": str(output_dir),
+        "eval_spatial_size": [eval_size, eval_size],
+        "DFINE": {"backbone": "HGNetv2"},
+        "HGNetv2": {
+            "name": "B2",
+            "return_idx": [1, 2, 3],
+            "freeze_at": -1,
+            "freeze_norm": False,
+            "use_lab": True,
+            # The COCO checkpoint is loaded with ``-t``. Disable a second
+            # backbone-only download from D-FINE's default config.
+            "pretrained": False,
+        },
+        "DFINETransformer": {"num_layers": 4, "eval_idx": -1},
+        "HybridEncoder": {
+            "in_channels": [384, 768, 1536],
+            "hidden_dim": 256,
+            "depth_mult": 0.67,
+        },
+        "optimizer": {
+            "type": "AdamW",
+            "params": [
+                {
+                    "params": "^(?=.*backbone)(?!.*norm|bn).*$",
+                    "lr": 0.000025,
+                },
+                {
+                    "params": "^(?=.*backbone)(?=.*norm|bn).*$",
+                    "lr": 0.000025,
+                    "weight_decay": 0.0,
+                },
+                {
+                    "params": "^(?=.*(?:encoder|decoder))(?=.*(?:norm|bn|bias)).*$",
+                    "weight_decay": 0.0,
+                },
+            ],
+            "lr": 0.00025,
+            "betas": [0.9, 0.999],
+            "weight_decay": 0.000125,
+        },
+        "epochs": epochs,
+        "train_dataloader": {
+            "total_batch_size": batch_size,
+            "num_workers": num_workers,
+            "dataset": {
+                "transforms": {
+                    "ops": [
+                        {"type": "RandomPhotometricDistort", "p": 0.5},
+                        {"type": "RandomZoomOut", "fill": 0},
+                        {"type": "RandomIoUCrop", "p": 0.8},
+                        {"type": "SanitizeBoundingBoxes", "min_size": 1},
+                        {"type": "RandomHorizontalFlip"},
+                        {"type": "Resize", "size": [eval_size, eval_size]},
+                        {"type": "SanitizeBoundingBoxes", "min_size": 1},
+                        {"type": "ConvertPILImage", "dtype": "float32", "scale": True},
+                        {"type": "ConvertBoxes", "fmt": "cxcywh", "normalize": True},
+                    ],
+                    "policy": {
+                        "name": "stop_epoch",
+                        "epoch": stop_augment_epoch,
+                        "ops": [
+                            "RandomPhotometricDistort",
+                            "RandomZoomOut",
+                            "RandomIoUCrop",
+                        ],
+                    },
+                }
+            },
+            "collate_fn": {
+                "type": "BatchImageCollateFunction",
+                "base_size": eval_size,
+                "base_size_repeat": 3,
+                "stop_epoch": stop_augment_epoch,
+                "ema_restart_decay": 0.9999,
+            },
+        },
+        "val_dataloader": {
+            "total_batch_size": batch_size * 2,
+            "num_workers": num_workers,
+            "dataset": {
+                "transforms": {
+                    "ops": [
+                        {"type": "Resize", "size": [eval_size, eval_size]},
+                        {"type": "ConvertPILImage", "dtype": "float32", "scale": True},
+                    ]
+                }
+            },
+            "collate_fn": {"type": "BatchImageCollateFunction"},
+        },
+        "ema": {"warmups": 0},
+        "lr_warmup_scheduler": {"warmup_duration": 0},
+    }
+
+    config_path = (
+        dfine_repo
+        / "configs"
+        / "dfine"
+        / "custom"
+        / "dfine_hgnetv2_m_scale_error_generated.yml"
+    )
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(
+        yaml.safe_dump(config, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+    print(f"[D-FINE] Generated experiment config -> {config_path}")
+    return config_path
 
 
 def prepare_coco_data(
@@ -176,10 +317,16 @@ def prepare_coco_data(
 
     train_images = Path(cfg["train"])
     val_images = Path(cfg["val"])
-    train_labels = train_images.parent / "labels" if not (train_images.parent.parent / "labels").exists() \
+    train_labels = (
+        train_images.parent / "labels"
+        if not (train_images.parent.parent / "labels").exists()
         else train_images.parent.parent / "labels" / train_images.parent.name
-    val_labels = val_images.parent / "labels" if not (val_images.parent.parent / "labels").exists() \
+    )
+    val_labels = (
+        val_images.parent / "labels"
+        if not (val_images.parent.parent / "labels").exists()
         else val_images.parent.parent / "labels" / val_images.parent.name
+    )
 
     # Try common YOLO directory structures
     for candidate in [
@@ -261,14 +408,20 @@ def train_dfine(
     )
     num_classes = len(class_names)
 
-    # 2. Generate dataset config
-    dataset_yml = output_dir / "dataset_glass.yml"
+    # 2. Generate dataset config inside D-FINE so relative includes remain
+    # portable across local Windows and Kaggle Linux environments.
+    dataset_yml = dfine_repo / "configs" / "dataset" / "scale_error_generated.yml"
     _generate_dataset_config(train_imgs, train_json, val_imgs, val_json, num_classes, dataset_yml)
 
-    # 3. Find model config
-    model_config = dfine_repo / "configs" / "dfine" / "custom" / "dfine_hgnetv2_m_glass.yml"
-    if not model_config.exists():
-        model_config = dfine_repo / "configs" / "dfine" / "dfine_hgnetv2_m_coco.yml"
+    # 3. Reproduce the reference recipe. This intentionally starts at epoch 0
+    # from the COCO tuning checkpoint; no --resume checkpoint is supplied.
+    model_config = _generate_experiment_config(
+        dfine_repo,
+        output_dir,
+        epochs=epochs,
+        eval_size=eval_size,
+        batch_size=batch_size,
+    )
 
     # 4. Run training
     print(f"[D-FINE] Starting training: {epochs} epochs, eval_size={eval_size}")
@@ -295,7 +448,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train D-FINE-M model")
     parser.add_argument("--data", required=True, help="Path to runtime_data.yaml")
     parser.add_argument("--dfine-repo", required=True, help="Path to D-FINE repository")
-    parser.add_argument("--weights", required=True, help="Path to pretrained weights (dfine_m_coco.pth)")
+    parser.add_argument(
+        "--weights",
+        required=True,
+        help="Path to pretrained weights (dfine_m_coco.pth)",
+    )
     parser.add_argument("--output-dir", default="artifacts/runs/dfine_m", help="Output directory")
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--eval-size", type=int, default=960)
