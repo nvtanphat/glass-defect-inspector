@@ -24,3 +24,14 @@ kaggle*
 *.onnx
 *.engine
 *.pdf
+
+# Third-party D-FINE source code (extract from results.zip or clone upstream)
+D-FINE/
+
+# D-FINE local eval workspace (ROI test images extracted from results.zip)
+_dfine_eval/data_roi/
+_dfine_eval/*.log
+
+# One-off environment check scripts
+_check_env.py
+_scan_tfevents.py

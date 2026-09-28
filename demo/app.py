@@ -15,10 +15,10 @@ sys.path.insert(0, str(ROOT / "src"))
 
 # Candidate paths for model weights
 POSSIBLE_WEIGHTS = [
-    ROOT / "kaggle_eval_results" / "best.pt",
+    ROOT / "weights" / "yolo26m_roi_vfl_best.pt",
+    ROOT / "weights" / "yolo26m.pt",
     ROOT / "artifacts" / "runs" / "yolo26m" / "weights" / "best.pt",
     ROOT / "artifacts" / "runs" / "yolo26m_960" / "weights" / "best.pt",
-    ROOT / "weights" / "yolo26m.pt",
     ROOT / "yolo26m.pt",
 ]
 

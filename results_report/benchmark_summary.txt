@@ -1,0 +1,14 @@
+========================================================================================
+GLASS DEFECT INSPECTOR: HELD-OUT TEST BENCHMARK COMPARISON (890 images, 1,573 ground-truth labels)
+========================================================================================
+Model                              | Backbone       | Pre-process | mAP@50 | mAP@75 | mAP@50:95 | Latency (T4) | FPS
+------------------------------------------------------------------------------------------------------------------------
+YOLO11m (Baseline 1)               | CSPDarknet     | Raw 960x960 | 63.86% | 32.23% | 34.31%    | 57.2 ms      | 17.5
+RT-DETR-L (Baseline 2)             | HGNetv2-B4     | Raw 960x960 | 65.22% | 30.57% | 35.02%    | 97.3 ms      | 10.3
+YOLO26m Base                       | YOLO26         | Raw 960x960 | 69.85% | 36.75% | 38.51%    | 67.4 ms      | 14.8
+YOLO26m + ROI + VFL (SOTA) 🏆       | YOLO26         | ROI Crop    | 70.96% | 39.69% | 40.34%    | 58.4 ms      | 17.1
+D-FINE-M (Fine-grained Regression) | HGNetv2-B2     | ROI Crop    | 76.90% | 46.00% | 44.40%    | 57.27 ms      | 17.5
+========================================================================================
+Input Resolution: 960x960 (aligned with YOLO26m)
+Pretrained weights: COCO (dfine_m_coco.pth)
+Training: 100 Epochs (Stage 1: 88 epochs multi-scale, Stage 2: 12 epochs FDR refinement)

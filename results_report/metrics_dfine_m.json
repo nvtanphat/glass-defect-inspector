@@ -1,0 +1,19 @@
+{
+  "model": "D-FINE-M",
+  "backbone": "HGNetv2-B2",
+  "parameters_M": 19.3,
+  "input_resolution": "960x960",
+  "epochs": 100,
+  "pretrained_weights": "COCO (dfine_m_coco.pth)",
+  "mAP50_95": 44.4,
+  "mAP50": 76.9,
+  "mAP75": 46.0,
+  "mAP_small": 35.3,
+  "mAP_medium": 45.8,
+  "mAP_large": 55.9,
+  "per_class": {},
+  "latency_forward_ms": 57.27,
+  "fps": 17.5,
+  "test_images": 890,
+  "test_annotations": 1573
+}
