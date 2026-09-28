@@ -5,15 +5,17 @@
 [![Ultralytics](https://img.shields.io/badge/Ultralytics-YOLO26-00FFFF.svg)](https://docs.ultralytics.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Test mAP50-95](https://img.shields.io/badge/Best%20mAP50--95-44.40%25-brightgreen.svg)](#-benchmark-results-held-out-test-split)
-[![Inference Speed](https://img.shields.io/badge/Speed-17.5%20FPS%20(57.3ms)-orange.svg)](#3-phân-rã-độ-trễ-suy-luận-tesla-t4-gpu)
+[![Forward Speed](https://img.shields.io/badge/D--FINE%20forward-17.5%20FPS%20(57.3ms)-orange.svg)](#3-phân-rã-độ-trễ-suy-luận-tesla-t4-gpu)
 
-Pipeline phát hiện lỗi miệng chai thủy tinh công nghiệp hỗ trợ **4 kiến trúc mô hình**: **YOLO26m**, **YOLO11m**, **RT-DETR-L**, và **D-FINE-M**, kết hợp tiền xử lý **ROI Cropping**, hàm mất mát **Varifocal Loss + Class Weighting**, và cơ chế suy luận **NMS-Free**.
+Pipeline phát hiện lỗi miệng chai thủy tinh công nghiệp hỗ trợ **4 kiến trúc mô hình**: **YOLO26m**, **YOLO11m**, **RT-DETR-L**, và **D-FINE-M**. ROI Cropping, Varifocal Loss + Class Weighting và NMS-Free được dùng cho biến thể YOLO26m nâng cao; D-FINE-M dùng ROI Crop và loss gốc của framework D-FINE.
 
 ---
 
-## 📊 Benchmark Results (Held-out Test Split)
+## 📊 Kết quả đánh giá (Held-out Test Split)
 
-Toàn bộ mô hình được đánh giá trên cùng một tập **Test độc lập** (890 ảnh, 1.573 nhãn ground-truth), hoàn toàn tách biệt khỏi tập huấn luyện (`train`) và kiểm định (`val`).
+> **Trạng thái:** Bảng này đang tạm dùng **kết quả của lần train trước**. Sau khi hai job retrain YOLO26m và D-FINE-M hoàn tất, thay trực tiếp các số tương ứng trong README này rồi push lên GitHub; không có file kết quả trung gian hay script sinh báo cáo.
+
+Toàn bộ run dùng cùng **890 ảnh nguồn** của tập Test độc lập. Tuy nhiên, artifacts của các run ROI lịch sử cho thấy annotation sau crop còn khoảng **1.483** box thay vì **1.573** box Raw. Vì vậy, các metric Raw và ROI bên dưới là kết quả đã báo cáo của từng run nhưng không phải một phép so sánh kiểm soát trên cùng denominator. ROI config hiện tại đã được mở rộng để giữ đủ 1.573 box cho các lần chạy mới.
 
 ### 1. So sánh tổng thể trên tập Test
 
@@ -23,9 +25,9 @@ Toàn bộ mô hình được đánh giá trên cùng một tập **Test độc 
 | **RT-DETR-L** (Baseline 2) | HGNetv2-B4 | Raw 960×960 | 65.22% | 30.57% | 35.02% | 97.3 ms | 10.3 |
 | **YOLO26m Base** | YOLO26 | Raw 960×960 | 69.85% | 36.75% | 38.51% | 67.4 ms | 14.8 |
 | **YOLO26m + ROI + VFL** | YOLO26 | ROI Crop | 70.96% | 39.69% | 40.34% | 58.4 ms | 17.1 |
-| **D-FINE-M** 🏆 | HGNetv2-B2 | ROI Crop | **76.90%** | **46.00%** | **44.40%** | 57.27 ms | 17.5 |
+| **D-FINE-M** 🏆 | HGNetv2-B2 | ROI Crop | **76.90%** | **46.00%** | **44.40%** | 57.27 ms (forward-only) | 17.5* |
 
-> **D-FINE-M** đạt kết quả tốt nhất trên mọi chỉ số mAP, vượt YOLO26m+ROI+VFL khoảng **+6% mAP@50** và **+4% mAP@50:95**, với tốc độ suy luận tương đương.
+> Các giá trị trên là số đã báo cáo của lần chạy cũ. Chỉ so sánh chính thức hai mô hình retrain khi cùng dùng 890 ảnh Test, 1.573 annotation và cùng phạm vi đo latency. D-FINE cũ chỉ có số đo forward-only nên chưa thể kết luận tốc độ end-to-end tương đương.
 
 ---
 
@@ -40,7 +42,7 @@ Toàn bộ mô hình được đánh giá trên cùng một tập **Test độc 
 | **LoiTray** | Vết trầy xước | 40 | 30.69% | 33.57% | 34.56% | — |
 | **Trung bình** | | **1.573** | **34.31%** | **35.02%** | **40.34%** | **44.40%** |
 
-> D-FINE-M per-class metrics: mAP_small=35.3%, mAP_medium=45.8%, mAP_large=55.9%.
+> Số nhãn theo lớp trong bảng là của tập Raw (1.573 box). ROI artifact lịch sử còn 1.483 box: DiVat 198, DiVatLoiLom 383, LoiChi 788, LoiNhua 74, LoiTray 40. D-FINE-M per-class AP không còn; chỉ còn AP theo kích thước: small=35.3%, medium=45.8%, large=55.9%.
 
 ---
 
@@ -48,8 +50,10 @@ Toàn bộ mô hình được đánh giá trên cùng một tập **Test độc 
 
 | Giai đoạn suy luận | YOLO11m (NMS) | RT-DETR-L | YOLO26m + ROI + VFL (NMS-Free) | D-FINE-M |
 | :--- | :---: | :---: | :---: | :---: |
-| **Tổng độ trễ** | 57.20 ms | 97.29 ms | 58.42 ms | 57.27 ms |
-| **Tốc độ (FPS)** | 17.5 | 10.3 | 17.1 | 17.5 |
+| **Độ trễ được lưu** | 57.20 ms E2E | 97.29 ms E2E | 58.42 ms E2E | 57.27 ms forward-only |
+| **Tốc độ suy ra** | 17.5 FPS | 10.3 FPS | 17.1 FPS | 17.5 FPS* |
+
+> \* FPS của D-FINE được suy ra từ forward latency, không bao gồm đầy đủ preprocess/postprocess như benchmark E2E của ba model Ultralytics.
 
 ---
 
@@ -67,7 +71,7 @@ Toàn bộ mô hình được đánh giá trên cùng một tập **Test độc 
 ## 🛠️ Các phương pháp kỹ thuật chính
 
 1. **Cắt vùng quan tâm (ROI Cropping — `processing/apply_roi_crop.py`)**:
-   - Loại bỏ vùng nền đen cố định không chứa sản phẩm xung quanh miệng chai (tọa độ: `[1448, 900, 4228, 2300]`, giảm 25.3% diện tích thừa).
+   - Với ảnh 5328×3000, config hiện tại dùng ROI xấp xỉ `[752, 0, 4732, 3000]`, giữ toàn bộ 9.166/1.555/1.573 box của train/val/test trong lần kiểm tra local. Ảnh 1024×1024 và kích thước chưa có cấu hình được giữ nguyên.
    - Tăng mật độ điểm ảnh hữu ích của các khuyết tật kích thước nhỏ khi đưa về 960×960.
 
 2. **Varifocal Loss & Trọng số nghịch đảo tần suất (`losses.py`)**:
@@ -148,7 +152,7 @@ scale-error train \
 
 ```bash
 scale-error train \
-  --data data/processed_roi/data.yaml \
+  --data data/processed/runtime_data.yaml \
   --config configs/train_yolo11m.yaml \
   --project-dir artifacts/runs
 ```
@@ -157,7 +161,7 @@ scale-error train \
 
 ```bash
 scale-error train \
-  --data data/processed_roi/data.yaml \
+  --data data/processed/runtime_data.yaml \
   --config configs/train_rtdetr.yaml \
   --project-dir artifacts/runs
 ```

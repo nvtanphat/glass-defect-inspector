@@ -44,7 +44,9 @@ def train(
     project_dir: str | Path,
     run_name: str | None = None,
     dataset_report: str | Path | None = None,
+    resume_checkpoint: str | Path | None = None,
 ):
+    config_path = Path(config_path).resolve()
     cfg = load_yaml(config_path)
     model_name = str(cfg.pop("model"))
     preprocessing = str(cfg.pop("preprocessing", "raw"))
@@ -55,7 +57,8 @@ def train(
     project_dir.mkdir(parents=True, exist_ok=True)
 
     model_cls = RTDETR if model_name.startswith("rtdetr") else YOLO
-    model = model_cls(model_name)
+    model_source = str(Path(resume_checkpoint).resolve()) if resume_checkpoint else model_name
+    model = model_cls(model_source)
 
     if use_vfl and model_cls is not YOLO:
         raise ValueError("VFLDetectionLoss is only supported for YOLO models")
@@ -64,7 +67,10 @@ def train(
     if preprocessing not in {"raw", "roi_crop"}:
         raise ValueError(f"Unsupported preprocessing mode: {preprocessing}")
     if preprocessing == "roi_crop":
-        if roi_config is None or not Path(roi_config).exists():
+        roi_config_path = Path(roi_config) if roi_config is not None else None
+        if roi_config_path is not None and not roi_config_path.is_absolute():
+            roi_config_path = config_path.parent.parent / roi_config_path
+        if roi_config_path is None or not roi_config_path.exists():
             raise FileNotFoundError(
                 "preprocessing=roi_crop requires an existing roi_config path"
             )
@@ -99,10 +105,16 @@ def train(
         class_weights = compute_class_weights(report_path) if report_path else None
         model.add_callback("on_train_start", _attach_vfl_criterion(class_weights))
 
-    return model.train(
-        data=str(Path(data_yaml).resolve()),
-        project=str(project_dir),
-        name=run_name or Path(model_name).stem.replace("-", "_"),
-        exist_ok=True,
+    train_args = {
+        "data": str(Path(data_yaml).resolve()),
+        "project": str(project_dir),
+        "name": run_name or Path(model_name).stem.replace("-", "_"),
+        "exist_ok": True,
         **cfg,
+    }
+    if resume_checkpoint:
+        train_args["resume"] = str(Path(resume_checkpoint).resolve())
+
+    return model.train(
+        **train_args,
     )

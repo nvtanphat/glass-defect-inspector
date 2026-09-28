@@ -4,7 +4,7 @@ preprocessing: roi_crop
 roi_config: processing/roi_config.json
 use_vfl: true
 use_class_weights: true
-epochs: 120
+epochs: 100
 imgsz: 960
 batch: 8
 device: 0

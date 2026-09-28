@@ -16,7 +16,7 @@ def test_accuracy_first_config():
     assert cfg["use_vfl"] is True
     assert cfg["use_class_weights"] is True
     assert cfg["imgsz"] == 960
-    assert cfg["epochs"] == 120
+    assert cfg["epochs"] == 100
     assert cfg["optimizer"] == "MuSGD"
     assert cfg["patience"] == 15
 

@@ -383,6 +383,7 @@ def train_dfine(
     epochs: int = 100,
     eval_size: int = 960,
     batch_size: int = 8,
+    resume_checkpoint: str | Path | None = None,
 ) -> Path:
     """Train D-FINE-M model.
 
@@ -427,10 +428,12 @@ def train_dfine(
 
     # 4. Run training
     print(f"[D-FINE] Starting training: {epochs} epochs, eval_size={eval_size}")
+    checkpoint_flag = "-r" if resume_checkpoint else "-t"
+    checkpoint_path = resume_checkpoint or pretrained_weights
     cmd = [
         sys.executable, str(dfine_repo / "train.py"),
         "-c", str(model_config),
-        "-t", str(Path(pretrained_weights).resolve()),
+        checkpoint_flag, str(Path(checkpoint_path).resolve()),
         "--use-amp",
         "--seed", "42",
         "--output-dir", str(output_dir),

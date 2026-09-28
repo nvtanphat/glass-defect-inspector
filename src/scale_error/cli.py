@@ -36,6 +36,7 @@ def build_parser() -> argparse.ArgumentParser:
     tr_dfine.add_argument("--epochs", type=int, default=100)
     tr_dfine.add_argument("--eval-size", type=int, default=960)
     tr_dfine.add_argument("--batch-size", type=int, default=8)
+    tr_dfine.add_argument("--resume", default=None, help="Resume from a D-FINE checkpoint")
 
     ev = sub.add_parser("evaluate", help="Evaluate YOLO26m / YOLO11m / RT-DETR-L (Ultralytics)")
     ev.add_argument("--weights", required=True)
@@ -82,6 +83,7 @@ def main() -> None:
         train_dfine(
             args.data, args.dfine_repo, args.weights, args.output_dir,
             epochs=args.epochs, eval_size=args.eval_size, batch_size=args.batch_size,
+            resume_checkpoint=args.resume,
         )
 
     elif args.cmd == "evaluate":
