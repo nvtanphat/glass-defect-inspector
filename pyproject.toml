@@ -22,10 +22,6 @@ dev = [
     "pytest>=8.3",
     "ruff>=0.9",
 ]
-demo = [
-    "gradio>=5.0",
-]
-
 [project.scripts]
 scale-error = "scale_error.cli:main"
 
@@ -41,4 +37,4 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "."]

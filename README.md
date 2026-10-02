@@ -209,21 +209,7 @@ scale-error evaluate-dfine \
 
 ---
 
-### 6. Giao diện Web Dashboard & Dự đoán
-
-#### Giao diện Web Gradio Dashboard
-
-```bash
-python demo/app.py
-```
-
-Mở trình duyệt tại `http://localhost:7860`. Tính năng:
-- **Thẻ KPI thời gian thực**: Tổng lỗi, số chủng loại, độ trễ (ms).
-- **Tab trực quan hóa kép**: Bounding box phân loại lỗi + ROI Preview.
-- **Bảng dữ liệu chi tiết**: Tọa độ XYXY, confidence, diện tích (px²).
-- **Chế độ suy luận**: NMS-Free (0.12ms post-process) hoặc Standard NMS.
-
-#### Dự đoán qua CLI
+### 6. Dự đoán qua CLI
 
 ```bash
 scale-error predict \
@@ -257,8 +243,6 @@ yolo export \
 │   ├── train_yolo11m.yaml           # YOLO11m (Auto SGD)
 │   ├── train_rtdetr.yaml            # RT-DETR-L (AdamW)
 │   └── train_dfine_m.yaml           # D-FINE-M (reference config)
-├── demo/
-│   └── app.py                       # Giao diện Gradio Dashboard
 ├── docs/
 │   └── FULL_DOCUMENTATION.md        # Tài liệu chi tiết
 ├── kaggle/                          # Scripts push & train trên Kaggle cloud GPU

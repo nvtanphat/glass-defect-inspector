@@ -15,12 +15,14 @@ weights/
 
 # Local caches, credentials and outputs
 kaggle*
-.kaggle/
+.kaggle*
+results/
 *.ps1
 *.zip
 
 # Model checkpoints and exports
 *.pt
+*.pth
 *.onnx
 *.engine
 *.pdf
