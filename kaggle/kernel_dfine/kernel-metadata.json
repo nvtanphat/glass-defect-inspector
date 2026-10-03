@@ -1,6 +1,6 @@
 {
-  "id": "nguynvntnpht/scale-error-dfine-m-roi-retrain",
-  "title": "scale-error-dfine-m-roi-retrain",
+  "id": "baohuynh05/scale-error-dfine-m-baseline",
+  "title": "scale-error-dfine-m-baseline",
   "code_file": "run_dfine.py",
   "language": "python",
   "kernel_type": "script",
@@ -8,8 +8,7 @@
   "enable_gpu": true,
   "enable_internet": true,
   "dataset_sources": [
-    "nguynvntnpht/scale-error-dc-v26-yolov8",
-    "nguynvntnpht/scale-error-yolo26-code"
+    "baohuynh05/scale-error-dc-v26-yolov8"
   ],
   "competition_sources": [],
   "kernel_sources": [],
