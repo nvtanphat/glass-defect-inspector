@@ -78,8 +78,17 @@ def _safe_all_gather(tensor_list, tensor, *args, **kwargs):
 _dist.all_gather = _safe_all_gather
 '''
     text = patch_code + "\n" + text
+    text = text.replace("find_unused_parameters: bool = False", "find_unused_parameters: bool = True")
+    text = text.replace("find_unused_parameters=find_unused_parameters", "find_unused_parameters=True")
     dist_file.write_text(text, encoding="utf-8")
-    log("Applied NCCL CPU all_gather try-except hotfix to dist_utils.py")
+    log("Applied NCCL CPU all_gather try-except and find_unused_parameters=True hotfix to dist_utils.py")
+
+    runtime_yml = DFINE_REPO / "configs" / "runtime.yml"
+    if runtime_yml.exists():
+        rtext = runtime_yml.read_text(encoding="utf-8")
+        rtext = rtext.replace("find_unused_parameters: False", "find_unused_parameters: True")
+        runtime_yml.write_text(rtext, encoding="utf-8")
+        log("Updated runtime.yml: find_unused_parameters: True")
 
 
 def patch_faster_coco_eval_file() -> None:
@@ -767,6 +776,7 @@ def setup_fbdnet_configs(paths: dict[str, Path], class_names: list[str]) -> tupl
         ],
         "output_dir": str(OUTPUT_DIR),
         "eval_spatial_size": [960, 960],
+        "find_unused_parameters": True,
         "DFINE": {
             "backbone": "HGNetv2FBD",
             "encoder": "FBDHybridEncoder",
