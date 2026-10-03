@@ -15,6 +15,7 @@ else:
 
 
 TARGET_KERNELS = [
+    'jyang10/scale-error-dfine-m-evaluate',
     'baohuynh05/scale-error-dfine-m-baseline',
     'leppan/scale-error-dfine-fbdnet-m',
     'jyang10/scale-error-dfine-frequency-official',

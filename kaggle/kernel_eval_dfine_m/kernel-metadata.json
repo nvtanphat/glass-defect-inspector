@@ -1,0 +1,17 @@
+{
+  "id": "jyang10/scale-error-dfine-m-evaluate",
+  "title": "scale-error-dfine-m-evaluate",
+  "code_file": "eval_dfine_on_kaggle.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": [
+    "baohuynh05/scale-error-dc-v26-yolov8",
+    "jyang10/scale-error-dfine-m-best-weights"
+  ],
+  "kernel_sources": [],
+  "competition_sources": [],
+  "model_sources": []
+}

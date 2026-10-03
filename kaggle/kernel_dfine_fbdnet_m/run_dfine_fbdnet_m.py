@@ -384,7 +384,9 @@ class FBDHybridEncoder(HybridEncoder):
                         w, h, self.hidden_dim, self.pe_temperature
                     ).to(src_flatten.device)
                 else:
-                    pos_embed = self.pe[i]
+                    pos_embed = getattr(self, f"pos_embed{enc_ind}", None)
+                    if pos_embed is not None:
+                        pos_embed = pos_embed.to(src_flatten.device)
                 memory = self.encoder[i](src_flatten, pos_embed=pos_embed)
                 proj_feats[enc_ind] = memory.permute(0, 2, 1).reshape(-1, self.hidden_dim, h, w)
 
