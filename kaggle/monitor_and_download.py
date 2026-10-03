@@ -150,6 +150,20 @@ def check_and_download(kernel_slug: str) -> dict[str, Any]:
                 shutil.copy2(candidates[0], weights_dest)
                 print(f"   -> Successfully copied frequency best weights to {weights_dest}")
 
+        if "scale-error-dfine-m-baseline" in kernel_slug:
+            candidates = list(target_path.glob("*best_stg2*.pth")) or list(target_path.glob("*best*.pth"))
+            if candidates:
+                weights_dest = PROJECT_ROOT / "weights" / "dfine_m_baseline_reproduced_best.pth"
+                shutil.copy2(candidates[0], weights_dest)
+                print(f"   -> Successfully copied baseline reproduced weights to {weights_dest}")
+
+        if "fbdnet-m" in kernel_slug:
+            candidates = list(target_path.glob("*best*.pth"))
+            if candidates:
+                weights_dest = PROJECT_ROOT / "weights" / "dfine_m_fbdnet_best.pth"
+                shutil.copy2(candidates[0], weights_dest)
+                print(f"   -> Successfully copied FBDNet-M best weights to {weights_dest}")
+
         if "scale-error-dfine-m-tiled" in kernel_slug:
             candidates = list(target_path.glob("*best*.pth"))
             if candidates:
@@ -187,8 +201,25 @@ def monitor_until_complete(target_slug: str = "jyang10/scale-error-dfine-frequen
         time.sleep(poll_interval)
 
 
+def check_all_active():
+    active_targets = [
+        "baohuynh05/scale-error-dfine-m-baseline",
+        "jyang10/scale-error-dfine-frequency-official",
+        "leppan/scale-error-dfine-fbdnet-m",
+    ]
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Checking all {len(active_targets)} active kernels...", flush=True)
+    results = {}
+    for target in active_targets:
+        res = check_and_download(target)
+        results[target] = res
+    return results
+
+
 if __name__ == "__main__":
-    monitor_until_complete()
+    if "--once" in sys.argv or "--check-all" in sys.argv:
+        check_all_active()
+    else:
+        monitor_until_complete()
 
 
 
