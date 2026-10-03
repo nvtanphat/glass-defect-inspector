@@ -54,20 +54,42 @@ def patch_dist_utils_for_nccl_cpu() -> None:
 import torch.distributed as _dist
 _orig_all_gather = _dist.all_gather
 def _safe_all_gather(tensor_list, tensor, *args, **kwargs):
-    if _dist.is_initialized() and _dist.get_backend() == "nccl" and tensor.device.type == "cpu":
-        dev = torch.cuda.current_device()
-        cuda_tensor = tensor.to(dev)
-        cuda_list = [t.to(dev) for t in tensor_list]
-        work = _orig_all_gather(cuda_list, cuda_tensor, *args, **kwargs)
-        for cpu_t, cuda_t in zip(tensor_list, cuda_list):
-            cpu_t.copy_(cuda_t.cpu())
-        return work
-    return _orig_all_gather(tensor_list, tensor, *args, **kwargs)
+    try:
+        return _orig_all_gather(tensor_list, tensor, *args, **kwargs)
+    except RuntimeError as e:
+        if "device type cpu" in str(e) or "No backend type" in str(e):
+            dev = torch.cuda.current_device()
+            cuda_tensor = tensor.to(dev)
+            cuda_list = [t.to(dev) for t in tensor_list]
+            work = _orig_all_gather(cuda_list, cuda_tensor, *args, **kwargs)
+            for cpu_t, cuda_t in zip(tensor_list, cuda_list):
+                cpu_t.copy_(cuda_t.cpu())
+            return work
+        raise
 _dist.all_gather = _safe_all_gather
 '''
     text = patch_code + "\n" + text
     dist_file.write_text(text, encoding="utf-8")
-    log("Applied NCCL CPU all_gather hotfix to dist_utils.py")
+    log("Applied NCCL CPU all_gather try-except hotfix to dist_utils.py")
+
+
+def patch_faster_coco_eval_file() -> None:
+    try:
+        import faster_coco_eval.utils.pytorch.coco_eval as ce
+        file_path = Path(ce.__file__)
+        text = file_path.read_text(encoding="utf-8")
+        target_pattern = 'device = torch.device(f"cuda:{torch.cuda.current_device()}") if torch.cuda.is_available() else torch.device("cpu")'
+        old_pattern = 'device = torch.device("cuda") if dist.get_backend() == "nccl" else torch.device("cpu")'
+        if old_pattern in text:
+            text = text.replace(old_pattern, target_pattern)
+            file_path.write_text(text, encoding="utf-8")
+            log(f"Patched {file_path.name} (replaced nccl check with cuda check)")
+        elif 'device = torch.device("cpu")' in text:
+            text = text.replace('device = torch.device("cpu")', target_pattern)
+            file_path.write_text(text, encoding="utf-8")
+            log(f"Patched {file_path.name} (replaced cpu device with cuda check)")
+    except Exception as e:
+        log(f"Warning: could not patch faster_coco_eval file: {e}")
 
 
 def install_dependencies() -> None:
@@ -109,6 +131,7 @@ def install_dependencies() -> None:
         check=True,
     )
     patch_dist_utils_for_nccl_cpu()
+    patch_faster_coco_eval_file()
 
 
 def find_dataset_root() -> Path:
