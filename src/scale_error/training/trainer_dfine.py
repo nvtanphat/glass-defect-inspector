@@ -170,7 +170,7 @@ def _generate_experiment_config(
     eval_size: int,
     batch_size: int,
     num_workers: int = 4,
-    stop_augment_epoch: int = 70,
+    stop_augment_epoch: int = 88,
     dataset_config_name: str = "scale_error_generated.yml",
     config_name: str = "dfine_hgnetv2_m_scale_error_generated.yml",
 ) -> Path:
@@ -236,8 +236,9 @@ def _generate_experiment_config(
             "dataset": {
                 "transforms": {
                     "ops": [
-                        {"type": "RandomPhotometricDistort", "p": 0.3},
-                        {"type": "RandomIoUCrop", "p": 0.5},
+                        {"type": "RandomPhotometricDistort", "p": 0.5},
+                        {"type": "RandomZoomOut", "fill": 0},
+                        {"type": "RandomIoUCrop", "p": 0.8},
                         {"type": "SanitizeBoundingBoxes", "min_size": 1},
                         {"type": "RandomHorizontalFlip"},
                         {"type": "Resize", "size": [eval_size, eval_size]},
@@ -250,6 +251,7 @@ def _generate_experiment_config(
                         "epoch": stop_augment_epoch,
                         "ops": [
                             "RandomPhotometricDistort",
+                            "RandomZoomOut",
                             "RandomIoUCrop",
                         ],
                     },
@@ -373,6 +375,25 @@ def prepare_coco_data(
     return train_out_images, train_json, val_out_images, val_json, class_names
 
 
+def get_best_dfine_checkpoint(output_dir: str | Path) -> Path:
+    """Resolve the best D-FINE checkpoint, preferring best_stg2.pth then best_stg1.pth.
+
+    Args:
+        output_dir: Output directory containing checkpoints.
+
+    Returns:
+        Path to best_stg2.pth, best_stg1.pth, or best.pth.
+    """
+    output_dir = Path(output_dir)
+    for name in ["best_stg2.pth", "best_stg1.pth", "best.pth"]:
+        candidate = output_dir / name
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(
+        f"D-FINE best checkpoint (best_stg2.pth or best_stg1.pth) not found in {output_dir}"
+    )
+
+
 def train_dfine(
     data_yaml: str | Path,
     dfine_repo: str | Path,
@@ -380,9 +401,10 @@ def train_dfine(
     output_dir: str | Path,
     epochs: int = 100,
     eval_size: int = 960,
-    batch_size: int = 4,
-    stop_augment_epoch: int = 70,
+    batch_size: int = 8,
+    stop_augment_epoch: int = 88,
     resume_checkpoint: str | Path | None = None,
+    nproc_per_node: int | None = None,
 ) -> Path:
     """Train D-FINE-M model.
 
@@ -393,10 +415,13 @@ def train_dfine(
         output_dir: Directory for training outputs.
         epochs: Number of training epochs.
         eval_size: Evaluation image size.
-        batch_size: Training batch size.
+        batch_size: Training global batch size (default: 8).
+        stop_augment_epoch: Epoch to stop multi-scale & photometric augmentations (default: 88).
+        resume_checkpoint: Optional checkpoint path to resume from.
+        nproc_per_node: Optional number of GPUs for torchrun DDP (auto-detected if >=2).
 
     Returns:
-        Path to the output directory containing best.pth.
+        Path to the output directory containing best_stg1.pth / best_stg2.pth.
     """
     dfine_repo = Path(dfine_repo).resolve()
     output_dir = Path(output_dir).resolve()
@@ -427,24 +452,50 @@ def train_dfine(
     )
 
     # 4. Run training
-    print(f"[D-FINE] Starting training: {epochs} epochs, eval_size={eval_size}")
+    print(f"[D-FINE] Starting training: {epochs} epochs, eval_size={eval_size}, batch_size={batch_size}")
     checkpoint_flag = "-r" if resume_checkpoint else "-t"
     checkpoint_path = resume_checkpoint or pretrained_weights
-    cmd = [
-        sys.executable, str(dfine_repo / "train.py"),
-        "-c", str(model_config),
-        checkpoint_flag, str(Path(checkpoint_path).resolve()),
-        "--use-amp",
-        "--seed", "42",
-        "--output-dir", str(output_dir),
-        "--summary-dir", str(output_dir / "summary"),
-    ]
+
+    import torch
+    num_gpus = torch.cuda.device_count() if torch.cuda.is_available() else 0
+    effective_nproc = nproc_per_node if nproc_per_node is not None else (num_gpus if num_gpus >= 2 else 1)
+
+    if effective_nproc >= 2:
+        print(f"[D-FINE] Launching 2-GPU DDP via torchrun (nproc_per_node={effective_nproc})...")
+        cmd = [
+            sys.executable, "-m", "torch.distributed.run",
+            f"--nproc_per_node={effective_nproc}",
+            "--master_port=7777",
+            str(dfine_repo / "train.py"),
+            "-c", str(model_config),
+            checkpoint_flag, str(Path(checkpoint_path).resolve()),
+            "--use-amp",
+            "--seed", "42",
+            "--output-dir", str(output_dir),
+            "--summary-dir", str(output_dir / "summary"),
+        ]
+    else:
+        cmd = [
+            sys.executable, str(dfine_repo / "train.py"),
+            "-c", str(model_config),
+            checkpoint_flag, str(Path(checkpoint_path).resolve()),
+            "--use-amp",
+            "--seed", "42",
+            "--output-dir", str(output_dir),
+            "--summary-dir", str(output_dir / "summary"),
+        ]
 
     print(f"[D-FINE] Command: {' '.join(cmd)}")
     subprocess.run(cmd, check=True, cwd=str(dfine_repo))
 
     print(f"[D-FINE] Training complete. Output: {output_dir}")
+    try:
+        best_ckpt = get_best_dfine_checkpoint(output_dir)
+        print(f"[D-FINE] Best checkpoint resolved: {best_ckpt.name} ({best_ckpt})")
+    except FileNotFoundError:
+        print(f"[D-FINE] Checkpoint note: outputs saved in {output_dir}")
     return output_dir
+
 
 
 if __name__ == "__main__":
@@ -462,9 +513,11 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--eval-size", type=int, default=960)
     parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument("--stop-augment-epoch", type=int, default=88)
     args = parser.parse_args()
 
     train_dfine(
         args.data, args.dfine_repo, args.weights, args.output_dir,
         epochs=args.epochs, eval_size=args.eval_size, batch_size=args.batch_size,
+        stop_augment_epoch=args.stop_augment_epoch,
     )

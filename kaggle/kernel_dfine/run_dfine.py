@@ -39,9 +39,19 @@ def setup_code_repo() -> Path:
         if (source_root / "src").exists():
             shutil.copytree(source_root, REPO_COPY, dirs_exist_ok=True)
             return REPO_COPY
-    raise FileNotFoundError(
-        "Code dataset is attached but neither code_bundle.zip nor an unpacked src tree was found"
+    log("No code dataset attached; cloning directly from GitHub repository...")
+    subprocess.run(
+        [
+            "git",
+            "clone",
+            "--depth",
+            "1",
+            "https://github.com/nvtanphat/-glass-defect-inspector.git",
+            str(REPO_COPY),
+        ],
+        check=True,
     )
+    return REPO_COPY
 
 
 def find_resume_checkpoint(suffix: str) -> Path | None:
@@ -155,16 +165,27 @@ def main() -> None:
         encoding="utf-8",
     )
 
-    urllib.request.urlretrieve(
-        "https://github.com/Peterande/storage/releases/download/dfinev1.0/dfine_m_coco.pth",
-        DFINE_WEIGHTS,
-    )
+    if not DFINE_WEIGHTS.exists():
+        candidates = list(Path("/kaggle/input").rglob("dfine_m_coco.pth"))
+        if candidates:
+            log(f"Using attached COCO weights from {candidates[0]}")
+            shutil.copy2(candidates[0], DFINE_WEIGHTS)
+        else:
+            log("Downloading dfine_m_coco.pth from GitHub release...")
+            urllib.request.urlretrieve(
+                "https://github.com/Peterande/storage/releases/download/dfinev1.0/dfine_m_coco.pth",
+                DFINE_WEIGHTS,
+            )
     output_dir = ARTIFACTS / "runs" / "dfine_m"
     resume_checkpoint = find_resume_checkpoint("pth")
     if resume_checkpoint:
         log(f"Resuming D-FINE from {resume_checkpoint}")
     else:
         log("No D-FINE resume checkpoint attached; starting from COCO weights")
+
+    num_gpus = torch.cuda.device_count() if torch.cuda.is_available() else 0
+    log(f"Detected {num_gpus} CUDA device(s) - global batch size 8")
+
     train_dfine(
         runtime_yaml,
         DFINE_REPO,
@@ -172,13 +193,23 @@ def main() -> None:
         output_dir,
         epochs=100,
         eval_size=960,
-        batch_size=4,
-        stop_augment_epoch=70,
+        batch_size=8,
+        stop_augment_epoch=88,
         resume_checkpoint=resume_checkpoint,
     )
-    best = output_dir / "best.pth"
-    if not best.exists():
-        raise FileNotFoundError(f"D-FINE best checkpoint not found: {best}")
+
+    # Checkpoint handling: prefer best_stg2.pth (stage-2 refinement), fallback to best_stg1.pth
+    best = None
+    for name in ["best_stg2.pth", "best_stg1.pth", "best.pth"]:
+        candidate = output_dir / name
+        if candidate.exists():
+            best = candidate
+            break
+    if best is None:
+        raise FileNotFoundError(
+            f"D-FINE best checkpoint (best_stg2.pth or best_stg1.pth) not found in {output_dir}"
+        )
+    log(f"Evaluating best checkpoint: {best.name}")
     evaluate_dfine(
         best,
         DFINE_REPO,
