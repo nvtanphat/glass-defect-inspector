@@ -1,0 +1,17 @@
+{
+  "id": "leppan/scale-error-dfine-fbdnet-m",
+  "title": "scale-error-dfine-fbdnet-m",
+  "code_file": "run_dfine_fbdnet_m.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": [
+    "baohuynh05/scale-error-dc-v26-yolov8",
+    "jyang10/scale-error-dfine-resume-epoch70"
+  ],
+  "kernel_sources": [],
+  "competition_sources": [],
+  "model_sources": []
+}

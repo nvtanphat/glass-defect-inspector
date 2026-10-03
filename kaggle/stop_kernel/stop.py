@@ -1,0 +1,1 @@
+print('Kernel stopped successfully.')

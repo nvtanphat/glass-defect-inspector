@@ -1,0 +1,99 @@
+# Experiment E3: D-FINE-M with Unified P2 High-Resolution + Frequency-Aware Fusion
+# Hypothesis: P2 brings shallow detail, and Frequency Gating prevents high-frequency
+# background clutter from propagating forward. Together they yield highest AP_small.
+
+__include__: [
+  '../../dataset/glass_defect.yml',
+  '../../runtime.yml',
+  '../include/dataloader.yml',
+  '../include/optimizer.yml',
+  '../include/dfine_hgnetv2.yml',
+]
+
+output_dir: /kaggle/working/glass-defect-experiments/p2_frequency
+
+eval_spatial_size: [960, 960]
+
+DFINE:
+  type: DFINEModelWithP2Frequency
+  backbone: HGNetv2
+
+HGNetv2:
+  name: 'B2'
+  return_idx: [0, 1, 2, 3]  # P2, P3, P4, P5
+  freeze_at: -1
+  freeze_norm: False
+  use_lab: True
+  pretrained: False
+
+DFINETransformer:
+  num_layers: 4
+  eval_idx: -1
+
+HybridEncoder:
+  in_channels: [384, 768, 1536]  # Fused P3, P4, P5
+  hidden_dim: 256
+  depth_mult: 0.67
+
+optimizer:
+  type: AdamW
+  params:
+    -
+      params: '^(?=.*backbone)(?!.*norm|bn).*$'
+      lr: 0.000025
+    -
+      params: '^(?=.*backbone)(?=.*norm|bn).*$'
+      lr: 0.000025
+      weight_decay: 0.
+    -
+      params: '^(?=.*(?:encoder|decoder|p2_freq))(?=.*(?:norm|bn|bias)).*$'
+      weight_decay: 0.
+
+  lr: 0.00025
+  betas: [0.9, 0.999]
+  weight_decay: 0.000125
+
+epochs: 100
+
+train_dataloader:
+  total_batch_size: 8
+  num_workers: 4
+  dataset:
+    transforms:
+      ops:
+        - {type: RandomPhotometricDistort, p: 0.5}
+        - {type: RandomZoomOut, fill: 0}
+        - {type: RandomIoUCrop, p: 0.8}
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: RandomHorizontalFlip}
+        - {type: Resize, size: [960, 960]}
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: ConvertPILImage, dtype: 'float32', scale: True}
+        - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+      policy:
+        name: stop_epoch
+        epoch: 88
+        ops: ['RandomPhotometricDistort', 'RandomZoomOut', 'RandomIoUCrop']
+  collate_fn:
+    type: BatchImageCollateFunction
+    base_size: 960
+    base_size_repeat: 3
+    stop_epoch: 88
+    ema_restart_decay: 0.9999
+
+val_dataloader:
+  total_batch_size: 16
+  num_workers: 4
+  dataset:
+    transforms:
+      ops:
+        - {type: Resize, size: [960, 960]}
+        - {type: ConvertPILImage, dtype: 'float32', scale: True}
+  collate_fn:
+    type: BatchImageCollateFunction
+
+ema:
+  warmups: 0
+
+lr_warmup_scheduler:
+  warmup_duration: 0

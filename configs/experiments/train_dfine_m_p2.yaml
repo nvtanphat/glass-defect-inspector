@@ -1,0 +1,100 @@
+# Experiment E1: D-FINE-M with P2 High-Resolution Feature Fusion
+# Hypothesis: Injecting stride-4 (240x240 @960) shallow spatial details into P3
+# boosts AP_small and fine crack/scratch detection (LoiChi, LoiTray) without
+# modifying the downstream HybridEncoder or DFINETransformer decoder.
+
+__include__: [
+  '../../dataset/glass_defect.yml',
+  '../../runtime.yml',
+  '../include/dataloader.yml',
+  '../include/optimizer.yml',
+  '../include/dfine_hgnetv2.yml',
+]
+
+output_dir: /kaggle/working/glass-defect-experiments/p2
+
+eval_spatial_size: [960, 960]
+
+DFINE:
+  type: DFINEModelWithP2
+  backbone: HGNetv2
+
+HGNetv2:
+  name: 'B2'
+  return_idx: [0, 1, 2, 3]  # P2 (stride 4), P3 (stride 8), P4 (stride 16), P5 (stride 32)
+  freeze_at: -1
+  freeze_norm: False
+  use_lab: True
+  pretrained: False
+
+DFINETransformer:
+  num_layers: 4
+  eval_idx: -1
+
+HybridEncoder:
+  in_channels: [384, 768, 1536]  # Fused P3, P4, P5
+  hidden_dim: 256
+  depth_mult: 0.67
+
+optimizer:
+  type: AdamW
+  params:
+    -
+      params: '^(?=.*backbone)(?!.*norm|bn).*$'
+      lr: 0.000025
+    -
+      params: '^(?=.*backbone)(?=.*norm|bn).*$'
+      lr: 0.000025
+      weight_decay: 0.
+    -
+      params: '^(?=.*(?:encoder|decoder|p2_fusion))(?=.*(?:norm|bn|bias)).*$'
+      weight_decay: 0.
+
+  lr: 0.00025
+  betas: [0.9, 0.999]
+  weight_decay: 0.000125
+
+epochs: 100
+
+train_dataloader:
+  total_batch_size: 8
+  num_workers: 4
+  dataset:
+    transforms:
+      ops:
+        - {type: RandomPhotometricDistort, p: 0.5}
+        - {type: RandomZoomOut, fill: 0}
+        - {type: RandomIoUCrop, p: 0.8}
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: RandomHorizontalFlip}
+        - {type: Resize, size: [960, 960]}
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: ConvertPILImage, dtype: 'float32', scale: True}
+        - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+      policy:
+        name: stop_epoch
+        epoch: 88
+        ops: ['RandomPhotometricDistort', 'RandomZoomOut', 'RandomIoUCrop']
+  collate_fn:
+    type: BatchImageCollateFunction
+    base_size: 960
+    base_size_repeat: 3
+    stop_epoch: 88
+    ema_restart_decay: 0.9999
+
+val_dataloader:
+  total_batch_size: 16
+  num_workers: 4
+  dataset:
+    transforms:
+      ops:
+        - {type: Resize, size: [960, 960]}
+        - {type: ConvertPILImage, dtype: 'float32', scale: True}
+  collate_fn:
+    type: BatchImageCollateFunction
+
+ema:
+  warmups: 0
+
+lr_warmup_scheduler:
+  warmup_duration: 0

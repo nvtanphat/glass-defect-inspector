@@ -1,0 +1,17 @@
+{
+  "id": "baohuynh05/scale-error-dfine-m-resume-24-46",
+  "title": "scale-error-dfine-m-resume-24-46",
+  "code_file": "run_dfine_fresh_resume24.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": [
+    "baohuynh05/scale-error-dc-v26-yolov8",
+    "baohuynh05/scale-error-dfine-fresh-resume-epoch24"
+  ],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

@@ -7,14 +7,19 @@ venv/
 .env
 .vscode/
 
-data/raw/
-data/processed/
+data/
+data/**
 artifacts/
 runs/
 weights/
 
 # Local caches, credentials and outputs
-kaggle*
+kaggle-output/
+kaggle/*_bundle_upload/
+kaggle/test_p2_err/
+kaggle/code_bundle/
+kaggle/.kaggle_accounts.json
+.kaggle/
 .kaggle*
 results/
 *.ps1
