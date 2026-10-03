@@ -42,6 +42,34 @@ def log(msg: str) -> None:
     print(f"[scale-error-dfine] {msg}", flush=True)
 
 
+def patch_dist_utils_for_nccl_cpu() -> None:
+    dist_file = DFINE_REPO / "src" / "misc" / "dist_utils.py"
+    if not dist_file.exists():
+        return
+    text = dist_file.read_text(encoding="utf-8")
+    if "_safe_all_gather" in text:
+        return
+    patch_code = '''
+# Hotfix: prevent RuntimeError: No backend type associated with device type cpu under NCCL in PyTorch 2.6+
+import torch.distributed as _dist
+_orig_all_gather = _dist.all_gather
+def _safe_all_gather(tensor_list, tensor, *args, **kwargs):
+    if _dist.is_initialized() and _dist.get_backend() == "nccl" and tensor.device.type == "cpu":
+        dev = torch.cuda.current_device()
+        cuda_tensor = tensor.to(dev)
+        cuda_list = [t.to(dev) for t in tensor_list]
+        work = _orig_all_gather(cuda_list, cuda_tensor, *args, **kwargs)
+        for cpu_t, cuda_t in zip(tensor_list, cuda_list):
+            cpu_t.copy_(cuda_t.cpu())
+        return work
+    return _orig_all_gather(tensor_list, tensor, *args, **kwargs)
+_dist.all_gather = _safe_all_gather
+'''
+    text = patch_code + "\n" + text
+    dist_file.write_text(text, encoding="utf-8")
+    log("Applied NCCL CPU all_gather hotfix to dist_utils.py")
+
+
 def install_dependencies() -> None:
     log("Installing dependencies and setting up D-FINE repository...")
     subprocess.run(
@@ -56,6 +84,7 @@ def install_dependencies() -> None:
             "pycocotools>=2.0.7",
             "tensorboard>=2.15",
             "opencv-python-headless>=4.8",
+            "faster-coco-eval>=1.8.0",
         ],
         check=True,
     )
@@ -75,6 +104,11 @@ def install_dependencies() -> None:
         [sys.executable, "-m", "pip", "install", "-r", str(DFINE_REPO / "requirements.txt")],
         check=True,
     )
+    subprocess.run(
+        [sys.executable, "-m", "pip", "install", "--upgrade", "faster-coco-eval>=1.8.0"],
+        check=True,
+    )
+    patch_dist_utils_for_nccl_cpu()
 
 
 def find_dataset_root() -> Path:
