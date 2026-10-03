@@ -89,6 +89,13 @@ def check_and_download(kernel_slug: str) -> dict[str, Any]:
     target_path = OUTPUT_DIR / slug
 
     if status_str in {"COMPLETE", "KernelWorkerStatus.COMPLETE"}:
+        done_marker = target_path / ".download_done"
+        if done_marker.exists():
+            print(f" -> Kernel {kernel_slug} is COMPLETE and already downloaded.")
+            result["downloaded"] = True
+            result["download_path"] = str(target_path)
+            return result
+
         print(f" -> Kernel {kernel_slug} is COMPLETE! Downloading output to {target_path}...")
         target_path.mkdir(parents=True, exist_ok=True)
         import requests
@@ -121,11 +128,12 @@ def check_and_download(kernel_slug: str) -> dict[str, Any]:
                         with open(dest, "wb") as fp:
                             for chunk in r.iter_content(chunk_size=4 * 1024 * 1024):
                                 if chunk:
-                                    fp.write(chunk)
+                                     fp.write(chunk)
                     print(f"   -> Saved: {fn} ({dest.stat().st_size / (1024 * 1024):.1f} MB)")
                 token = getattr(res, "next_page_token", None)
                 if not token:
                     break
+        done_marker.write_text("done", encoding="utf-8")
         result["downloaded"] = True
         result["download_path"] = str(target_path)
 
