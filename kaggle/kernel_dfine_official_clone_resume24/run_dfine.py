@@ -641,9 +641,17 @@ def main() -> None:
         try:
             import base64
             from kaggle.api.kaggle_api_extended import ApiListKernelSessionOutputRequest, KaggleApi
-            if "KAGGLE_KEY" not in os.environ and not Path("~/.kaggle/kaggle.json").expanduser().exists():
-                os.environ["KAGGLE_USERNAME"] = "phtnguyn1ytj"
-                os.environ["KAGGLE_KEY"] = "a718b4f92763ab19e10a8a7c7a33aa08"
+
+            # Force write kaggle.json to guarantee phtnguyn1ytj authentication
+            k_dir = Path.home() / ".kaggle"
+            k_dir.mkdir(parents=True, exist_ok=True)
+            (k_dir / "kaggle.json").write_text(
+                json.dumps({"username": "phtnguyn1ytj", "key": "a718b4f92763ab19e10a8a7c7a33aa08"}),
+                encoding="utf-8"
+            )
+            os.environ["KAGGLE_USERNAME"] = "phtnguyn1ytj"
+            os.environ["KAGGLE_KEY"] = "a718b4f92763ab19e10a8a7c7a33aa08"
+
             api = KaggleApi()
             api.authenticate()
             with api.build_kaggle_client() as client:
@@ -670,16 +678,14 @@ def main() -> None:
             if (OUTPUT_DIR / "last.pth").exists():
                 resume_ckpt = OUTPUT_DIR / "last.pth"
         except Exception as e:
-            log(f"Warning: Failed to fetch prior checkpoint via Kaggle API: {e}")
+            log(f"Error: Failed to fetch prior checkpoint via Kaggle API: {e}")
 
-    if resume_ckpt and "coco" not in str(resume_ckpt).lower():
-        log(f"Resuming training from: {resume_ckpt}")
-        ckpt_flag = "-r"
-        ckpt_path = str(resume_ckpt)
-    else:
-        log(f"Starting training with COCO tuning weights: {DFINE_WEIGHTS}")
-        ckpt_flag = "-t"
-        ckpt_path = str(DFINE_WEIGHTS)
+    if not resume_ckpt or "coco" in str(resume_ckpt).lower():
+        raise RuntimeError("FATAL: Could not find last.pth to resume! Refusing to start training from Epoch 0.")
+
+    log(f"Successfully located resume checkpoint: {resume_ckpt}")
+    ckpt_flag = "-r"
+    ckpt_path = str(resume_ckpt)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     # Restore prior best checkpoint and log if available
