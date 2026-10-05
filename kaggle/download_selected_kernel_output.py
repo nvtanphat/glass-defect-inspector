@@ -32,14 +32,16 @@ REPORT_NAMES = {
 
 def should_download(file_name: str) -> bool:
     path = PurePosixPath(file_name)
-    output_parts = {"output_dfine_resume", "output_dfine_resume_final"}
+    output_parts = {"output_dfine_resume", "output_dfine_resume_final", "output_fbdnet_m", "output_dfine_m"}
     is_resume_output = any(part in output_parts for part in path.parts)
-    if path.name in {"best_resume.pth", "last_resume.pth"}:
+    if "data_roi" in path.parts or ".git" in path.parts or "coco" in path.name.lower():
+        return False
+    if path.suffix.lower() in {".pth", ".json"} or path.name in {"log.txt", "fbdnet_m_log.txt", "dfine_m_log.txt"}:
         return True
-    if path.name in REPORT_NAMES:
-        return is_resume_output or len(path.parts) == 1
+    if path.name in {"best_resume.pth", "last_resume.pth", "best_stg1.pth", "best_stg2.pth", "last.pth"}:
+        return True
     if re.fullmatch(r"checkpoint\d+\.pth", path.name):
-        return is_resume_output
+        return True
     return path.name in CHECKPOINT_NAMES and is_resume_output
 
 
@@ -269,6 +271,13 @@ def main() -> None:
     owner, slug = args.kernel.split("/", maxsplit=1)
     destination = args.destination.resolve()
     destination.mkdir(parents=True, exist_ok=True)
+
+    accounts_file = Path(__file__).parent / ".kaggle_accounts.json"
+    if accounts_file.exists():
+        accounts = json.loads(accounts_file.read_text(encoding="utf-8"))
+        if owner in accounts:
+            os.environ["KAGGLE_USERNAME"] = accounts[owner]["username"]
+            os.environ["KAGGLE_KEY"] = accounts[owner]["key"]
 
     api = KaggleApi()
     api.authenticate()

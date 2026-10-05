@@ -1,0 +1,17 @@
+{
+  "id": "baohuynh05/scale-error-dfine-m-baseline-resume23",
+  "title": "scale-error-dfine-m-baseline-resume23",
+  "code_file": "run_dfine.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": [
+    "baohuynh05/scale-error-dc-v26-yolov8",
+    "baohuynh05/scale-error-dfine-baseline-resume23"
+  ],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

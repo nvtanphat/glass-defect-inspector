@@ -18,7 +18,11 @@ kaggle-output/
 kaggle/*_bundle_upload/
 kaggle/test_p2_err/
 kaggle/code_bundle/
+kaggle/dataset_*/
+kaggle/*.log
+kaggle/urls*.json
 kaggle/.kaggle_accounts.json
+*.download
 .kaggle/
 .kaggle*
 results/

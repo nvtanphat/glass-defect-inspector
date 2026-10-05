@@ -35,6 +35,12 @@ else:
 
 
 TARGET_KERNELS = [
+    "jyang10/scale-error-dfine-m-baseline-resume69",
+    "phtnguyn1ytj/scale-error-dfine-official-clone",
+    "baohuynh05/scale-error-dfine-fbdnet-m-resume46",
+    "jyang10/scale-error-dfine-m-baseline-resume47",
+    "baohuynh05/scale-error-dfine-m-baseline-resume23",
+    "leppan/scale-error-dfine-fbdnet-m-resume23",
     "baohuynh05/scale-error-dfine-m-baseline",
     "leppan/scale-error-dfine-fbdnet-m",
     "jyang10/scale-error-dfine-frequency-official",
@@ -88,15 +94,15 @@ def check_and_download(kernel_slug: str) -> dict[str, Any]:
 
     target_path = OUTPUT_DIR / slug
 
-    if status_str in {"COMPLETE", "KernelWorkerStatus.COMPLETE"}:
+    if status_str in {"COMPLETE", "KernelWorkerStatus.COMPLETE", "CANCEL_ACKNOWLEDGED", "KernelWorkerStatus.CANCEL_ACKNOWLEDGED"}:
         done_marker = target_path / ".download_done"
         if done_marker.exists():
-            print(f" -> Kernel {kernel_slug} is COMPLETE and already downloaded.")
+            print(f" -> Kernel {kernel_slug} is {status_str} and already downloaded.")
             result["downloaded"] = True
             result["download_path"] = str(target_path)
             return result
 
-        print(f" -> Kernel {kernel_slug} is COMPLETE! Downloading output to {target_path}...")
+        print(f" -> Kernel {kernel_slug} is {status_str}! Downloading output to {target_path}...")
         target_path.mkdir(parents=True, exist_ok=True)
         import requests
         from kaggle.api.kaggle_api_extended import ApiListKernelSessionOutputRequest
@@ -106,8 +112,7 @@ def check_and_download(kernel_slug: str) -> dict[str, Any]:
                 req = ApiListKernelSessionOutputRequest()
                 req.user_name = owner
                 req.kernel_slug = slug
-                if token:
-                    req.page_token = token
+                api._set_paging(req, 200, token)
                 res = client.kernels.kernels_api_client.list_kernel_session_output(req)
                 for f in (res.files or []):
                     fn = f.file_name
@@ -117,7 +122,7 @@ def check_and_download(kernel_slug: str) -> dict[str, Any]:
                     ext = dest.suffix.lower()
                     if ext not in {".pth", ".json", ".csv", ".txt", ".yaml", ".yml"}:
                         continue
-                    if not url or ".git" in fn or "__pycache__" in fn or "dataset" in fn or "artifacts" in fn or "site-packages" in fn:
+                    if not url or ".git" in fn or "__pycache__" in fn or "dataset" in fn or "artifacts" in fn or "site-packages" in fn or "data_roi" in fn or "coco" in fn:
                         continue
                     if dest.exists() and dest.stat().st_size > 0:
                         continue
@@ -211,9 +216,9 @@ def monitor_until_complete(target_slug: str = "jyang10/scale-error-dfine-frequen
 
 def check_all_active():
     active_targets = [
-        "baohuynh05/scale-error-dfine-m-baseline",
-        "jyang10/scale-error-dfine-frequency-official",
-        "leppan/scale-error-dfine-fbdnet-m",
+        "baohuynh05/scale-error-dfine-fbdnet-m-resume46",
+        "phtnguyn1ytj/scale-error-dfine-official-clone",
+        "jyang10/scale-error-dfine-m-baseline-resume69",
     ]
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Checking all {len(active_targets)} active kernels...", flush=True)
     results = {}
