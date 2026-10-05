@@ -1,15 +1,13 @@
 {
-  "id": "jyang10/scale-error-dfine-fbdnet-m-resume69",
-  "title": "scale-error-dfine-fbdnet-m-resume69",
+  "id": "phtnguyn1ytj/test-gpu-probe",
+  "title": "test-gpu-probe",
   "code_file": "run_dfine_fbdnet_m.py",
   "language": "python",
   "kernel_type": "script",
   "is_private": true,
   "enable_gpu": true,
-  "enable_internet": true,
-  "dataset_sources": [
-    "baohuynh05/scale-error-dc-v26-yolov8"
-  ],
+  "enable_internet": false,
+  "dataset_sources": [],
   "competition_sources": [],
   "kernel_sources": [],
   "model_sources": []
