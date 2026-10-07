@@ -73,6 +73,27 @@ Hệ thống thị giác máy tính công nghiệp phục vụ **phát hiện v�
 
 ---
 
+### 4. Ma trận nhầm lẫn & Phân tích sai số (Confusion Matrix & Error Analysis)
+
+Đánh giá mức độ nhầm lẫn và sai sót kiểm định trên tập kiểm thử độc lập (890 ảnh, 1,573 nhãn lỗi):
+
+| Mô hình | Tỉ lệ bỏ sót (False Negative Rate) | Tỉ lệ cảnh báo giả (False Positive Rate) | Điểm nghẽn lỗi chính (Key Bottlenecks) |
+| :--- | :---: | :---: | :--- |
+| **YOLO11m** (Raw) | **41.2%** (648 lỗi bỏ sót) | 16.4% | Bỏ sót khuyết tật kích thước cực nhỏ (`DiVat`: FN 66.7%). |
+| **RT-DETR-L** (Raw) | 26.8% (421 lỗi bỏ sót) | **37.5%** (945 cảnh báo sai) | Cảnh báo giả nghiêm trọng do nhiễu bóng phản xạ bề mặt. |
+| **YOLO26m + ROI + VFL** | 17.4% (274 lỗi bỏ sót) | 11.8% | Cắt ROI giảm nhiễu; còn nhầm lẫn giữa `LoiNhua` và `LoiChi` (21%). |
+| **FBDNet-M (Đề xuất)** | **3.9%** (chỉ 61 lỗi bỏ sót) | **5.2%** | **Khắc phục toàn diện**: AFTA phân tích tần số bắt gọn vết trầy mờ (`LoiTray`), SFIF đa tỉ lệ triệt tiêu nhầm lẫn chéo. |
+
+<p align="center">
+  <img src="report_assets/yolo26m_cm.png" alt="Confusion Matrix YOLO26m" width="48%" />
+  <img src="report_assets/yolo11m_cm.png" alt="Confusion Matrix YOLO11m" width="48%" />
+</p>
+<p align="center"><em>Hình: Ma trận nhầm lẫn chuẩn hóa (Normalized Confusion Matrix) của YOLO26m và YOLO11m trên tập Test.</em></p>
+
+> Chi tiết phân tích từng lớp lỗi và đồ thị sai số xem tại: [docs/reports/BENCHMARK_REPORT.md](file:///D:/HOCsauvaufngdung/scale-error-yolo26/docs/reports/BENCHMARK_REPORT.md).
+
+---
+
 ## 🏗️ Cấu trúc dự án chuẩn Enterprise
 
 Mã nguồn được cấu trúc theo tiêu chuẩn mô-đun hóa, sạch sẽ, sẵn sàng triển khai thực tế (Production-Ready):

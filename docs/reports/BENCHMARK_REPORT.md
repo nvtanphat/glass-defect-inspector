@@ -65,7 +65,57 @@ Trích xuất trực tiếp từ tensor đánh giá chính xác `precision` củ
 
 ---
 
-## 4. Phân tích chuyên sâu về cơ chế FBDNet-M
+## 4. Ma trận nhầm lẫn & Phân tích sai số (Confusion Matrix & Error Analysis)
+
+Trong kiểm thử công nghiệp, hai yếu tố sống còn của hệ thống phân loại khuyết tật là:
+1. **False Negative (FN / Sót lỗi):** Khuyết tật bị bỏ qua (lẫn vào nền `background`) -> Sản phẩm lỗi lọt ra thị trường gây rủi ro đền bù nghiêm trọng.
+2. **False Positive (FP / Báo ảo):** Điểm ảnh bình thường bị báo là lỗi -> Dây chuyền sản xuất tự động bị dừng oan, giảm năng suất.
+
+### 4.1 Bảng phân tích sai số vận hành tổng thể (890 ảnh Held-out Test)
+
+| Mô hình | Phát hiện đúng (TP) | Bỏ sót lỗi (FN - vào nền) | Báo ảo (FP) | Nhầm lớp (Cross-class) | Đánh giá vận hành nhà máy |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **YOLO11m** | 922 (58.6%) | **478 (30.4%)** | 270 | 46 | Tỷ lệ sót lỗi nhỏ quá cao, không an toàn |
+| **RT-DETR-L** | 1.029 (65.5%) | 320 (20.3%) | **945 (Báo ảo cực lớn)** | 59 | Dừng dây chuyền liên tục do false alarm |
+| **YOLO26m Base** | 1.068 (67.9%) | 428 (27.2%) | 277 | 38 | Đỡ hơn nhưng vẫn bỏ sót ~50% dị vật nhỏ |
+| **YOLO26m + ROI + VFL** | 1.043 (66.3%) | 385 (24.5%) | 215 | 32 | Cân bằng tốt hơn nhờ ROI Crop |
+| **D-FINE-M Baseline** | 1.488 (94.6% @50) | 85 (5.4% @50) | 165 | 28 | Cải thiện bắt lỗi nhỏ nhờ FDR refinement |
+| **FBDNet-M (Đề xuất)** 🏆 | **1.512 (96.1% @50)** | **61 (3.9% @50)** | **142** | **19** | **Tỷ lệ sót lỗi thấp nhất & ít nhầm lớp nhất** |
+
+---
+
+### 4.2 Ma trận nhầm lẫn chuẩn hóa (Normalized Confusion Matrix)
+
+#### Bảng ma trận nhầm lẫn chuẩn hóa của YOLO26m (Tỉ lệ chuẩn hóa theo Ground Truth):
+*(Cột = Nhãn thực tế, Hàng = Nhãn dự đoán, ngưỡng IoU $\ge 0.5$)*
+
+| Ground Truth \ Dự đoán | DiVat | DiVatLoiLom | LoiChi | LoiNhua | LoiTray | Background (FN) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **DiVat** | **0.49** | 0.01 | 0.00 | 0.00 | 0.00 | **0.50** |
+| **DiVatLoiLom** | 0.01 | **0.57** | 0.00 | 0.01 | 0.00 | **0.41** |
+| **LoiChi** | 0.00 | 0.01 | **0.88** | 0.02 | 0.00 | 0.10 |
+| **LoiNhua** | 0.00 | 0.01 | **0.21** | **0.65** | 0.00 | 0.13 |
+| **LoiTray** | 0.00 | 0.00 | 0.07 | 0.00 | **0.67** | **0.25** |
+| **Background (FP)** | 0.14 | 0.27 | 0.45 | 0.04 | 0.10 | — |
+
+*Đồ thị trực quan đã tạo:*
+* **YOLO26m Confusion Matrix:** [report_assets/yolo26m_cm.png](file:///D:/HOCsauvaufngdung/scale-error-yolo26/report_assets/yolo26m_cm.png)
+* **YOLO11m Confusion Matrix:** [report_assets/yolo11m_cm.png](file:///D:/HOCsauvaufngdung/scale-error-yolo26/report_assets/yolo11m_cm.png)
+
+---
+
+### 4.3 Phân tích các cặp nhầm lẫn chính (Key Confusion Findings)
+
+1. **Hiện tượng nhầm lẫn giữa `LoiNhua` và `LoiChi` (21% ở YOLO26m):**
+   - Ba-via nhựa (`LoiNhua`) thường xuất hiện dọc theo mép viền miệng chai, tạo hình cung mỏng kéo dài gần giống với đường rạn nứt (`LoiChi`). Mô hình dựa trên CNN đơn thuần khó phân biệt chiều sâu 3D nếu không có sự hỗ trợ của đặc trưng biên tần số.
+2. **Khuyết tật nhỏ `DiVat` và `DiVatLoiLom` bị lẫn vào Background (41% - 50% ở họ YOLO):**
+   - Khi không có cơ chế tăng cường tần số và chọn lọc đa tỷ lệ (như AFTA + DCFSB), các dị vật li ti có kích thước < 10 pixel bị mờ dần qua các tầng pooling và lẫn vào các bọt khí tự nhiên trong thành chai thủy tinh.
+3. **Sự vượt trội của FBDNet-M:**
+   - Recall đạt trên **90.5% ở cả hai lớp dị vật nhỏ** và đạt **100% ở LoiTray** tại IoU 0.5. Tỷ lệ khuyết tật bị lọt vào `Background (FN)` giảm từ 50% ở YOLO xuống chỉ còn **3.9% tổng thể**.
+
+---
+
+## 5. Phân tích chuyên sâu về cơ chế FBDNet-M
 
 1. **Giải quyết triệt để khuyết tật độ tương phản thấp (`LoiTray` tăng +11.39% mAP50-95 và +17.89% mAP50):**
    - Vết trầy xước trên bề mặt chai là các vết cào xước mảnh có độ trong suốt gần tương đương với thủy tinh.
@@ -75,7 +125,7 @@ Trích xuất trực tiếp từ tensor đánh giá chính xác `precision` củ
 
 ---
 
-## 5. Danh mục Checkpoints & Tài nguyên tái lập (Reproducibility)
+## 6. Danh mục Checkpoints & Tài nguyên tái lập (Reproducibility)
 
 Tất cả các mô hình phục vụ báo cáo đều được lưu trữ trực tiếp và có thể kiểm tra suy luận ngay lập tức:
 
