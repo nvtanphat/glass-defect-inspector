@@ -8,7 +8,7 @@
   "enable_gpu": true,
   "enable_internet": true,
   "dataset_sources": [
-    "baohuynh05/scale-error-dc-v26-yolov8"
+    "nguynvntnpht/scale-error-dc-v26-yolov8"
   ],
   "kernel_sources": [],
   "competition_sources": [],
