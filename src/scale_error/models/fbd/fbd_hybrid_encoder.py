@@ -11,10 +11,25 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ...core import register
-from .fbd_modules.dcfsb import DCFSB
-from .fbd_modules.sfif import SFIF
-from .hybrid_encoder import HybridEncoder
+try:
+    from ...core import register
+    from .fbd_modules.dcfsb import DCFSB
+    from .fbd_modules.sfif import SFIF
+    from .hybrid_encoder import HybridEncoder
+except Exception:
+    try:
+        from src.core import register
+        from src.zoo.dfine.hybrid_encoder import HybridEncoder
+        from .dcfsb import DCFSB
+        from .sfif import SFIF
+    except Exception:
+        def register():
+            def deco(cls):
+                return cls
+            return deco
+        from .dcfsb import DCFSB
+        from .sfif import SFIF
+        HybridEncoder = nn.Module
 
 __all__ = ["FBDHybridEncoder"]
 

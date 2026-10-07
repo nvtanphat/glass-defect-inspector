@@ -1,1 +1,1 @@
-print('Kernel stopped successfully.')
+print("Kernel cancelled and stopped by user.")
