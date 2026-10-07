@@ -1,0 +1,28 @@
+# Experiment E1: RF-DETR-M + Adaptive High-Resolution Detail Branch (AHRD ON)
+# Scientific Hypothesis Verification: Small-Object Bottleneck in Glass Defect Inspection
+# Model: RF-DETR-M + AHRD (HGNetv2-B2 + AHRD + HybridEncoder + DFINETransformer)
+# Dataset: Glass Defect Dataset (5 classes: DiVat, DiVatLoiLom, LoiChi, LoiNhua, LoiTray)
+# Independent Variable: AHRD = ON (Single isolated architectural intervention)
+
+experiment_id: E1_rfdetr_m_ahrd
+model_name: RF-DETR-M+AHRD
+ahrd_enabled: true
+
+dfine_config: results/D-FINE/configs/dfine/custom/rfdetr_m_e1_ahrd.yml
+pretrained_weights: weights/dfine_m_coco.pth
+output_dir: runs/experiments/rfdetr_m_e1_ahrd
+
+seeds: [42, 43, 44]
+epochs: 100
+batch_size: 8
+image_size: [960, 960]
+eval_size: [960, 960]
+
+optimizer:
+  type: AdamW
+  lr: 0.00025
+  backbone_lr: 0.000025
+  weight_decay: 0.000125
+  betas: [0.9, 0.999]
+
+stop_augment_epoch: 88

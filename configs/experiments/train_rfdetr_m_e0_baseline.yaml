@@ -1,0 +1,28 @@
+# Experiment E0: RF-DETR-M Baseline (AHRD OFF)
+# Scientific Hypothesis Verification: Small-Object Bottleneck in Glass Defect Inspection
+# Model: RF-DETR-M (HGNetv2-B2 + HybridEncoder + DFINETransformer)
+# Dataset: Glass Defect Dataset (5 classes: DiVat, DiVatLoiLom, LoiChi, LoiNhua, LoiTray)
+# Independent Variable: AHRD = OFF
+
+experiment_id: E0_rfdetr_m_baseline
+model_name: RF-DETR-M
+ahrd_enabled: false
+
+dfine_config: results/D-FINE/configs/dfine/custom/rfdetr_m_e0_baseline.yml
+pretrained_weights: weights/dfine_m_coco.pth
+output_dir: runs/experiments/rfdetr_m_e0_baseline
+
+seeds: [42, 43, 44]
+epochs: 100
+batch_size: 8
+image_size: [960, 960]
+eval_size: [960, 960]
+
+optimizer:
+  type: AdamW
+  lr: 0.00025
+  backbone_lr: 0.000025
+  weight_decay: 0.000125
+  betas: [0.9, 0.999]
+
+stop_augment_epoch: 88
