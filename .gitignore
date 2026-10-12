@@ -5,6 +5,12 @@ __pycache__/
 .venv/
 venv/
 .env
+.env.*
+!.env.example
+*.env
+.local/
+var/
+node_modules/
 .vscode/
 
 data/
@@ -19,9 +25,9 @@ kaggle-output/
 .kaggle/
 .kaggle*
 scratch/
-tools/check_kaggle_status.py
-tools/check_all_logs.py
-tools/download_rfdetr_checkpoints.py
+scripts/check_kaggle_status.py
+scripts/check_all_logs.py
+scripts/download_rfdetr_checkpoints.py
 results/
 *.ps1
 *.zip
@@ -45,3 +51,23 @@ _plot_dfine_curves.py
 # One-off environment check scripts
 _check_env.py
 _scan_tfevents.py
+
+# Private execution tooling and generated evidence stay local.
+/reports/
+build/
+dist/
+*.egg-info/
+scripts/check_account_slots.py
+scripts/download_timed_out_checkpoints.py
+scripts/prepare_ahrd_resume66.py
+scripts/prepare_leppan_baseline.py
+scripts/prepare_sanwd_kernel.py
+scripts/update_leppan_kernel.py
+scripts/kaggle_fbdnet_evaluation.py
+scripts/run_kaggle_fbdnet_nwd.py
+tests/research/test_dfine_fresh_phase1.py
+tests/research/test_dfine_resume_kernel.py
+tests/research/test_kaggle_evaluation_outputs.py
+KAGGLE_ACCOUNTS_AND_TRAINING_MONITOR.md
+docs/research/reports/*.docx
+docs/research/reports/report.html

@@ -83,7 +83,7 @@ def evaluate_dfine(
 
     # 2. Generate an evaluation config that points at this exact test split.
     # Using the historical glass_test.yml here would silently evaluate the
-    # hard-coded /kaggle/working/data_roi/test directory instead.
+    # hard-coded data_roi/test directory instead.
     dataset_config_name = "scale_error_eval_generated.yml"
     dataset_config = dfine_repo / "configs" / "dataset" / dataset_config_name
     _generate_dataset_config(

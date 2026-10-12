@@ -179,7 +179,7 @@ def _generate_experiment_config(
     The reference artifacts in ``results/output_dfine_m`` were produced with
     the D-FINE-M HGNetv2-B2 recipe below.  Runtime values are written into the
     D-FINE config tree so its relative ``__include__`` paths work on both
-    Windows and Linux/Kaggle.
+    Windows and Linux.
     """
     config = {
         "__include__": [
@@ -436,7 +436,7 @@ def train_dfine(
     num_classes = len(class_names)
 
     # 2. Generate dataset config inside D-FINE so relative includes remain
-    # portable across local Windows and Kaggle Linux environments.
+    # portable across Windows and Linux environments.
     dataset_yml = dfine_repo / "configs" / "dataset" / "scale_error_generated.yml"
     _generate_dataset_config(train_imgs, train_json, val_imgs, val_json, num_classes, dataset_yml)
 

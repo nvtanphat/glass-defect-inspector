@@ -1,0 +1,8 @@
+{
+  "name": "glass-inspector-styles",
+  "private": true,
+  "scripts": {
+    "build": "tailwindcss -i tailwind.input.css -o styles.css --content index.html,workflow.js --minify"
+  },
+  "devDependencies": {"tailwindcss": "3.4.17"}
+}

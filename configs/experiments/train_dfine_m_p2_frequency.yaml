@@ -10,7 +10,7 @@ __include__: [
   '../include/dfine_hgnetv2.yml',
 ]
 
-output_dir: /kaggle/working/glass-defect-experiments/p2_frequency
+output_dir: artifacts/runs/glass-defect-experiments/p2_frequency
 
 eval_spatial_size: [960, 960]
 

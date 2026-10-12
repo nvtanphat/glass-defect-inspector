@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "scale-error-yolo26"
 version = "0.1.0"
-description = "End-to-end YOLO26m industrial defect detection pipeline for Scale_Error_DC."
+description = "Local glass defect training, evaluation, and persistent inspection application."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -21,12 +21,32 @@ dependencies = [
 dev = [
     "pytest>=8.3",
     "ruff>=0.9",
+    "httpx>=0.27",
+    "playwright>=1.57,<2",
+    "pypdf>=5,<7",
+]
+app = [
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.32,<1",
+    "sqlalchemy>=2.0,<3",
+    "psycopg[binary]>=3.2,<4",
+    "alembic>=1.14,<2",
+    "python-multipart>=0.0.18,<1",
+    "reportlab>=4,<6",
+    "tensorboard>=2.18,<3",
+    "pycocotools>=2.0.8",
+    "faster-coco-eval>=1.6.6",
+    "scipy>=1.13",
+    "calflops>=0.3.2",
+    "transformers>=4.40,<5",
+    "loguru>=0.7,<1",
 ]
 [project.scripts]
 scale-error = "scale_error.cli:main"
+glass-inspector = "glass_inspector.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/scale_error"]
+packages = ["src/scale_error", "src/glass_inspector"]
 
 [tool.ruff]
 line-length = 100
@@ -38,3 +58,32 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src", "."]
+
+# Scoped pre-existing research lint debt; preserve model/loss and user work.
+# Inspector runtime and new tests receive the full lint rules above.
+[tool.ruff.lint.per-file-ignores]
+"src/scale_error/evaluation/coco_per_class_evaluator.py" = ["B904", "E501", "I001"]
+"src/scale_error/evaluation/evaluator.py" = ["E501"]
+"src/scale_error/models/experiment_modules.py" = ["E741", "F401"]
+"src/scale_error/models/fbd/afta.py" = ["F401"]
+"src/scale_error/models/fbd/dcfsb.py" = ["F401"]
+"src/scale_error/models/fbd/fbd_hybrid_encoder.py" = ["I001"]
+"src/scale_error/models/fbd/hgnetv2_fbd.py" = ["I001"]
+"src/scale_error/models/fbd/sfif.py" = ["F401"]
+"src/scale_error/training/nwd_loss.py" = ["E501", "I001"]
+"src/scale_error/training/trainer_dfine.py" = ["E501"]
+"tests/research/test_ahrd.py" = ["E402"]
+"tests/research/test_dfine_resume_kernel.py" = ["E501"]
+"tests/research/test_fbd_modules.py" = ["E402"]
+"tests/research/test_fbdnet_nwd_smoke.py" = ["E402", "F401", "I001"]
+"tests/research/test_scale_aware_nwd.py" = ["E402", "E501", "F401", "I001"]
+"scripts/check_benchmarks.py" = ["B007", "E501", "F401", "I001", "UP015"]
+"scripts/compare_fbdnet_e0_e1.py" = ["E501", "F541", "UP006", "UP015", "UP035", "UP045"]
+"scripts/eval_ahrd_experiment.py" = ["B007", "B905", "E402", "E501", "E741", "F401", "F841", "I001"]
+"scripts/eval_dfine.py" = ["E402", "E501", "F401", "F841", "I001", "UP031"]
+# Repository bootstrap and long report prose intentionally exceed normal source layout.
+"scripts/evaluate_fbdnet.py" = ["E402", "E501"]
+"scripts/evaluate_fbdnet_full.py" = ["E501"]
+"scripts/plot_confusion_matrices.py" = ["E501", "I001"]
+"scripts/run_ahrd_experiment.py" = ["E501", "F401"]
+"scripts/visualize_gradcam.py" = ["E501", "F401", "I001"]

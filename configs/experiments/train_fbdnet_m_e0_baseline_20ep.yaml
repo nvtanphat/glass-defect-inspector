@@ -1,0 +1,30 @@
+# Experiment E0: FBDNet-M Fine-Tuning Baseline (20 epochs)
+# Scientific Hypothesis Verification: Small-Object Bottleneck in Glass Defect Inspection
+# Model: FBDNet-M (HGNetv2FBD + FBDHybridEncoder + DFINETransformer)
+# Dataset: Glass Defect Dataset Scale_Error_DC v26 (5 classes: DiVat, DiVatLoiLom, LoiChi, LoiNhua, LoiTray)
+# Pretrained checkpoint: weights/dfine_m_fbdnet_best.pth (epoch 89, mAP50:95 = 42.42%)
+# Optimization: Fresh AdamW optimizer and scheduler, no resume of optimizer state
+# Localization Loss: Standard D-FINE (L1 + GIoU + FGL + VFL)
+
+experiment_id: E0_fbdnet_m_baseline_20ep
+model_name: FBDNet-M
+use_nwd: false
+
+dfine_config: results/D-FINE/configs/dfine/custom/fbdnet_m_e0_baseline_20ep.yml
+pretrained_weights: weights/dfine_m_fbdnet_best.pth
+output_dir: runs/experiments/fbdnet_m_e0_baseline_20ep
+
+seed: 42
+epochs: 20
+batch_size: 8
+image_size: [960, 960]
+eval_size: [960, 960]
+
+optimizer:
+  type: AdamW
+  lr: 0.00025
+  backbone_lr: 0.000025
+  weight_decay: 0.000125
+  betas: [0.9, 0.999]
+
+stop_augment_epoch: 15

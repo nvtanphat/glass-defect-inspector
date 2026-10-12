@@ -45,12 +45,16 @@ class SFIF(nn.Module):
         # 3. Interactive cross-gating
         self.gate_s2f = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(channels, channels, kernel_size=1),
+            nn.Conv2d(channels, channels // 4, kernel_size=1, bias=False),
+            nn.SiLU(),
+            nn.Conv2d(channels // 4, channels, kernel_size=1, bias=False),
             nn.Sigmoid(),
         )
         self.gate_f2s = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(channels, channels, kernel_size=1),
+            nn.Conv2d(channels, channels // 4, kernel_size=1, bias=False),
+            nn.SiLU(),
+            nn.Conv2d(channels // 4, channels, kernel_size=1, bias=False),
             nn.Sigmoid(),
         )
 

@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-inspector}
+      POSTGRES_USER: ${POSTGRES_USER:-inspector}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  app:
+    build: .
+    stop_grace_period: 60s
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-inspector}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-inspector}
+      INSPECTOR_API_TOKEN: ${INSPECTOR_API_TOKEN:?Set INSPECTOR_API_TOKEN in .env}
+      INSPECTOR_STORAGE: /app/var/inspections
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8501:8501"
+    volumes:
+      - ./weights:/app/weights:ro
+      - inspection-images:/app/var/inspections
+      # Optional research source mount. Missing D-FINE keeps those adapters UNAVAILABLE.
+      - ./results/D-FINE:/app/results/D-FINE:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/api/health')"]
+      interval: 15s
+      timeout: 5s
+      start_period: 120s
+      retries: 5
+volumes:
+  postgres-data:
+  inspection-images:

@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Glass Defect Inspector — Kiểm tra chai</title>
+<!-- Tailwind CSS v3 with Plugins -->
+<link rel="stylesheet" href="/ui/styles.css">
+<!-- Lucide Icons CDN -->
+
+<!-- Custom Style Configuration matching stitch_image_ui_replica -->
+<style data-purpose="custom-styling">
+  html, body {
+    height: 100vh !important;
+    max-height: 100vh !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    background: #2563eb;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  }
+  .defect-pixel-preview {
+    image-rendering: pixelated;
+  }
+  .defect-box {
+    transition: all 0.15s ease-in-out;
+  }
+  .defect-box:hover, .defect-box.selected {
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.95), 0 0 14px rgba(37, 99, 235, 0.9);
+    z-index: 25;
+  }
+  .detection-row.selected {
+    background-color: #eff6ff !important;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  .animate-spin-fast {
+    animation: spin 0.7s linear infinite;
+  }
+
+#workflow-nav button {padding: 5px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px;}
+#workflow-nav button.active {background: #2563eb; color: white;}
+#workflow-screen table {width: 100%; border-collapse: collapse;}
+#workflow-screen td, #workflow-screen th {padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0;}
+#workflow-screen button, #workflow-screen input, #workflow-screen select, #workflow-screen textarea {border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 6px; margin: 4px;}
+#workflow-screen [data-card] {background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin-bottom: 12px;}
+#login-dialog {border: 1px solid #cbd5e1; border-radius: 16px; padding: 28px; width: min(420px, 90vw);}
+#login-dialog::backdrop {background: rgb(15 23 42 / 45%);}
+#login-form {display: flex; flex-direction: column; gap: 12px;}
+#login-form h2 {font-size: 20px; font-weight: 700;}
+#login-form p {font-size: 14px;}
+#login-form input {border: 1px solid #cbd5e1; padding: 10px; border-radius: 8px;}
+#login-form button {background: #2563eb; color: white; padding: 10px; border-radius: 8px;}
+#login-error {color: #b91c1c;}
+.technical-detail {display: none !important;}
+@media (max-width: 1023px) {
+ html, body {height: auto !important; max-height: none !important; overflow: auto !important;}
+ #workspace-screen {display: flex; flex-direction: column; height: auto; overflow: visible;}
+ #workspace-screen > aside {height: auto; overflow: visible;}
+ #workspace-screen > section {height: 700px;}
+}
+</style>
+</head>
+<body class="bg-[#f3f6f9] text-slate-800 h-screen max-h-screen overflow-hidden flex flex-col antialiased select-none m-0 p-0 text-[14px]">
+
+<!-- BEGIN: MainHeader -->
+<header class="h-14 flex-shrink-0 bg-white border-b border-slate-200 px-5 flex items-center justify-between z-30 shadow-xs">
+  <!-- Left branding & title -->
+  <div class="flex items-center gap-3">
+    <div class="text-blue-600 flex items-center justify-center">
+      <!-- Reticle / Target Viewfinder Icon -->
+      <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24">
+        <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
+        <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
+        <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
+        <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
+    </div>
+    <h1 class="text-xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
+      Glass Defect Inspector <span class="font-normal text-slate-400">—</span> <span class="font-bold text-slate-900">Kiểm tra chai</span>
+    </h1>
+  </div>
+  <!-- Right subtitle & version tag -->
+  <div class="flex items-center gap-3.5">
+    <span class="text-xs text-slate-500 font-medium tracking-wide hidden sm:inline">Phát hiện và lưu kết quả kiểm tra lỗi chai</span>
+    <span class="text-xs font-bold px-2 py-0.5 rounded text-slate-700 bg-slate-100 border border-slate-200">v2.0.0</span>
+  </div>
+</header>
+<nav id="workflow-nav" class="flex gap-2 px-4 py-2 bg-white border-b border-slate-200 flex-wrap">
+ <button data-screen="workspace">Kiểm tra chai</button>
+ <button data-screen="history">Lịch sử kiểm tra</button>
+ <button data-screen="review">Xác nhận kết quả</button>
+ <button data-screen="dashboard">Thống kê chất lượng</button>
+ <button id="account-button" class="ml-auto">Đăng nhập</button>
+</nav>
+<dialog id="login-dialog" aria-labelledby="login-title">
+ <form id="login-form">
+  <h2 id="login-title">Đăng nhập để kiểm tra chai</h2>
+  <p>Nhập mật khẩu truy cập do người quản lý cung cấp.</p>
+  <label for="api-token">Mật khẩu truy cập</label>
+  <input id="api-token" type="password" required maxlength="512" autocomplete="current-password">
+  <p id="login-error" role="alert"></p>
+  <button id="connect-api" type="submit">Đăng nhập</button>
+ </form>
+</dialog>
+<div id="workflow-status" role="status" class="px-4 py-1 text-xs bg-slate-50" aria-live="polite">Vui lòng đăng nhập để bắt đầu.</div>
+<section id="workflow-screen" hidden class="flex-1 overflow-auto p-4"></section>
+<!-- END: MainHeader -->
+
+<!-- BEGIN: MainWorkspace (Rigid 100vh Layout, No Page Scroll) -->
+<main id="workspace-screen" class="flex-1 min-h-0 h-[calc(100vh-3.5rem)] p-3 max-w-[1920px] mx-auto w-full grid grid-cols-12 gap-3 overflow-hidden">
+
+  <!-- BEGIN: LeftControlPanel (Col 3) -->
+  <aside class="col-span-12 lg:col-span-3 h-full overflow-hidden flex flex-col">
+    <div class="bg-white rounded-xl border border-slate-200 p-3.5 shadow-xs h-full flex flex-col justify-between overflow-hidden">
+      
+      <!-- Top Section: Upload & Presets -->
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <h2 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Chọn ảnh chai</h2>
+          <span class="text-[10px] text-slate-400 font-medium">JPG, PNG, BMP</span>
+        </div>
+        <input type="file" id="image-file-input" accept="image/jpeg,image/png,image/bmp" multiple class="hidden">
+        
+        <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-lg p-2.5 flex flex-col items-center justify-center text-center hover:border-blue-400 transition-colors cursor-pointer bg-slate-50/50">
+          <svg class="w-6 h-6 text-slate-400 mb-1 stroke-[1.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <rect height="18" rx="2" ry="2" width="18" x="3" y="3"></rect>
+            <circle cx="9" cy="9" r="2"></circle>
+            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+          </svg>
+          <p class="text-xs font-bold text-slate-700">Kéo ảnh vào đây <span class="text-blue-600 font-medium">hoặc chọn ảnh</span></p>
+        </div>
+
+        <!-- Quick Demo Bottle Picker -->
+        <div class="mt-2 pt-2 border-t border-slate-100">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[11px] font-bold text-slate-700">Ảnh có sẵn:</span>
+          </div>
+          <div class="grid grid-cols-4 gap-1" id="sample-buttons">
+            <button type="button" data-sample="bottle1" class="sample-btn px-1.5 py-1 text-xs font-bold bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 rounded border border-slate-200 transition-colors cursor-pointer text-center">Chai 1</button>
+            <button type="button" data-sample="bottle2" class="sample-btn px-1.5 py-1 text-xs font-bold bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 rounded border border-slate-200 transition-colors cursor-pointer text-center">Chai 2</button>
+            <button type="button" data-sample="bottle3" class="sample-btn px-1.5 py-1 text-xs font-bold bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 rounded border border-slate-200 transition-colors cursor-pointer text-center">Chai 3</button>
+            <button type="button" data-sample="replica" class="sample-btn px-1.5 py-1 text-xs font-bold bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 rounded border border-slate-200 transition-colors cursor-pointer text-center">Ảnh khác</button>
+          </div>
+        </div>
+      </div>
+
+      <hr class="border-slate-100 my-2">
+
+      <!-- Middle Section: Model Config & Sliders -->
+      <details id="inspection-options" class="my-3 overflow-auto"><summary class="cursor-pointer text-xs font-bold">Tùy chọn kiểm tra</summary><div class="space-y-2.5 pt-3">
+        <!-- Model Weights -->
+        <div>
+          <label class="block text-xs font-bold text-slate-900 mb-1" for="model-weights">Bộ kiểm tra</label>
+          <div class="relative">
+            <select id="model-weights" class="w-full text-xs font-semibold bg-white border border-slate-300 rounded-lg py-1.5 pl-2.5 pr-7 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-xs text-slate-800">
+              <option value="" disabled selected>Đang tải bộ kiểm tra…</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-slate-400">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preprocessing Pipeline Mode -->
+        <div class="bg-slate-50/80 p-2 rounded-lg border border-slate-100">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[11px] font-bold text-slate-900">Vùng cần kiểm tra</span>
+            <span id="prep-mode-badge" class="text-[9px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 uppercase tracking-wider">Vùng chai</span>
+          </div>
+          <div class="relative">
+            <select id="prep-mode" class="w-full text-xs font-semibold bg-white border border-slate-300 rounded-lg py-1.5 pl-2 pr-6 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-xs text-slate-800">
+              <option value="roi" selected>Tự chọn vùng chai</option>
+              <option value="full">Kiểm tra toàn bộ ảnh</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-slate-400">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inference Mode (NMS-Free vs Standard NMS) -->
+        <div class="bg-slate-50/80 p-2 rounded-lg border border-slate-100 flex items-center justify-between">
+          <span class="text-[11px] font-bold text-slate-900">Đánh dấu lỗi</span>
+          <div class="flex items-center gap-2">
+            <label class="flex items-center gap-1 cursor-pointer text-xs font-medium text-slate-700">
+              <input checked id="mode-nms-free" value="nms_free" class="w-3.5 h-3.5 text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer" name="inference-mode" type="radio">
+              <span>Giữ các vị trí</span>
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer text-xs font-medium text-slate-700">
+              <input id="mode-standard-nms" value="standard_nms" class="w-3.5 h-3.5 text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer" name="inference-mode" type="radio">
+              <span>Gộp vị trí trùng</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Confidence Threshold Slider -->
+        <div>
+          <div class="flex justify-between items-center text-xs mb-1">
+            <span class="font-bold text-slate-900">Mức tin cậy tối thiểu</span>
+            <span id="conf-val" class="font-bold text-blue-700 font-mono text-xs bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200">0.25</span>
+          </div>
+          <input id="conf-slider" class="w-full h-1.5 bg-blue-600 rounded-lg appearance-none cursor-pointer" max="1" min="0.01" step="0.01" type="range" value="0.25">
+          <div class="flex justify-between text-[10px] text-slate-400 mt-0.5 font-mono">
+            <span>0.00</span>
+            <span>1.00</span>
+          </div>
+        </div>
+
+        <!-- IoU Threshold Slider -->
+        <div>
+          <div class="flex justify-between items-center text-xs mb-1">
+            <span class="font-bold text-slate-900">Mức gộp vị trí trùng</span>
+            <span id="iou-val" class="font-bold text-blue-700 font-mono text-xs bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200">0.45</span>
+          </div>
+          <input id="iou-slider" class="w-full h-1.5 bg-blue-600 rounded-lg appearance-none cursor-pointer" max="1" min="0.01" step="0.01" type="range" value="0.45">
+          <div class="flex justify-between text-[10px] text-slate-400 mt-0.5 font-mono">
+            <span>0.00</span>
+            <span>1.00</span>
+          </div>
+        </div>
+      </div>
+
+      </details>
+      <!-- Bottom Action Buttons -->
+      <div class="pt-2 space-y-1.5 flex-shrink-0">
+        <button id="btn-run" class="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer" type="button">
+          <svg id="btn-run-icon" class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <span id="btn-run-text">Kiểm tra chai</span>
+        </button>
+        <button id="btn-clear" class="w-full py-1.5 px-3 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer" type="button">
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          <span>Chọn lại ảnh</span>
+        </button>
+      </div>
+
+    </div>
+  </aside>
+  <!-- END: LeftControlPanel -->
+
+  <!-- BEGIN: CenterInspectionPanel (Col 6 - Fills Height rigidly) -->
+  <section class="col-span-12 lg:col-span-6 h-full flex flex-col overflow-hidden">
+    <div id="inspection-card" class="bg-white rounded-xl border border-slate-200 shadow-xs h-full flex flex-col overflow-hidden">
+      <!-- Inspection Top Header Bar -->
+      <div class="px-4 py-2 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+        <h2 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Ảnh kiểm tra</h2>
+        <div class="flex items-center gap-3 text-xs text-slate-600 font-medium">
+          <span>Kích thước: <span id="header-dim" class="font-bold text-slate-800">-</span></span>
+          <span class="text-slate-300">|</span>
+          <span id="header-zoom" class="font-semibold">Phóng to: 100%</span>
+          <div class="flex items-center gap-1 ml-1 text-slate-600">
+            <button id="btn-zoom" class="p-1 hover:bg-slate-100 rounded border border-slate-200 text-slate-700 cursor-pointer" title="Phóng to / thu nhỏ">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" x2="16.65"></line><line x1="11" x2="11" y1="8" y2="14"></line><line x1="8" x2="14" y1="11" y2="11"></line></svg>
+            </button>
+            <button id="btn-fullscreen" class="p-1 hover:bg-slate-100 rounded border border-slate-200 text-slate-700 cursor-pointer" title="Xem toàn màn hình">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Viewport Box with Overlay Detections (Takes ALL available vertical space) -->
+      <div id="viewport-container" class="relative flex-1 min-h-0 bg-neutral-900 overflow-hidden flex items-center justify-center">
+        <!-- Bottle Image Container -->
+        <div id="image-wrapper" class="relative w-full h-full flex items-center justify-center transition-transform duration-200 origin-center">
+          
+          <!-- Placeholder when no image loaded -->
+          <div id="placeholder-box" class="flex flex-col items-center justify-center text-slate-500 p-6 text-center">
+            <svg class="w-12 h-12 text-slate-600 mb-2.5 stroke-[1.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
+              <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
+              <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
+              <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <p class="text-sm font-bold text-slate-200">Chưa có ảnh trong khung kiểm định</p>
+            <p class="text-xs text-slate-400 mt-1 max-w-sm">Tải ảnh chai lên hoặc chọn nhanh mẫu bên trái để kiểm tra lỗi.</p>
+          </div>
+
+          <img id="viewport-img" alt="Ảnh chai đang kiểm tra" class="absolute w-full h-full object-contain hidden" src="">
+          
+          <!-- Overlays Layer -->
+          <div id="overlays-layer" class="absolute inset-0 pointer-events-none">
+            <!-- Overlays rendered dynamically here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Xem chi tiết lỗi Box (Compact fixed height bar) -->
+      <div class="p-2.5 border-t border-slate-100 flex-shrink-0">
+        <h3 class="text-xs font-bold text-slate-900 mb-1.5">Xem chi tiết lỗi <span class="text-slate-400 font-normal">(chọn vị trí trên ảnh)</span></h3>
+        <div class="flex items-center gap-4">
+          <!-- Defect Thumbnail -->
+          <div class="w-16 h-16 bg-neutral-800 rounded-lg border border-slate-200 overflow-hidden relative flex-shrink-0 flex items-center justify-center">
+            <div id="roi-placeholder" class="text-slate-500 flex flex-col items-center justify-center text-[9px]">
+              <svg class="w-5 h-5 text-slate-600 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect height="18" rx="2" ry="2" width="18" x="3" y="3"></rect>
+                <circle cx="9" cy="9" r="2"></circle>
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+              </svg>
+              <span>Chưa chọn lỗi</span>
+            </div>
+            <img id="roi-thumbnail" alt="Ảnh phóng to vị trí lỗi" class="w-full h-full object-cover defect-pixel-preview hidden" src="">
+          </div>
+          <!-- Defect Details Grid -->
+          <div class="grid grid-cols-[85px_1fr] text-xs gap-y-0.5">
+            <span class="text-slate-500 font-medium">Loại lỗi:</span>
+            <span id="roi-class" class="font-bold text-slate-400">-</span>
+            <span class="text-slate-500 font-medium">Độ tin cậy:</span>
+            <span id="roi-conf" class="font-bold text-slate-800">-</span>
+            <span class="text-slate-500 font-medium">Kích thước:</span>
+            <span id="roi-crop-size" class="font-semibold text-slate-800">-</span>
+            <span class="technical-detail">Vị trí:</span>
+            <span id="roi-xyxy" class="technical-detail font-mono text-slate-800 text-[10px] font-semibold">-</span>
+            <span class="technical-detail">Diện tích:</span>
+            <span id="roi-area" class="technical-detail font-semibold text-slate-800">-</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+  <!-- END: CenterInspectionPanel -->
+
+  <!-- BEGIN: RightSummaryPanel (Col 3 - Fills Height rigidly) -->
+  <aside class="col-span-12 lg:col-span-3 h-full flex flex-col gap-2.5 overflow-hidden">
+    <!-- Summary Metrics Card -->
+    <section class="bg-white rounded-xl border border-slate-200 p-2.5 shadow-xs flex-shrink-0">
+      <h2 class="text-xs font-bold text-slate-900 mb-1.5 uppercase tracking-wide">Kết quả kiểm tra</h2>
+      <p id="quality-decision" class="text-base font-bold mb-1">Chưa kiểm tra</p>
+      <p id="quality-explanation" class="text-xs text-slate-500 mb-3">Chọn ảnh rồi nhấn Kiểm tra chai.</p>
+      <div class="grid grid-cols-3 gap-1">
+        <!-- Metric 1: Total Defects -->
+        <div class="bg-slate-50/70 border border-slate-100 rounded-lg p-1.5 text-center">
+          <span class="block text-[9px] text-slate-500 font-bold uppercase tracking-wide mb-0.5">Số lỗi</span>
+          <span id="metric-total" class="text-xl font-black text-blue-600">0</span>
+        </div>
+        <!-- Metric 2: Defect Types -->
+        <div class="bg-slate-50/70 border border-slate-100 rounded-lg p-1.5 text-center">
+          <span class="block text-[9px] text-slate-500 font-bold uppercase tracking-wide mb-0.5">Loại lỗi</span>
+          <span id="metric-types" class="text-xl font-black text-blue-600">0</span>
+        </div>
+        <!-- Metric 3: Latency -->
+        <div class="bg-slate-50/70 border border-slate-100 rounded-lg p-1.5 text-center">
+          <span class="block text-[9px] text-slate-500 font-bold uppercase tracking-wide mb-0.5">Thời gian</span>
+          <span id="metric-latency" class="text-base font-black text-slate-900 leading-tight">-</span>
+        </div>
+        <!-- Metric 4: Speed (FPS) -->
+        <div class="technical-detail bg-emerald-50/80 border border-emerald-100 rounded-lg p-1.5 text-center">
+          <span class="block text-[9px] text-emerald-700 font-bold uppercase tracking-wide mb-0.5">Speed</span>
+          <span id="metric-fps" class="text-base font-black text-emerald-600 leading-tight">- <span class="text-[9px] font-normal">FPS</span></span>
+        </div>
+      </div>
+      <!-- Timing Breakdown Sub-bar -->
+      <div class="technical-detail mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500 font-mono px-0.5">
+        <span>Prep: <strong id="time-prep" class="text-slate-700">-</strong></span>
+        <span>Infer: <strong id="time-infer" class="text-slate-700">-</strong></span>
+        <span>Post: <strong id="time-post" class="text-slate-700">-</strong></span>
+        <span>Tiles: <strong id="time-tiles" class="text-blue-600">1</strong></span>
+      </div>
+    </section>
+
+    <!-- Detections Table Card (Fills remaining height) -->
+    <section class="bg-white rounded-xl border border-slate-200 p-3 shadow-xs flex-1 min-h-0 flex flex-col overflow-hidden">
+      <h2 class="text-xs font-bold text-slate-900 mb-1.5 flex-shrink-0 uppercase tracking-wide">Lỗi phát hiện (<span id="detections-count">0</span>)</h2>
+      <div class="overflow-x-auto flex-1 min-h-0 overflow-y-auto">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr class="border-b border-slate-200 text-slate-600 text-[10px] uppercase font-bold tracking-wider sticky top-0 bg-white">
+              <th class="py-1.5 pr-1.5">#</th>
+              <th class="py-1.5 px-1.5">Loại lỗi</th>
+              <th class="py-1.5 px-1.5">Độ tin cậy</th>
+              <th class="technical-detail">Vị trí</th>
+              <th class="technical-detail">Diện tích</th>
+            </tr>
+          </thead>
+          <tbody id="detections-tbody" class="divide-y divide-slate-100 font-medium text-xs">
+            <tr>
+              <td colspan="5" class="py-6 text-center text-slate-400 text-xs">
+                Chưa có kết quả kiểm định.<br>Vui lòng chọn ảnh và nhấn <b>"Kiểm tra chai"</b>.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Bottom Action Buttons: Export & Save -->
+    <div class="grid grid-cols-2 gap-2 pt-0 flex-shrink-0">
+      <button id="btn-export-json" class="w-full py-2 px-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-bold rounded-lg flex items-center justify-center gap-1 shadow-xs transition-colors cursor-pointer" type="button">
+        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+        <span>Tải kết quả</span>
+      </button>
+      <button id="btn-save-image" class="w-full py-2 px-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-bold rounded-lg flex items-center justify-center gap-1 shadow-xs transition-colors cursor-pointer" type="button">
+        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect height="18" rx="2" ry="2" width="18" x="3" y="3"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg>
+        <span>Tải ảnh đánh dấu</span>
+      </button>
+    </div>
+  </aside>
+  <!-- END: RightSummaryPanel -->
+
+</main>
+<!-- END: MainWorkspace -->
+
+<!-- JavaScript inspection workspace -->
+<script src="/ui/user-text.js"></script>
+<script>
+// Class styling dictionary
+const CLASS_MAP = {
+  'DiVat': {
+    border: 'border-emerald-500',
+    bg: 'bg-emerald-500',
+    text: 'text-emerald-600',
+    hex: '#10b981'
+  },
+  'LoiChi': {
+    border: 'border-cyan-400',
+    bg: 'bg-[#00badb]',
+    text: 'text-[#00badb]',
+    hex: '#00badb'
+  },
+  'DiVatLoiLom': {
+    border: 'border-rose-500',
+    bg: 'bg-rose-500',
+    text: 'text-rose-500',
+    hex: '#f43f5e'
+  },
+  'LoiNhua': {
+    border: 'border-amber-500',
+    bg: 'bg-amber-500',
+    text: 'text-amber-500',
+    hex: '#f59e0b'
+  },
+  'LoiTray': {
+    border: 'border-purple-600',
+    bg: 'bg-purple-600',
+    text: 'text-purple-600',
+    hex: '#9333ea'
+  }
+};
+
+// Clean Initial App State (ZERO fake hardcoded detections)
+let appState = {
+  currentImage: null,
+  imageWidth: 0,
+  imageHeight: 0,
+  zoomLevel: 100,
+  detections: [],
+  selectedDefectId: null,
+  totalDefects: 0,
+  defectTypes: 0,
+  latencyMs: null,
+  annotatedImage: null,
+  isInspecting: false,
+  sampleImages: {},
+  result: null,
+  files: [],
+  imageEpoch: 0,
+  inspectionId: null
+};
+
+// Elements
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('image-file-input');
+const modelWeightsSelect = document.getElementById('model-weights');
+const confSlider = document.getElementById('conf-slider');
+const confVal = document.getElementById('conf-val');
+const iouSlider = document.getElementById('iou-slider');
+const iouVal = document.getElementById('iou-val');
+const btnRun = document.getElementById('btn-run');
+const btnRunText = document.getElementById('btn-run-text');
+const btnRunIcon = document.getElementById('btn-run-icon');
+const btnClear = document.getElementById('btn-clear');
+const placeholderBox = document.getElementById('placeholder-box');
+const viewportImg = document.getElementById('viewport-img');
+const overlaysLayer = document.getElementById('overlays-layer');
+const headerDim = document.getElementById('header-dim');
+const headerZoom = document.getElementById('header-zoom');
+const btnZoom = document.getElementById('btn-zoom');
+const btnFullscreen = document.getElementById('btn-fullscreen');
+const roiPlaceholder = document.getElementById('roi-placeholder');
+const roiThumbnail = document.getElementById('roi-thumbnail');
+const roiClass = document.getElementById('roi-class');
+const roiConf = document.getElementById('roi-conf');
+const roiCropSize = document.getElementById('roi-crop-size');
+const roiXyxy = document.getElementById('roi-xyxy');
+const roiArea = document.getElementById('roi-area');
+const metricTotal = document.getElementById('metric-total');
+const metricTypes = document.getElementById('metric-types');
+const metricLatency = document.getElementById('metric-latency');
+const metricFps = document.getElementById('metric-fps');
+const timePrep = document.getElementById('time-prep');
+const timeInfer = document.getElementById('time-infer');
+const timePost = document.getElementById('time-post');
+const timeTiles = document.getElementById('time-tiles');
+const detectionsCount = document.getElementById('detections-count');
+const detectionsTbody = document.getElementById('detections-tbody');
+const btnExportJson = document.getElementById('btn-export-json');
+const btnSaveImage = document.getElementById('btn-save-image');
+const prepMode = document.getElementById('prep-mode');
+const prepModeBadge = document.getElementById('prep-mode-badge');
+const modeNmsFree = document.getElementById('mode-nms-free');
+const modeStandardNms = document.getElementById('mode-standard-nms');
+
+if (prepMode && prepModeBadge) {
+  prepMode.addEventListener('change', (e) => {
+    const val = e.target.value;
+    if (val === 'full') {
+      prepModeBadge.textContent = 'Toàn ảnh';
+      prepModeBadge.className = 'text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 uppercase tracking-wider';
+    } else {
+      prepModeBadge.textContent = 'Vùng chai';
+      prepModeBadge.className = 'text-[9px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 uppercase tracking-wider';
+    }
+  });
+}
+
+// Initialize Sliders
+confSlider.addEventListener('input', (e) => {
+  confVal.textContent = parseFloat(e.target.value).toFixed(2);
+});
+
+iouSlider.addEventListener('input', (e) => {
+  iouVal.textContent = parseFloat(e.target.value).toFixed(2);
+});
+
+// Zoom logic
+btnZoom.addEventListener('click', () => {
+  if (appState.zoomLevel === 100) appState.zoomLevel = 135;
+  else if (appState.zoomLevel === 135) appState.zoomLevel = 175;
+  else appState.zoomLevel = 100;
+  
+  headerZoom.textContent = `Phóng to: ${appState.zoomLevel}%`;
+  const wrapper = document.getElementById('image-wrapper');
+  wrapper.style.transform = `scale(${appState.zoomLevel / 100})`;
+});
+
+// Fullscreen logic
+btnFullscreen.addEventListener('click', () => {
+  const container = document.getElementById('viewport-container');
+  if (!document.fullscreenElement) {
+    container.requestFullscreen().catch(err => console.log(err));
+  } else {
+    document.exitFullscreen();
+  }
+});
+
+// File upload / drop logic
+dropZone.addEventListener('click', () => fileInput.click());
+
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('border-blue-500', 'bg-blue-50/40');
+});
+
+dropZone.addEventListener('dragleave', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('border-blue-500', 'bg-blue-50/40');
+});
+
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('border-blue-500', 'bg-blue-50/40');
+  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+    loadImageFile(e.dataTransfer.files[0], Array.from(e.dataTransfer.files));
+  }
+});
+
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files && e.target.files[0]) {
+    loadImageFile(e.target.files[0], Array.from(e.target.files));
+  }
+});
+
+function displayImage(src) {
+  if (appState.isInspecting) return;
+  const epoch = ++appState.imageEpoch;
+  clearDetections();
+  appState.files = [];
+  appState.currentImage = src;
+  placeholderBox.classList.add('hidden');
+  viewportImg.classList.remove('hidden');
+  viewportImg.src = src;
+
+  const testImg = new Image();
+  testImg.onload = function() {
+    if (epoch !== appState.imageEpoch) return;
+    appState.imageWidth = testImg.naturalWidth;
+    appState.imageHeight = testImg.naturalHeight;
+    headerDim.textContent = `${testImg.naturalWidth} × ${testImg.naturalHeight}`;
+    fitImage();
+  };
+  testImg.src = src;
+}
+
+function loadImageFile(file, files = [file]) {
+  if (appState.isInspecting) return;
+  if (files.length > 4 || files.some(f => f.size > 10 * 1024 * 1024 || !['image/jpeg','image/png','image/bmp'].includes(f.type))) {
+    setStatus('Chọn từ 1 đến 4 ảnh JPG, PNG hoặc BMP; mỗi ảnh tối đa 10 MB.', true); return;
+  }
+  const selection = ++appState.imageEpoch;
+  clearDetections();
+  appState.currentImage = null;
+  appState.imageWidth = 0; appState.imageHeight = 0;
+  appState.files = [];
+  setStatus('Đang đọc ảnh…');
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    if (selection !== appState.imageEpoch || appState.isInspecting) return;
+    displayImage(evt.target.result);
+    appState.files = files;
+    setStatus(`${files.length} ảnh đã chọn`);
+  };
+  reader.readAsDataURL(file);
+}
+
+// Same-origin API; no localhost probing or retries of mutating requests.
+async function apiResponse(endpoint, options = {}) {
+  const headers = new Headers(options.headers || {});
+  const response = await fetch(endpoint, {credentials: 'same-origin', ...options, headers});
+  if (!response.ok) {
+    let data; try { data = await response.json(); } catch { data = {}; }
+    if (response.status === 401) {
+      showLogin();
+      throw new Error(endpoint === '/api/session'
+        ? 'Mật khẩu chưa đúng. Vui lòng nhập lại.'
+        : 'Vui lòng đăng nhập để tiếp tục.');
+    }
+    const messages = {403: 'Bạn chưa được phép thực hiện thao tác này.',
+      409: 'Kết quả đã thay đổi. Hãy mở lại trước khi xác nhận.',
+      413: 'Ảnh quá lớn. Vui lòng chọn ảnh nhỏ hơn.',
+      422: 'Thông tin hoặc ảnh chưa hợp lệ. Hãy kiểm tra và thử lại.',
+      429: 'Hệ thống đang bận. Vui lòng chờ một chút rồi thử lại.',
+      503: 'Hệ thống chưa sẵn sàng. Vui lòng liên hệ người quản lý.'};
+    throw new Error(messages[response.status] || 'Không hoàn thành thao tác. Vui lòng thử lại.');
+  }
+  return response;
+}
+async function fetchFromApi(endpoint, options = {}) {
+  return (await apiResponse(endpoint, options)).json();
+}
+function setStatus(message, error = false) {
+  const el = document.getElementById('workflow-status');
+  el.textContent = message;
+  el.style.color = error ? '#b91c1c' : '#334155';
+}
+function fitImage() {
+  const container = document.getElementById('viewport-container');
+  const wrapper = document.getElementById('image-wrapper');
+  const w = appState.imageWidth, h = appState.imageHeight;
+  if (!w || !h) return;
+  const scale = Math.min(container.clientWidth / w, container.clientHeight / h);
+  wrapper.style.width = `${w * scale}px`;
+  wrapper.style.height = `${h * scale}px`;
+}
+new ResizeObserver(fitImage).observe(document.getElementById('viewport-container'));
+viewportImg.addEventListener('load', fitImage);
+document.addEventListener('fullscreenchange', fitImage);
+
+// Preset Sample Buttons
+document.querySelectorAll('.sample-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const sampleKey = btn.getAttribute('data-sample');
+    if (appState.sampleImages && appState.sampleImages[sampleKey]) {
+      displayImage(appState.sampleImages[sampleKey]);
+    } else {
+      fetchFromApi('/api/samples')
+        .then(data => {
+          if (data && data.samples) {
+            appState.sampleImages = data.samples;
+            if (data.samples[sampleKey]) {
+              displayImage(data.samples[sampleKey]);
+            }
+          }
+        }).catch(err => console.error("Error loading sample:", err));
+    }
+  });
+});
+
+// Load models and samples from backend API dynamically
+let backendEpoch = 0;
+function loadBackendData() {
+  const epoch = ++backendEpoch;
+  // 1. Models
+  fetchFromApi('/api/models')
+    .then(data => {
+      if (epoch !== backendEpoch) return;
+      signedIn = true;
+      accountButton.textContent = 'Đăng xuất';
+      if (loginDialog.open) loginDialog.close();
+      modelWeightsSelect.innerHTML = '';
+      btnRun.disabled = !data.models?.length;
+      if (!data.models?.length) modelWeightsSelect.add(new Option('Chưa có bộ kiểm tra sẵn sàng', ''));
+      setStatus(data.models?.length ? 'Sẵn sàng. Chọn ảnh rồi nhấn Kiểm tra chai.' : 'Chưa có bộ kiểm tra sẵn sàng. Liên hệ người quản lý.');
+      if (data && data.models && data.models.length > 0) {
+        data.models.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.id;
+          opt.dataset.roi = String(m.enable_roi);
+          opt.dataset.nms = m.default_nms;
+          opt.textContent = modelLabel(m.id);
+          if (m.is_default) opt.selected = true;
+          modelWeightsSelect.appendChild(opt);
+        });
+        modelWeightsSelect.dispatchEvent(new Event("change"));
+      }
+    })
+    .catch(err => { if (epoch !== backendEpoch) return; btnRun.disabled = true; setStatus(err.message, true); });
+
+  // 2. Samples
+  fetchFromApi('/api/samples')
+    .then(data => {
+      if (data && data.samples) {
+        appState.sampleImages = data.samples;
+      }
+    })
+    .catch(err => console.error("Error fetching samples:", err));
+}
+
+modelWeightsSelect.addEventListener('change', () => {
+  const selected = modelWeightsSelect.selectedOptions[0];
+  if (selected?.dataset.roi) {
+    prepMode.value = selected.dataset.roi === 'true' ? 'roi' : 'full';
+    prepMode.dispatchEvent(new Event('change'));
+    modeNmsFree.disabled = selected.dataset.nms === 'standard_nms';
+    modeNmsFree.checked = !modeNmsFree.disabled;
+    modeStandardNms.checked = modeNmsFree.disabled;
+  }
+});
+const loginDialog = document.getElementById('login-dialog');
+const accountButton = document.getElementById('account-button');
+let signedIn = false;
+function showLogin() {
+  signedIn = false;
+  accountButton.textContent = 'Đăng nhập';
+  btnRun.disabled = true;
+  if (!loginDialog.open) loginDialog.showModal();
+}
+document.getElementById('login-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  const submit = document.getElementById('connect-api');
+  const error = document.getElementById('login-error');
+  submit.disabled = true; error.textContent = '';
+  try {
+    await fetchFromApi('/api/session', {method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({password: document.getElementById('api-token').value.trim()})});
+    document.getElementById('api-token').value = '';
+    loginDialog.close();
+    loadBackendData();
+  } catch (err) { error.textContent = err.message; }
+  finally { submit.disabled = false; }
+});
+accountButton.addEventListener('click', async () => {
+  if (appState.isInspecting) { setStatus('Vui lòng chờ kiểm tra ảnh hoàn tất.'); return; }
+  if (!signedIn) { showLogin(); return; }
+  try {
+    await fetchFromApi('/api/session', {method: 'DELETE'});
+    ++backendEpoch;
+    ++workflowEpoch;
+    finishInspection();
+    clearDetections();
+    clearWorkflow();
+    workspaceScreen.style.display = ''; workflowScreen.hidden = true;
+    showLogin();
+    setStatus('Đã đăng xuất.');
+  } catch (err) { setStatus(err.message, true); }
+});
+// Call on startup
+loadBackendData();
+
+// Kiểm tra chai Button
+btnRun.addEventListener('click', async () => {
+  if (appState.isInspecting) return;
+  if (!appState.currentImage) {
+    alert("Vui lòng tải ảnh lên hoặc chọn ảnh mẫu trước khi kiểm định!");
+    return;
+  }
+  
+  // A new attempt invalidates the previous result, including failed retries.
+  clearDetections();
+  // Set UI to loading state
+  appState.isInspecting = true;
+  fileInput.disabled = true; btnClear.disabled = true; btnRun.disabled = true;
+  document.querySelectorAll('.sample-btn').forEach(button => button.disabled = true);
+  btnRun.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+  btnRun.classList.add('bg-blue-500', 'cursor-wait');
+  btnRunText.textContent = "Đang kiểm tra ảnh…";
+  btnRunIcon.innerHTML = `<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"></circle><path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>`;
+  btnRunIcon.classList.add('animate-spin-fast');
+
+  const selectedModel = modelWeightsSelect.value;
+  const nmsMode = modeStandardNms.checked ? "standard_nms" : "nms_free";
+  const selectedPrep = prepMode ? prepMode.value : "roi";
+  const enableRoi = selectedPrep !== "full";
+  const conf = parseFloat(confSlider.value);
+  const iou = parseFloat(iouSlider.value);
+  const currentImg = appState.currentImage;
+
+  const payload = {
+    image_data: currentImg,
+    model_id: selectedModel,
+    conf_threshold: conf,
+    iou_threshold: iou,
+    nms_mode: nmsMode,
+    enable_roi: enableRoi,
+    enable_tiling: false
+  };
+
+  const epoch = appState.imageEpoch;
+  let files = appState.files;
+  if (!files.length && currentImg.startsWith('blob:')) {
+    try {
+      const response = await fetch(currentImg);
+      if (!response.ok) throw new Error('Không đọc được ảnh đã lưu. Vui lòng mở lại từ Lịch sử kiểm tra.');
+      const blob = await response.blob();
+      files = [new File([blob], 'saved-image.png', {type: blob.type})];
+    } catch (err) {
+      handleInferenceResult({success: false, error: err.message});
+      return;
+    }
+  }
+  if (files.length) {
+    const form = new FormData();
+    for (const file of files) form.append('files', file);
+    const {image_data, ...config} = payload;
+    form.append('config', JSON.stringify(config));
+    fetchFromApi('/api/inspections', {method: 'POST', body: form})
+      .then(async detail => {
+        if (epoch !== appState.imageEpoch) return;
+        if (detail.images.length === 1) {
+          const image = detail.images[0];
+          const annotated = await imageUrl(image.annotated_url);
+          if (epoch !== appState.imageEpoch) return;
+          handleInferenceResult({...image.result, success: true,
+            inspection_id: detail.id, conclusion: detail.conclusion, annotated_b64: annotated});
+          return;
+        }
+        // Batch images are inspected separately; choose one from Review before
+        // putting its result over an image in Workspace.
+        finishInspection();
+        appState.inspectionId = detail.id;
+        setStatus(`Đã lưu ${detail.images.length} ảnh: ${qualityLabel(detail.conclusion)}`);
+        await openInspection(detail.id);
+      }).catch(err => handleInferenceResult({success: false, error: err.message}));
+    return;
+  }
+  fetchFromApi('/api/predict', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+    .then(res => { if (epoch === appState.imageEpoch) handleInferenceResult(res); })
+    .catch(err => {
+      console.error("Direct fetch error:", err);
+      handleInferenceResult({ success: false, error: err.message });
+      setStatus(err.message, true);
+    });
+});
+
+function finishInspection() {
+  appState.isInspecting = false;
+  fileInput.disabled = false; btnClear.disabled = false; btnRun.disabled = !signedIn;
+  document.querySelectorAll('.sample-btn').forEach(button => button.disabled = false);
+  btnRun.classList.remove('bg-blue-500', 'cursor-wait');
+  btnRun.classList.add('bg-blue-600', 'hover:bg-blue-700');
+  btnRunText.textContent = "Kiểm tra chai";
+  btnRunIcon.innerHTML = `<polygon points="5 3 19 12 5 21 5 3"></polygon>`;
+  btnRunIcon.classList.remove('animate-spin-fast');
+
+}
+
+function handleInferenceResult(res) {
+  finishInspection();
+  if (res && res.success) {
+    appState.result = res;
+    appState.inspectionId = res.inspection_id;
+    document.getElementById('quality-decision').textContent = qualityLabel(res.conclusion);
+    document.getElementById('quality-explanation').textContent = res.conclusion === 'REJECT'
+      ? 'Đã phát hiện dấu hiệu lỗi. Hãy xem các vị trí được đánh dấu.'
+      : res.conclusion === 'PASS' ? 'Kết quả đã được người kiểm tra xác nhận.'
+      : 'Cần người kiểm tra xác nhận trước khi kết luận đạt.';
+    setStatus(`Đã lưu kết quả: ${qualityLabel(res.conclusion)}`);
+    if (res.image_b64) {
+      viewportImg.src = res.image_b64;
+      appState.currentImage = res.image_b64;
+    }
+    if (res.annotated_b64) {
+      appState.annotatedImage = res.annotated_b64;
+    }
+
+    appState.imageWidth = res.image_width || appState.imageWidth;
+    appState.imageHeight = res.image_height || appState.imageHeight;
+    headerDim.textContent = `${appState.imageWidth} × ${appState.imageHeight}`;
+
+    updateMetrics(res.total_defects, res.defect_types, res.latency_ms, res.fps, res.timing);
+    renderDetections(res.detections);
+    if (res.roi_box) {
+      const [x1,y1,x2,y2] = res.roi_box;
+      const roi = document.createElement('div');
+      roi.id = 'applied-roi';
+      roi.style.cssText = `position:absolute;pointer-events:none;border:1px dashed white;left:${x1/appState.imageWidth*100}%;top:${y1/appState.imageHeight*100}%;width:${(x2-x1)/appState.imageWidth*100}%;height:${(y2-y1)/appState.imageHeight*100}%`;
+      roi.title = 'Vùng chai đã kiểm tra';
+      overlaysLayer.appendChild(roi);
+    }
+    fitImage();
+  } else if (res && res.error) {
+    setStatus(res.error, true);
+  }
+}
+
+// Clear Button
+btnClear.addEventListener('click', () => {
+  if (appState.isInspecting) return;
+  ++appState.imageEpoch;
+  appState.files = [];
+  fileInput.value = '';
+  appState.currentImage = null;
+  appState.imageWidth = 0;
+  appState.imageHeight = 0;
+  viewportImg.src = '';
+  viewportImg.classList.add('hidden');
+  placeholderBox.classList.remove('hidden');
+  headerDim.textContent = '-';
+  clearDetections();
+
+});
+
+function clearDetections() {
+  document.getElementById('quality-decision').textContent = 'Chưa kiểm tra';
+  document.getElementById('quality-explanation').textContent = 'Chọn ảnh rồi nhấn Kiểm tra chai.';
+  appState.annotatedImage = null;
+  appState.result = null;
+  appState.inspectionId = null;
+  appState.selectedDefectId = null;
+  appState.totalDefects = 0;
+  appState.defectTypes = 0;
+  appState.latencyMs = null;
+  appState.fps = null;
+  appState.timing = null;
+  appState.zoomLevel = 100;
+  headerZoom.textContent = 'Phóng to: 100%';
+  document.getElementById('image-wrapper').style.transform = '';
+  roiThumbnail.src = '';
+  appState.detections = [];
+  overlaysLayer.innerHTML = '';
+  detectionsTbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400">Chưa có kết quả kiểm định. Nhấn <b>"Kiểm tra chai"</b>.</td></tr>`;
+  detectionsCount.textContent = '0';
+  metricTotal.textContent = '0';
+  metricTypes.textContent = '0';
+  metricLatency.textContent = '-';
+  if (metricFps) metricFps.innerHTML = `- <span class="text-[9px] font-normal">FPS</span>`;
+  if (timePrep) timePrep.textContent = '-';
+  if (timeInfer) timeInfer.textContent = '-';
+  if (timePost) timePost.textContent = '-';
+  if (timeTiles) timeTiles.textContent = '1';
+  
+  roiClass.textContent = "-";
+  roiClass.className = "font-bold text-slate-400";
+  roiConf.textContent = "-";
+  roiCropSize.textContent = "-";
+  roiXyxy.textContent = "-";
+  roiArea.textContent = "-";
+  roiThumbnail.classList.add('hidden');
+  roiPlaceholder.classList.remove('hidden');
+}
+
+// Render detections onto viewport and table
+function renderDetections(detections) {
+  appState.detections = detections || [];
+  overlaysLayer.innerHTML = '';
+  detectionsTbody.innerHTML = '';
+  detections = detections || [];
+  detectionsCount.textContent = detections.length;
+
+  if (!detections || detections.length === 0) {
+    detectionsTbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400">Chưa phát hiện lỗi. Cần người kiểm tra xác nhận trước khi kết luận đạt.</td></tr>`;
+    roiClass.textContent = "Cần xác nhận";
+    roiClass.className = "font-bold text-amber-600";
+    roiConf.textContent = "-";
+    roiCropSize.textContent = "-";
+    roiXyxy.textContent = "-";
+    roiArea.textContent = "-";
+    roiThumbnail.classList.add('hidden');
+    roiPlaceholder.classList.remove('hidden');
+    return;
+  }
+
+  detections.forEach((det) => {
+    const style = CLASS_MAP[det.class] || {
+      border: 'border-blue-500',
+      bg: 'bg-blue-500',
+      text: 'text-blue-600',
+      hex: '#2563eb'
+    };
+
+    // 1. Viewport Bounding Box Div
+    const boxEl = document.createElement('div');
+    boxEl.className = `absolute pointer-events-auto cursor-pointer defect-box ${det.id === appState.selectedDefectId ? 'selected' : ''}`;
+    const b = det.bbox_normalized;
+    boxEl.style.top = `${b[1] * 100}%`;
+    boxEl.style.left = `${b[0] * 100}%`;
+    boxEl.style.width = `${(b[2] - b[0]) * 100}%`;
+    boxEl.style.height = `${(b[3] - b[1]) * 100}%`;
+
+    const innerBorder = document.createElement('div');
+    innerBorder.className = `border-2 ${style.border} w-full h-full shadow-xs relative`;
+
+    const tagSpan = document.createElement('span');
+    tagSpan.className = `absolute -top-7 left-0 ${style.bg} text-white font-bold text-xs px-2 py-0.5 rounded shadow-sm whitespace-nowrap`;
+    tagSpan.textContent = `${defectLabel(det.class)} ${(det.confidence * 100).toFixed(0)}%`;
+
+    innerBorder.appendChild(tagSpan);
+    boxEl.appendChild(innerBorder);
+
+    boxEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectDefect(det.id);
+    });
+
+    overlaysLayer.appendChild(boxEl);
+
+    // 2. Table Row
+    const row = document.createElement('tr');
+    row.className = `detection-row hover:bg-slate-50/80 transition-colors cursor-pointer ${det.id === appState.selectedDefectId ? 'selected' : ''}`;
+    row.id = `row-det-${det.id}`;
+    row.innerHTML = `
+      <td class="py-3 pr-2 text-slate-400 font-mono text-sm">${det.id}</td>
+      <td class="py-3 px-2 font-bold text-sm ${style.text}">${defectLabel(det.class)}</td>
+      <td class="py-3 px-2 font-mono text-sm font-semibold text-slate-700">${(det.confidence * 100).toFixed(0)}%</td>
+      <td class="technical-detail py-3 px-2 font-mono text-xs text-slate-600 font-semibold">[${det.xyxy.join(', ')}]</td>
+      <td class="technical-detail py-3 pl-2 text-right font-mono text-sm font-semibold text-slate-700">${det.area}</td>
+    `;
+    row.addEventListener('click', () => selectDefect(det.id));
+    detectionsTbody.appendChild(row);
+  });
+
+  // Select first defect
+  selectDefect(detections[0].id);
+}
+
+// Select Defect for Xem chi tiết lỗi
+function selectDefect(id) {
+  appState.selectedDefectId = id;
+  const det = appState.detections.find(d => d.id === id);
+  if (!det) return;
+
+  const style = CLASS_MAP[det.class] || { text: 'text-blue-600', hex: '#2563eb' };
+
+  // Update table selection highlight
+  document.querySelectorAll('.detection-row').forEach(r => r.classList.remove('selected'));
+  const targetRow = document.getElementById(`row-det-${id}`);
+  if (targetRow) targetRow.classList.add('selected');
+
+  // Update box highlight in viewport
+  document.querySelectorAll('.defect-box').forEach(b => b.classList.remove('selected'));
+
+  // Update Xem chi tiết lỗi Details
+  roiClass.textContent = defectLabel(det.class);
+  roiClass.className = `font-bold ${style.text}`;
+  roiConf.textContent = `${(det.confidence * 100).toFixed(0)}%`;
+  roiCropSize.textContent = det.crop_size || '-';
+  roiXyxy.textContent = `[${det.xyxy.join(', ')}]`;
+  roiArea.textContent = `${det.area} pixels`;
+
+  if (det.crop_b64) {
+    roiPlaceholder.classList.add('hidden');
+    roiThumbnail.classList.remove('hidden');
+    roiThumbnail.src = det.crop_b64;
+  }
+}
+
+// Update summary metrics
+function updateMetrics(total, types, latency, fps, timing) {
+  appState.totalDefects = total;
+  appState.defectTypes = types;
+  appState.latencyMs = latency;
+  appState.fps = fps;
+  appState.timing = timing;
+
+  metricTotal.textContent = total;
+  metricTypes.textContent = types;
+  metricLatency.textContent = durationLabel(latency);
+  if (metricFps) {
+    metricFps.innerHTML = `${fps != null ? fps : '-'} <span class="text-[9px] font-normal">FPS</span>`;
+  }
+
+  if (timing) {
+    if (timePrep) timePrep.textContent = `${timing.preprocess_ms}ms`;
+    if (timeInfer) timeInfer.textContent = `${timing.inference_ms}ms`;
+    if (timePost) timePost.textContent = `${timing.postprocess_ms}ms`;
+    if (timeTiles) timeTiles.textContent = timing.tiles_processed || 1;
+  } else {
+    if (timePrep) timePrep.textContent = '-';
+    if (timeInfer) timeInfer.textContent = '-';
+    if (timePost) timePost.textContent = '-';
+    if (timeTiles) timeTiles.textContent = '1';
+  }
+}
+
+// Export JSON
+btnExportJson.addEventListener('click', () => {
+  if (!appState.result) {
+    alert("Chưa có kết quả để xuất JSON. Vui lòng chạy kiểm định trước.");
+    return;
+  }
+
+  exportInspection(appState.inspectionId, 'json').catch(err => setStatus(err.message, true));
+  return;
+});
+
+// Save Image
+btnSaveImage.addEventListener('click', () => {
+  if (!appState.result) {
+    alert("Chưa có ảnh để lưu.");
+    return;
+  }
+  const src = appState.annotatedImage || viewportImg.src;
+  const a = document.createElement('a');
+  a.href = src;
+  a.download = `glass_defect_annotated_${Date.now()}.jpg`;
+  a.click();
+});
+
+window.addEventListener('resize', fitImage);
+</script>
+
+<script src="/ui/workflow.js"></script>
+</body>
+</html>
