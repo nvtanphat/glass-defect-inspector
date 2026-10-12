@@ -334,6 +334,7 @@ def test_real_gradcam_is_persisted_and_does_not_change_assessment(client, model_
     assert metadata["model_id"] == model_id
     assert metadata["model_version"] == created["model_version"]
     assert metadata["nonzero_gradient"]
+    assert not metadata["flat_cam"], "Real sample should expose spatial Grad-CAM signal"
     overlay = client.get(metadata["image_url"])
     assert overlay.status_code == 200
     assert overlay.headers["content-type"] == "image/jpeg"

@@ -16,7 +16,7 @@ from glass_inspector.inference_engine import (
     load_yolo_model,
 )
 
-VERSION = "detector-gradcam-v1"
+VERSION = "detector-gradcam-v2"
 
 
 def select_query(logits, boxes, target_box=None, category=None):
@@ -112,6 +112,8 @@ def explain(image, weights, adapter, result, config):
     )
     category = detection["class_id"] if detection else None
     features = []
+    backbone_features = []
+    backbone_hook = None
     if adapter in {"dfine", "fbdnet"}:
         from torchvision.transforms import Compose, Resize, ToTensor
 
@@ -139,6 +141,11 @@ def explain(image, weights, adapter, result, config):
         tensor = tensor.unsqueeze(0).float() / 255
         hook = head.register_forward_pre_hook(lambda module, inputs: features.extend(inputs[0]))
         layer = "detection head input features"
+        backbone_index = len(model.yaml["backbone"]) - 1
+        backbone_layer = model.model[backbone_index]
+        backbone_hook = backbone_layer.register_forward_hook(
+            lambda module, inputs, output: backbone_features.append(output)
+        )
         padding = None
         if adapter == "yolo":
             ratio = min(pixels.shape[1] / crop.width, pixels.shape[0] / crop.height)
@@ -181,11 +188,24 @@ def explain(image, weights, adapter, result, config):
                 boxes = decoded if head.end2end or head.xyxy else _xyxy(decoded)
             query, category = select_query(logits, boxes, target, category)
             score = logits[query, category]
-            gradients = torch.autograd.grad(score, features, allow_unused=True)
-            cam, metadata = normalize_cam(features, gradients, tensor.shape[-2:])
+            gradients = torch.autograd.grad(score, features + backbone_features, allow_unused=True)
+            cam, metadata = normalize_cam(features, gradients[: len(features)], tensor.shape[-2:])
+            if (
+                metadata["flat_cam"]
+                and backbone_features
+                and any(gradient is not None for gradient in gradients[len(features) :])
+            ):
+                fallback, fallback_metadata = normalize_cam(
+                    backbone_features, gradients[len(features) :], tensor.shape[-2:]
+                )
+                if not fallback_metadata["flat_cam"]:
+                    cam, metadata = fallback, fallback_metadata
+                    layer = f"backbone layer {backbone_index} ({type(backbone_layer).__name__})"
             probability = float(score.detach().sigmoid())
     finally:
         hook.remove()
+        if backbone_hook is not None:
+            backbone_hook.remove()
     if padding:
         left, top, width, height = padding
         cam = cam[top : top + height, left : left + width]
