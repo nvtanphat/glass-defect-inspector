@@ -30,7 +30,7 @@ jobs:
           python-version: "3.11"
       - run: python -m pip install --index-url https://download.pytorch.org/whl/cpu torch==2.13.0 torchvision==0.28.0
       - run: python -m pip install -e ".[dev,app]"
-      - run: ruff check src tests scripts migrations app.py
+      - run: ruff check src tests scripts migrations
       - run: python -m alembic upgrade head
       - run: python -m alembic check
       - run: pytest -q -rs --junitxml=pytest-results.xml

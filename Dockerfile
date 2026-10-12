@@ -8,7 +8,7 @@ COPY src ./src
 RUN pip install --no-cache-dir --no-deps .
 COPY processing/roi_config.json ./processing/roi_config.json
 COPY migrations ./migrations
-COPY alembic.ini app.py ./
+COPY alembic.ini ./
 ENV YOLO_CONFIG_DIR=/home/inspector/.config/Ultralytics
 ENV INSPECTOR_ROOT=/app
 RUN useradd --uid 10001 --create-home inspector && mkdir -p /app/var/inspections /home/inspector/.config/Ultralytics && chown -R inspector:inspector /app/var /home/inspector

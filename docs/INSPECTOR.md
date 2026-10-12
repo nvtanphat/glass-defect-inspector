@@ -1,6 +1,6 @@
 ﻿# Vận hành Glass Defect Inspector
 
-FastAPI phục vụ một giao diện web, PostgreSQL lưu lịch sử. `app.py`, `python -m glass_inspector` và `glass-inspector` khởi động cùng server ở http://127.0.0.1:8501. Chạy một worker để bảo toàn giới hạn inference/tài nguyên model.
+FastAPI phục vụ một giao diện web, PostgreSQL lưu lịch sử. `python -m glass_inspector` và `glass-inspector` khởi động cùng server ở http://127.0.0.1:8501. Chạy một worker để bảo toàn giới hạn inference/tài nguyên model.
 
 ## Python trực tiếp
 
@@ -11,7 +11,7 @@ python -m pip install -e ".[app,dev]"
 $env:DATABASE_URL = "postgresql+psycopg://inspector:YOUR_PASSWORD@127.0.0.1:5432/inspector"
 $env:INSPECTOR_API_TOKEN = "YOUR_INTERNAL_PASSWORD"
 python -m alembic upgrade head
-python app.py
+python -m glass_inspector
 ```
 
 Linux/macOS dùng `export`. Server Python đọc biến môi trường, không tự load `inspector.env`. Đổi host/port bằng `INSPECTOR_HOST`, `INSPECTOR_PORT`. `INSPECTOR_STORAGE` mặc định `var/inspections`; `INSPECTOR_ROOT` chọn root tài nguyên khi cài wheel ngoài checkout.

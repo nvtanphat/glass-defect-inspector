@@ -11,7 +11,7 @@
 | `tests/` | Unit, integration, browser và nghiên cứu |
 | `docs/` | Hướng dẫn, hình minh họa và benchmark lịch sử |
 
-`app.py`, `python -m glass_inspector`, `glass-inspector` khởi động cùng ứng dụng. Đã bỏ launcher Streamlit và demo dư. Build CSS bằng `npm ci` rồi `npm run build` trong `src/glass_inspector/web/`. CSS build nằm trong Git; `node_modules/` thì không.
+`python -m glass_inspector` và `glass-inspector` khởi động cùng ứng dụng. Đã bỏ launcher Streamlit và demo dư. Build CSS bằng `npm ci` rồi `npm run build` trong `src/glass_inspector/web/`. CSS build nằm trong Git; `node_modules/` thì không.
 
 `data/`, `weights/`, `results/`, `runs/`, `artifacts/`, `reports/`, `scratch/`, `var/` là tài nguyên local/output. Không xóa dataset, checkpoint hoặc database để dọn source. Runtime D-FINE tùy biến đặt ở `results/D-FINE/`, dùng bởi training và inference.
 

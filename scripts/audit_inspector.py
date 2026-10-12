@@ -24,7 +24,7 @@ def audit_sources():
     """Record the code/config inventory without importing training code."""
     records = []
     suffixes = {".py", ".html", ".js", ".css", ".json", ".yaml", ".yml", ".toml"}
-    files = {ROOT / name for name in ["app.py", "Dockerfile", "compose.yaml", "pyproject.toml"]}
+    files = {ROOT / name for name in ["Dockerfile", "compose.yaml", "pyproject.toml"]}
     for folder in [
         "src",
         "processing",

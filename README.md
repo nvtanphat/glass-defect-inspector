@@ -28,7 +28,7 @@ Chọn đường dẫn checkpoint thực tế của lần train. Runner FBDNet f
 
 ## Chạy web
 
-Chỉ có một giao diện ở `src/glass_inspector/web/`, được FastAPI phục vụ. `app.py`, `python -m glass_inspector` và `glass-inspector` khởi động cùng ứng dụng.
+Chỉ có một giao diện ở `src/glass_inspector/web/`, được FastAPI phục vụ. Khởi động bằng `python -m glass_inspector` hoặc `glass-inspector`.
 
 Docker: tạo `inspector.env` từ `.env.example`, thay mật khẩu database và `INSPECTOR_API_TOKEN`:
 
@@ -42,7 +42,7 @@ Python trực tiếp: cấu hình `DATABASE_URL`, `INSPECTOR_API_TOKEN`, rồi c
 
 ```bash
 python -m alembic upgrade head
-python app.py
+python -m glass_inspector
 ```
 
 Xem [vận hành web](docs/INSPECTOR.md). Model thiếu checkpoint/runtime được đánh dấu unavailable. Không có detection được chuyển sang **Cần xác nhận**, không tự kết luận đạt.
@@ -60,7 +60,7 @@ Dataset, weights, credentials, runtime ngoài và output không nằm trong Git.
 ## Kiểm tra
 
 ```bash
-python -m ruff check src tests scripts migrations app.py
+python -m ruff check src tests scripts migrations
 python -m pytest tests/unit tests/research -q
 ```
 
