@@ -16,10 +16,10 @@ from glass_inspector.inference_engine import (
     load_yolo_model,
 )
 
-VERSION = "detector-gradcam-v2"
+VERSION = "detector-cam-v3"
 
 
-def select_query(logits, boxes, target_box=None, category=None):
+def select_query(logits, boxes, target_box=None, category=None, target_score=None):
     """Match a saved detection spatially; without one explain the strongest raw score."""
     if category is None:
         index = int(logits.detach().sigmoid().argmax())
@@ -35,15 +35,19 @@ def select_query(logits, boxes, target_box=None, category=None):
     target_area = (target[2:] - target[:2]).clamp(min=0).prod()
     overlap = intersection / (area + target_area - intersection).clamp(min=1e-8)
     candidates = torch.where(overlap >= 0.5)[0]
-    query = (
-        candidates[logits.detach()[candidates, category].argmax()]
-        if len(candidates)
-        else overlap.argmax()
-    )
+    if len(candidates) and target_score is not None:
+        differences = (logits.detach()[candidates, category].sigmoid() - target_score).abs()
+        query = candidates[differences.argmin()]
+    else:
+        query = (
+            candidates[logits.detach()[candidates, category].argmax()]
+            if len(candidates)
+            else overlap.argmax()
+        )
     return int(query), category
 
 
-def normalize_cam(features, gradients, size):
+def normalize_cam(features, gradients, size, method="gradcam"):
     maps = []
     gradient_sum = 0.0
     for feature, gradient in zip(features, gradients, strict=True):
@@ -52,7 +56,7 @@ def normalize_cam(features, gradients, size):
         if not torch.isfinite(gradient).all() or not torch.isfinite(feature).all():
             raise ValueError("Nonfinite explanation")
         gradient_sum += float(gradient.detach().abs().sum())
-        weights = gradient.mean(dim=(-2, -1), keepdim=True)
+        weights = gradient if method == "hirescam" else gradient.mean(dim=(-2, -1), keepdim=True)
         cam = (weights * feature).sum(1, keepdim=True).relu()
         maps.append(
             torch.nn.functional.interpolate(cam, size=size, mode="bilinear", align_corners=False)[
@@ -73,10 +77,16 @@ def _xyxy(boxes):
     return torch.cat((boxes[:, :2] - boxes[:, 2:] / 2, boxes[:, :2] + boxes[:, 2:] / 2), dim=1)
 
 
-def explain(image, weights, adapter, result, config):
+def explain(image, weights, adapter, result, config, method="gradcam", detection_id=None):
     """Return an overlay JPEG and metadata; never update weights or quality decisions."""
     image = image.convert("RGB")
-    detection = max(result.get("detections", []), key=lambda d: d["confidence"], default=None)
+    detections = result.get("detections", [])
+    if detection_id is None:
+        detection = max(detections, key=lambda d: d["confidence"], default=None)
+    else:
+        detection = next((d for d in detections if d["id"] == detection_id), None)
+        if detection is None:
+            raise ValueError("Selected detection was not found in this inspection")
     roi = result.get("roi_box") or [0, 0, *image.size]
     crop = image.crop(tuple(roi))
     origin = [roi[0], roi[1]]
@@ -186,12 +196,17 @@ def explain(image, weights, adapter, result, config):
                 logits = raw["scores"][0].transpose(0, 1)
                 decoded = head._inference(raw)[0, :4].transpose(0, 1)
                 boxes = decoded if head.end2end or head.xyxy else _xyxy(decoded)
-            query, category = select_query(logits, boxes, target, category)
+            query, category = select_query(
+                logits, boxes, target, category, detection["confidence"] if detection else None
+            )
             score = logits[query, category]
             gradients = torch.autograd.grad(score, features + backbone_features, allow_unused=True)
-            cam, metadata = normalize_cam(features, gradients[: len(features)], tensor.shape[-2:])
+            cam, metadata = normalize_cam(
+                features, gradients[: len(features)], tensor.shape[-2:], method
+            )
             if (
                 metadata["flat_cam"]
+                and method == "gradcam"
                 and backbone_features
                 and any(gradient is not None for gradient in gradients[len(features) :])
             ):
@@ -218,11 +233,13 @@ def explain(image, weights, adapter, result, config):
     full = image.copy()
     full.paste(overlay, tuple(origin))
     if detection:
-        ImageDraw.Draw(full).rectangle(detection["bbox_xyxy"], outline="#ffffff", width=3)
+        ImageDraw.Draw(full).rectangle(detection["bbox_xyxy"], outline="#ffffff", width=1)
     stream = io.BytesIO()
     full.save(stream, "JPEG", quality=90)
     metadata.update(
         version=VERSION,
+        method=method,
+        detection_id=detection["id"] if detection else None,
         target_class=CLASS_NAMES[category],
         score=probability,
         query=query,

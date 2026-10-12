@@ -35,7 +35,7 @@
   }
   .gradcam-tools {display:flex; align-items:center; gap:8px; padding:8px 10px;
     border-top:1px solid #e2e8f0; flex-shrink:0; flex-wrap:wrap; font-size:12px;}
-  .gradcam-tools button {padding:5px 10px; border:1px solid #cbd5e1; border-radius:6px;
+  .gradcam-tools button, .gradcam-tools select {padding:5px 10px; border:1px solid #cbd5e1; border-radius:6px;
     background:#eff6ff; color:#1d4ed8; font-weight:600;}
   .gradcam-tools button:disabled {opacity:.5; cursor:not-allowed;}
   .gradcam-note {font-size:11px; color:#64748b;}
@@ -280,7 +280,11 @@
 
       <!-- Main Viewport Box with Overlay Detections (Takes ALL available vertical space) -->
       <div class="gradcam-tools">
-        <button type="button" id="btn-gradcam" disabled aria-pressed="false">Xem Grad-CAM</button>
+        <select id="cam-method" aria-label="Cách giải thích ảnh">
+          <option value="hirescam">HiResCAM · chi tiết</option>
+          <option value="gradcam">Grad-CAM · tổng thể</option>
+        </select>
+        <button type="button" id="btn-gradcam" disabled aria-pressed="false">Xem vùng chú ý</button>
         <span id="gradcam-caption" class="gradcam-note" role="status">Kiểm tra ảnh để xem vùng model chú ý.</span>
       </div>
       <div id="viewport-container" class="relative flex-1 min-h-0 bg-neutral-900 overflow-hidden flex items-center justify-center">
@@ -900,7 +904,7 @@ function handleInferenceResult(res) {
     appState.imageId = res.image_id;
     appState.gradcamImage = null;
     document.getElementById('btn-gradcam').disabled = !res.image_id;
-    document.getElementById('btn-gradcam').textContent = 'Xem Grad-CAM';
+    document.getElementById('btn-gradcam').textContent = 'Xem vùng chú ý';
     document.getElementById('btn-gradcam').setAttribute('aria-pressed', 'false');
     document.getElementById('gradcam-caption').textContent = 'Xem vùng model chú ý; màu nóng biểu thị ảnh hưởng lớn hơn.';
     document.getElementById('quality-decision').textContent = qualityLabel(res.conclusion);
@@ -959,7 +963,7 @@ function clearDetections() {
   appState.imageId = null;
   appState.gradcamImage = null;
   document.getElementById('btn-gradcam').disabled = true;
-  document.getElementById('btn-gradcam').textContent = 'Xem Grad-CAM';
+  document.getElementById('btn-gradcam').textContent = 'Xem vùng chú ý';
   document.getElementById('btn-gradcam').setAttribute('aria-pressed', 'false');
   document.getElementById('gradcam-caption').textContent = 'Kiểm tra ảnh để xem vùng model chú ý.';
   document.getElementById('quality-decision').textContent = 'Chưa kiểm tra';
@@ -1076,6 +1080,7 @@ function renderDetections(detections) {
 
 // Select Defect for Xem chi tiết lỗi
 function selectDefect(id) {
+  if (appState.selectedDefectId !== id && typeof resetExplanationView === 'function') resetExplanationView();
   appState.selectedDefectId = id;
   const det = appState.detections.find(d => d.id === id);
   if (!det) return;
@@ -1154,7 +1159,7 @@ btnSaveImage.addEventListener('click', () => {
   const src = showingGradcam ? viewportImg.src : appState.annotatedImage || viewportImg.src;
   const a = document.createElement('a');
   a.href = src;
-  a.download = `glass_defect_${showingGradcam ? 'gradcam' : 'annotated'}_${Date.now()}.jpg`;
+  a.download = `glass_defect_${showingGradcam ? appState.gradcamMetadata.method : 'annotated'}_${Date.now()}.jpg`;
   a.click();
 });
 

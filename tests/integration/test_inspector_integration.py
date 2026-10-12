@@ -323,15 +323,17 @@ def test_concurrent_reviews_keep_one_version_and_automatic_assessment(client):
 
 
 @pytest.mark.parametrize("model_id", ["yolo26m-base", "yolo26m-roi-vfl", "dfine-m", "fbdnet-m"])
-def test_real_gradcam_is_persisted_and_does_not_change_assessment(client, model_id):
+@pytest.mark.parametrize("method", ["gradcam", "hirescam"])
+def test_real_gradcam_is_persisted_and_does_not_change_assessment(client, model_id, method):
     require_model(client, model_id)
     created = upload(client, {"model_id": model_id}).json()
     image_id = created["images"][0]["id"]
-    endpoint = f"/api/images/{image_id}/gradcam"
+    endpoint = f"/api/images/{image_id}/gradcam?method={method}"
     response = client.post(endpoint)
     assert response.status_code == 200, response.text
     metadata = response.json()
     assert metadata["model_id"] == model_id
+    assert metadata["method"] == method
     assert metadata["model_version"] == created["model_version"]
     assert metadata["nonzero_gradient"]
     assert not metadata["flat_cam"], "Real sample should expose spatial Grad-CAM signal"
@@ -339,6 +341,8 @@ def test_real_gradcam_is_persisted_and_does_not_change_assessment(client, model_
     assert overlay.status_code == 200
     assert overlay.headers["content-type"] == "image/jpeg"
     assert overlay.content.startswith(b"\xff\xd8")
+    detail = client.get(metadata["detail_url"])
+    assert detail.status_code == 200 and detail.content.startswith(b"\xff\xd8")
     assert client.post(endpoint).json() == metadata
     assert client.get(metadata["image_url"]).content == overlay.content
     saved = client.get(f"/api/inspections/{created['id']}").json()
@@ -347,6 +351,35 @@ def test_real_gradcam_is_persisted_and_does_not_change_assessment(client, model_
     assert (
         saved["images"][0]["result"]["detections"] == created["images"][0]["result"]["detections"]
     )
+
+
+def test_selected_defects_have_separate_explanations_and_cache_files(client):
+    require_model(client, "yolo26m-roi-vfl")
+    created = upload(
+        client, {"model_id": "yolo26m-roi-vfl", "conf_threshold": 0.1, "enable_roi": False}
+    ).json()
+    image = created["images"][0]
+    detections = image["result"]["detections"]
+    assert len(detections) >= 2
+    snapshots = []
+    for detection in detections[:2]:
+        endpoint = (
+            f"/api/images/{image['id']}/gradcam?method=hirescam&detection_id={detection['id']}"
+        )
+        response = client.post(endpoint)
+        assert response.status_code == 200, response.text
+        metadata = response.json()
+        assert metadata["detection_id"] == detection["id"]
+        assert metadata["target_class"] == detection["class_name"]
+        assert metadata["score"] == pytest.approx(detection["confidence"], abs=1e-4)
+        full = client.get(metadata["image_url"]).content
+        assert client.post(endpoint).json() == metadata
+        snapshots.append((metadata, full))
+    assert snapshots[0][0]["image_url"] != snapshots[1][0]["image_url"]
+    assert snapshots[0][1] != snapshots[1][1]
+    assert client.get(snapshots[0][0]["image_url"]).content == snapshots[0][1]
+    invalid = client.post(f"/api/images/{image['id']}/gradcam?detection_id=10000")
+    assert invalid.status_code == 422
 
 
 def test_gradcam_rejects_stale_checkpoint_and_requires_authentication(client):

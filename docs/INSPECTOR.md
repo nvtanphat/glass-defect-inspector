@@ -35,11 +35,13 @@ Compose chạy migrations trước server. Image dùng inference CPU; `weights/`
 
 Cookie đăng nhập HttpOnly, SameSite=Strict, tối đa tám giờ, ký theo token cấu hình. Đổi token làm cookie cũ mất hiệu lực. Đây là mật khẩu nội bộ dùng chung, chưa có tài khoản riêng từng người. Automation dùng bearer token. Khi đưa server ra ngoài máy local, cấu hình HTTPS/reverse proxy và quyền truy cập phù hợp.
 
-## Grad-CAM
+## Bản đồ vùng chú ý
 
-Sau khi kiểm tra, bấm **Xem Grad-CAM** trên ảnh để xem vùng ảnh hưởng đến dự đoán, rồi **Xem ảnh gốc** để quay lại. Trong lịch sử/xác nhận cũng có nút xem và tải ảnh Grad-CAM. Bản đồ được tính theo yêu cầu, lưu cùng ảnh kiểm định và dùng lại cho các lần xem sau.
+Sau khi kiểm tra, chọn lỗi trong bảng rồi bấm **Xem vùng chú ý**. **HiResCAM · chi tiết** giữ gradient theo từng vị trí; **Grad-CAM · tổng thể** dùng trung bình gradient theo không gian. Tên phương pháp thực tế luôn được hiển thị. Bấm **Xem ảnh gốc** để quay lại. Thumbnail chi tiết lỗi cũng hiển thị vùng chú ý được phóng to. Trong lịch sử, chọn phương pháp/lỗi rồi xem hoặc tải ảnh.
 
-Các adapter YOLO, RT-DETR, D-FINE và FBDNet dùng gradient của class score từ model đã kiểm tra ảnh. Model cần checkpoint hợp lệ. Grad-CAM giải thích detection có confidence cao nhất; nếu không có detection vượt ngưỡng, nhãn ghi rõ đây là ứng viên chưa vượt ngưỡng. Màu nóng biểu thị ảnh hưởng tương đối, không phải biên lỗi hay xác nhận chất lượng. Bản đồ phẳng được ghi là không có tín hiệu rõ. Tiling giải thích một tile chứa detection được chọn; ROI/letterbox được ánh xạ về ảnh gốc. Checkpoint đã thay đổi thì không tạo giải thích mới cho kết quả cũ.
+Các adapter YOLO, RT-DETR, D-FINE và FBDNet dùng gradient của class score từ model đã kiểm tra ảnh. Query được đối chiếu với class, bbox và confidence của detection đã chọn. Model cần checkpoint hợp lệ. Nếu không chỉ định lỗi, API giải thích detection có confidence cao nhất; nếu không có detection vượt ngưỡng, nhãn ghi rõ đây là ứng viên chưa vượt ngưỡng. Màu nóng biểu thị ảnh hưởng tương đối, không phải biên lỗi hay xác nhận chất lượng. Không ép bản đồ vào bbox để tạo vẻ tập trung; bản đồ phẳng được ghi là không có tín hiệu rõ. Tiling giải thích một tile chứa detection được chọn; ROI/letterbox được ánh xạ về ảnh gốc. Checkpoint đã thay đổi thì không tạo giải thích mới cho kết quả cũ.
+
+Bản đồ và cache được lưu riêng cho từng phương pháp/lỗi. HiResCAM dùng tích gradient và activation theo vị trí, theo [phương pháp của Draelos và Carin](https://arxiv.org/abs/2011.08891); điều này không cam kết mọi bản đồ của detector/transformer sẽ trùng vùng lỗi thật.
 
 ![Grad-CAM trên web kiểm định](assets/inspector-gradcam.png)
 

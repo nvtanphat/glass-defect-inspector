@@ -377,12 +377,21 @@ def create_app(database_url=None, storage=None, token=None):
         )
 
     @application.post("/api/images/{image_id}/gradcam")
-    def gradcam(image_id: str):
-        return inspections.gradcam(image_id)
+    def gradcam(
+        image_id: str,
+        method: Literal["gradcam", "hirescam"] = "gradcam",
+        detection_id: int | None = Query(None, ge=1, le=10000),
+    ):
+        return inspections.gradcam(image_id, method, detection_id)
 
     @application.get("/api/images/{image_id}/{kind}")
-    def image(image_id: str, kind: Literal["original", "annotated", "gradcam"]):
-        path = inspections.image_path(image_id, kind)
+    def image(
+        image_id: str,
+        kind: Literal["original", "annotated", "gradcam", "cam-detail"],
+        method: Literal["gradcam", "hirescam"] | None = None,
+        detection_id: int | None = Query(None, ge=1, le=10000),
+    ):
+        path = inspections.image_path(image_id, kind, method, detection_id)
         if kind == "original":
             with Image.open(path) as im:
                 stream = io.BytesIO()

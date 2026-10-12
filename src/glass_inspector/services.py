@@ -293,15 +293,36 @@ class InspectionService:
                 items=[self.summary(r) for r in rows], total=total, page=page, page_size=page_size
             )
 
-    def image_path(self, image_id, kind):
+    def image_path(self, image_id, kind, method=None, detection_id=None):
         with self.sessions() as db:
             row = db.get(InspectionImage, image_id)
-            if row and kind == "gradcam":
-                path = (
-                    Path(row.original_path).parent / f"{image_id}.gradcam.jpg"
-                    if (row.result or {}).get("gradcam")
-                    else None
-                )
+            if row and kind in {"gradcam", "cam-detail"}:
+                if method:
+                    key = f"{method}:{detection_id or 'auto'}"
+                    metadata = (row.result or {}).get("explanations", {}).get(key)
+                    suffix = ".detail" if kind == "cam-detail" else ""
+                    path = (
+                        Path(row.original_path).parent
+                        / f"{image_id}.{method}.{detection_id or 'auto'}{suffix}.jpg"
+                        if metadata
+                        else None
+                    )
+                else:
+                    metadata = (row.result or {}).get("gradcam")
+                    if metadata and metadata.get("method") in {"gradcam", "hirescam"}:
+                        method = metadata["method"]
+                        detection_id = metadata.get("requested_detection_id")
+                        suffix = ".detail" if kind == "cam-detail" else ""
+                        path = (
+                            Path(row.original_path).parent
+                            / f"{image_id}.{method}.{detection_id or 'auto'}{suffix}.jpg"
+                        )
+                    else:
+                        path = (
+                            Path(row.original_path).parent / f"{image_id}.gradcam.jpg"
+                            if metadata and kind == "gradcam"
+                            else None
+                        )
             else:
                 path = (
                     (row.original_path if kind == "original" else row.annotated_path)
@@ -312,7 +333,7 @@ class InspectionService:
                 raise HTTPException(404, "Image not found")
             return Path(path)
 
-    def gradcam(self, image_id):
+    def gradcam(self, image_id, method="gradcam", detection_id=None):
         if not self.inference.gate.acquire(blocking=False):
             raise HTTPException(
                 429, "Inference capacity reached; retry later", headers={"Retry-After": "5"}
@@ -329,10 +350,29 @@ class InspectionService:
                 saved_result = dict(image.result)
                 config = dict(inspection.config)
                 model_id, model_version = inspection.model_id, inspection.model_version
-            output = path.parent / f"{image_id}.gradcam.jpg"
-            cached = saved_result.get("gradcam")
-            if cached and cached.get("version") == GRADCAM_VERSION and output.is_file():
-                return dict(cached, image_url=f"/api/images/{image_id}/gradcam")
+            if detection_id is not None and not any(
+                d["id"] == detection_id for d in saved_result.get("detections", [])
+            ):
+                raise HTTPException(422, "Selected detection was not found in this inspection")
+            key = f"{method}:{detection_id or 'auto'}"
+            output = path.parent / f"{image_id}.{method}.{detection_id or 'auto'}.jpg"
+            image_url = f"/api/images/{image_id}/gradcam?method={method}"
+            detail_url = f"/api/images/{image_id}/cam-detail?method={method}"
+            if detection_id is not None:
+                image_url += f"&detection_id={detection_id}"
+                detail_url += f"&detection_id={detection_id}"
+            cached = saved_result.get("explanations", {}).get(key)
+            if (
+                cached
+                and cached.get("version") == GRADCAM_VERSION
+                and output.is_file()
+                and (not cached.get("detail_box") or output.with_suffix(".detail.jpg").is_file())
+            ):
+                return dict(
+                    cached,
+                    image_url=image_url,
+                    detail_url=detail_url if cached.get("detail_box") else None,
+                )
             try:
                 record, weights = self.inference.registry.resolve(model_id)
             except (ValueError, LookupError) as exc:
@@ -343,13 +383,41 @@ class InspectionService:
                 raise HTTPException(404, "Original image not found")
             with Image.open(path) as original:
                 source = ImageOps.exif_transpose(original).convert("RGB")
-            raw, metadata = explain(source, weights, record["adapter"], saved_result, config)
-            metadata.update(model_id=model_id, model_version=model_version)
+            raw, metadata = explain(
+                source, weights, record["adapter"], saved_result, config, method, detection_id
+            )
+            metadata.update(
+                model_id=model_id, model_version=model_version, requested_detection_id=detection_id
+            )
             self.atomic_write(output, raw)
+            target = next(
+                (
+                    d
+                    for d in saved_result.get("detections", [])
+                    if d["id"] == metadata["detection_id"]
+                ),
+                None,
+            )
+            if target:
+                x1, y1, x2, y2 = target["bbox_xyxy"]
+                side = max(32, (x2 - x1) * 2, (y2 - y1) * 2)
+                center_x, center_y = (x1 + x2) / 2, (y1 + y2) / 2
+                box = [
+                    max(0, round(center_x - side / 2)),
+                    max(0, round(center_y - side / 2)),
+                    min(source.width, round(center_x + side / 2)),
+                    min(source.height, round(center_y + side / 2)),
+                ]
+                with Image.open(io.BytesIO(raw)) as overlay:
+                    stream = io.BytesIO()
+                    overlay.crop(box).save(stream, "JPEG", quality=95)
+                self.atomic_write(output.with_suffix(".detail.jpg"), stream.getvalue())
+                metadata["detail_box"] = box
             with self.sessions.begin() as db:
                 image = db.get(InspectionImage, image_id)
-                image.result = dict(image.result, gradcam=metadata)
-            return dict(metadata, image_url=f"/api/images/{image_id}/gradcam")
+                variants = dict(image.result.get("explanations", {}), **{key: metadata})
+                image.result = dict(image.result, gradcam=metadata, explanations=variants)
+            return dict(metadata, image_url=image_url, detail_url=detail_url if target else None)
         except HTTPException:
             raise
         except Exception as exc:

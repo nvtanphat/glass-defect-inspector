@@ -36,7 +36,7 @@ def page():
         browser.close()
 
 
-def run_image(page, filename="sample_bottle_1.jpg", confidence=0.25):
+def run_image(page, filename="sample_bottle_1.jpg", confidence=0.25, model_id="yolo26m-base"):
     page.locator("[data-screen=workspace]").click()
     page.locator("#image-file-input").set_input_files(
         ROOT / "src/glass_inspector/sample_images" / filename
@@ -44,7 +44,7 @@ def run_image(page, filename="sample_bottle_1.jpg", confidence=0.25):
     page.wait_for_function("appState.imageWidth > 0 && appState.currentImage != null")
     if not page.locator("#inspection-options").evaluate("(element) => element.open"):
         page.locator("#inspection-options summary").click()
-    page.select_option("#model-weights", "yolo26m-base")
+    page.select_option("#model-weights", model_id)
     page.evaluate("(value) => { confSlider.value=value; }", confidence)
     with page.expect_response(
         lambda response: response.url.endswith("/api/inspections")
@@ -89,11 +89,14 @@ def test_gradcam_toggle_saved_history_and_image_reset(page):
     result = run_image(page)
     original = page.locator("#viewport-img").get_attribute("src")
     with page.expect_response(
-        lambda response: response.url.endswith("/gradcam") and response.request.method == "POST",
+        lambda response: response.url.split("?")[0].endswith("/gradcam")
+        and response.request.method == "POST",
         timeout=90000,
     ) as pending:
         page.locator("#btn-gradcam").click()
     assert pending.value.status == 200, pending.value.text()
+    assert pending.value.json()["method"] == "hirescam"
+    assert pending.value.json()["detection_id"] == page.evaluate("appState.selectedDefectId")
     page.wait_for_function(
         "document.getElementById('btn-gradcam').getAttribute('aria-pressed') === 'true'"
     )
@@ -101,14 +104,22 @@ def test_gradcam_toggle_saved_history_and_image_reset(page):
     page.screenshot(path=str(ROOT / "docs/assets/inspector-gradcam.png"), full_page=True)
     with page.expect_download() as downloaded:
         page.locator("#btn-save-image").click()
-    assert "gradcam" in downloaded.value.suggested_filename
+    assert "hirescam" in downloaded.value.suggested_filename
     page.locator("#btn-gradcam").click()
     assert page.locator("#viewport-img").get_attribute("src") == original
     page.locator("[data-screen=history]").click()
     page.locator(f'[data-inspection-id="{result["inspection_id"]}"]').click()
-    page.get_by_role("button", name="Xem Grad-CAM", exact=True).click()
+    page.get_by_role("button", name="Xem vùng chú ý", exact=True).click()
     page.get_by_alt_text("Bản đồ Grad-CAM trên ảnh kiểm định").wait_for(state="visible")
-    assert page.get_by_role("link", name="Tải ảnh Grad-CAM").is_visible()
+    assert page.get_by_role("link", name="Tải ảnh vùng chú ý").is_visible()
+    page.get_by_label("Cách giải thích ảnh đã lưu").select_option("gradcam")
+    with page.expect_response(
+        lambda response: response.url.split("?")[0].endswith("/gradcam")
+        and response.request.method == "POST",
+        timeout=90000,
+    ) as switched:
+        page.get_by_role("button", name="Xem vùng chú ý", exact=True).click()
+    assert switched.value.status == 200 and switched.value.json()["method"] == "gradcam"
     run_image(page, confidence=1)
     page.locator("#btn-gradcam").click()
     page.wait_for_function(
@@ -121,6 +132,29 @@ def test_gradcam_toggle_saved_history_and_image_reset(page):
     page.wait_for_function("appState.result === null")
     assert page.locator("#btn-gradcam").is_disabled()
     assert not errors, errors
+
+
+def test_selecting_another_defect_changes_the_explanation_target(page):
+    result = run_image(page, confidence=0.1, model_id="yolo26m-roi-vfl")
+    assert len(result["detections"]) >= 2
+    second = result["detections"][1]
+    page.locator(f"#row-det-{second['id']}").click()
+    with page.expect_response(
+        lambda response: response.url.split("?")[0].endswith("/gradcam")
+        and response.request.method == "POST",
+        timeout=90000,
+    ) as pending:
+        page.locator("#btn-gradcam").click()
+    assert pending.value.status == 200, pending.value.text()
+    assert pending.value.json()["detection_id"] == second["id"]
+    assert pending.value.json()["target_class"] == second["class_name"]
+    page.wait_for_function(
+        "document.getElementById('btn-gradcam').getAttribute('aria-pressed') === 'true'"
+    )
+    assert page.locator("#roi-thumbnail").get_attribute("src").startswith("blob:")
+    page.locator(f"#row-det-{result['detections'][0]['id']}").click()
+    assert page.locator("#btn-gradcam").get_attribute("aria-pressed") == "false"
+    assert page.evaluate("appState.gradcamImage === null")
 
 
 def test_browser_boxes_resize_zoom_fullscreen_and_reset(page):
