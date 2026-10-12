@@ -321,6 +321,7 @@ def create_app(database_url=None, storage=None, token=None):
         return dict(
             results[0],
             inspection_id=inspection_id,
+            image_id=inspections.detail(inspection_id)["images"][0]["id"],
             conclusion=inspections.detail(inspection_id)["conclusion"],
         )
 
@@ -375,8 +376,12 @@ def create_app(database_url=None, storage=None, token=None):
             },
         )
 
+    @application.post("/api/images/{image_id}/gradcam")
+    def gradcam(image_id: str):
+        return inspections.gradcam(image_id)
+
     @application.get("/api/images/{image_id}/{kind}")
-    def image(image_id: str, kind: Literal["original", "annotated"]):
+    def image(image_id: str, kind: Literal["original", "annotated", "gradcam"]):
         path = inspections.image_path(image_id, kind)
         if kind == "original":
             with Image.open(path) as im:

@@ -83,6 +83,46 @@ def assert_boxes_match(page):
     assert errors and max(errors) < 1, errors
 
 
+def test_gradcam_toggle_saved_history_and_image_reset(page):
+    errors = []
+    page.on("pageerror", lambda err: errors.append(str(err)))
+    result = run_image(page)
+    original = page.locator("#viewport-img").get_attribute("src")
+    with page.expect_response(
+        lambda response: response.url.endswith("/gradcam") and response.request.method == "POST",
+        timeout=90000,
+    ) as pending:
+        page.locator("#btn-gradcam").click()
+    assert pending.value.status == 200, pending.value.text()
+    page.wait_for_function(
+        "document.getElementById('btn-gradcam').getAttribute('aria-pressed') === 'true'"
+    )
+    assert page.locator("#viewport-img").get_attribute("src") != original
+    page.screenshot(path=str(ROOT / "docs/assets/inspector-gradcam.png"), full_page=True)
+    with page.expect_download() as downloaded:
+        page.locator("#btn-save-image").click()
+    assert "gradcam" in downloaded.value.suggested_filename
+    page.locator("#btn-gradcam").click()
+    assert page.locator("#viewport-img").get_attribute("src") == original
+    page.locator("[data-screen=history]").click()
+    page.locator(f'[data-inspection-id="{result["inspection_id"]}"]').click()
+    page.get_by_role("button", name="Xem Grad-CAM", exact=True).click()
+    page.get_by_alt_text("Bản đồ Grad-CAM trên ảnh kiểm định").wait_for(state="visible")
+    assert page.get_by_role("link", name="Tải ảnh Grad-CAM").is_visible()
+    run_image(page, confidence=1)
+    page.locator("#btn-gradcam").click()
+    page.wait_for_function(
+        "document.getElementById('btn-gradcam').getAttribute('aria-pressed') === 'true'"
+    )
+    assert "Chưa có lỗi vượt ngưỡng" in page.locator("#gradcam-caption").inner_text()
+    page.locator("#image-file-input").set_input_files(
+        ROOT / "src/glass_inspector/sample_images/sample_bottle_2.jpg"
+    )
+    page.wait_for_function("appState.result === null")
+    assert page.locator("#btn-gradcam").is_disabled()
+    assert not errors, errors
+
+
 def test_browser_boxes_resize_zoom_fullscreen_and_reset(page):
     errors = []
     page.on("pageerror", lambda err: errors.append(str(err)))

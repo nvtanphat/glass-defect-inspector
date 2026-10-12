@@ -35,6 +35,14 @@ Compose chạy migrations trước server. Image dùng inference CPU; `weights/`
 
 Cookie đăng nhập HttpOnly, SameSite=Strict, tối đa tám giờ, ký theo token cấu hình. Đổi token làm cookie cũ mất hiệu lực. Đây là mật khẩu nội bộ dùng chung, chưa có tài khoản riêng từng người. Automation dùng bearer token. Khi đưa server ra ngoài máy local, cấu hình HTTPS/reverse proxy và quyền truy cập phù hợp.
 
+## Grad-CAM
+
+Sau khi kiểm tra, bấm **Xem Grad-CAM** trên ảnh để xem vùng ảnh hưởng đến dự đoán, rồi **Xem ảnh gốc** để quay lại. Trong lịch sử/xác nhận cũng có nút xem và tải ảnh Grad-CAM. Bản đồ được tính theo yêu cầu, lưu cùng ảnh kiểm định và dùng lại cho các lần xem sau.
+
+Các adapter YOLO, RT-DETR, D-FINE và FBDNet dùng gradient của class score từ model đã kiểm tra ảnh. Model cần checkpoint hợp lệ. Grad-CAM giải thích detection có confidence cao nhất; nếu không có detection vượt ngưỡng, nhãn ghi rõ đây là ứng viên chưa vượt ngưỡng. Màu nóng biểu thị ảnh hưởng tương đối, không phải biên lỗi hay xác nhận chất lượng. Bản đồ phẳng được ghi là không có tín hiệu rõ. Tiling giải thích một tile chứa detection được chọn; ROI/letterbox được ánh xạ về ảnh gốc. Checkpoint đã thay đổi thì không tạo giải thích mới cho kết quả cũ.
+
+![Grad-CAM trên web kiểm định](assets/inspector-gradcam.png)
+
 ## Kiểm tra và bảo trì
 
 ```bash

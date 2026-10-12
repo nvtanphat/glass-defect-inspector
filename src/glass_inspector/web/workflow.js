@@ -23,7 +23,7 @@ function button(label, parent, action, attrs = {}) {
 function clearWorkflow() {
   // Saved images may still be displayed or downloadable in Workspace.
   workflowObjectUrls = workflowObjectUrls.filter(url => {
-    if (url === appState.currentImage || url === appState.annotatedImage) return true;
+    if (url === appState.currentImage || url === appState.annotatedImage || url === appState.gradcamImage) return true;
     URL.revokeObjectURL(url);
     return false;
   });
@@ -35,6 +35,53 @@ async function imageUrl(url) {
   workflowObjectUrls.push(objectUrl);
   return objectUrl;
 }
+
+function gradcamLabel(metadata) {
+  if (metadata.flat_cam || !metadata.nonzero_gradient) return 'Grad-CAM không có tín hiệu rõ cho dự đoán này.';
+  const target = metadata.target_kind === 'detection' ? 'Giải thích lỗi' : 'Chưa có lỗi vượt ngưỡng; giải thích ứng viên';
+  return `${target}: ${defectLabel(metadata.target_class)}. Màu nóng = ảnh hưởng lớn hơn; không phải ranh giới lỗi.`;
+}
+
+async function loadGradcam(imageId) {
+  const metadata = await fetchFromApi(`/api/images/${encodeURIComponent(imageId)}/gradcam`, {method: 'POST'});
+  return {metadata, url: await imageUrl(metadata.image_url)};
+}
+
+document.getElementById('btn-gradcam').addEventListener('click', async () => {
+  const control = document.getElementById('btn-gradcam');
+  const caption = document.getElementById('gradcam-caption');
+  const imageId = appState.imageId;
+  if (!imageId) return;
+  if (control.getAttribute('aria-pressed') === 'true') {
+    viewportImg.src = appState.currentImage;
+    control.setAttribute('aria-pressed', 'false');
+    control.textContent = 'Xem Grad-CAM';
+    caption.textContent = 'Đang xem ảnh gốc và vị trí lỗi.';
+    return;
+  }
+  control.disabled = true;
+  control.textContent = 'Đang tạo Grad-CAM…';
+  caption.textContent = 'Đang tính vùng chú ý từ model đã kiểm tra ảnh này.';
+  try {
+    if (!appState.gradcamImage) {
+      const loaded = await loadGradcam(imageId);
+      if (imageId !== appState.imageId) return;
+      appState.gradcamImage = loaded.url;
+      appState.gradcamMetadata = loaded.metadata;
+    }
+    viewportImg.src = appState.gradcamImage;
+    control.setAttribute('aria-pressed', 'true');
+    control.textContent = 'Xem ảnh gốc';
+    caption.textContent = gradcamLabel(appState.gradcamMetadata);
+  } catch (error) {
+    if (imageId !== appState.imageId) return;
+    caption.textContent = 'Chưa tạo được Grad-CAM. Bạn có thể thử lại.';
+    control.textContent = 'Thử lại Grad-CAM';
+    setStatus(error.message, true);
+  } finally {
+    if (imageId === appState.imageId) control.disabled = false;
+  }
+});
 async function exportInspection(id, format) {
   const response = await apiResponse(`/api/inspections/${encodeURIComponent(id)}/export?format=${format}`);
   const url = URL.createObjectURL(await response.blob());
@@ -132,6 +179,33 @@ async function openInspection(id) {
     const result = image.result;
     node('p', result ? `${result.total_defects} lỗi · ${durationLabel(result.latency_ms)}` : 'Chưa có kết quả hoàn chỉnh', imageCard);
     if (result) {
+      const camBox = node('div', null, imageCard);
+      const camNote = node('p', 'Xem vùng model chú ý cho ảnh đã kiểm tra.', camBox, {class: 'gradcam-note', role: 'status'});
+      const camImage = node('img', null, camBox, {alt: 'Bản đồ Grad-CAM trên ảnh kiểm định', hidden: ''});
+      camImage.style.cssText = 'max-height:400px;max-width:100%;margin-top:8px';
+      const camButton = button('Xem Grad-CAM', camBox, async () => {
+        if (camImage.src) {
+          camImage.hidden = !camImage.hidden;
+          camButton.textContent = camImage.hidden ? 'Xem Grad-CAM' : 'Ẩn Grad-CAM';
+          return;
+        }
+        camButton.disabled = true;
+        camNote.textContent = 'Đang tạo Grad-CAM…';
+        try {
+          const loaded = await loadGradcam(image.id);
+          if (epoch !== workflowEpoch) return;
+          camImage.src = loaded.url;
+          camImage.hidden = false;
+          camButton.textContent = 'Ẩn Grad-CAM';
+          camNote.textContent = gradcamLabel(loaded.metadata);
+          const download = node('a', 'Tải ảnh Grad-CAM', camBox, {href: loaded.url, download: `gradcam-${image.id}.jpg`});
+          download.style.cssText = 'display:inline-block;margin:8px;color:#1d4ed8';
+        } catch (error) {
+          camNote.textContent = 'Chưa tạo được Grad-CAM. Bạn có thể thử lại.';
+          camButton.textContent = 'Thử lại Grad-CAM';
+          setStatus(error.message, true);
+        } finally { camButton.disabled = false; }
+      });
       const table = node('table', null, imageCard);
       for (const d of result.detections) {
         const row = node('tr', null, table);
@@ -144,7 +218,7 @@ async function openInspection(id) {
         displayImage(original);
         // Use original coordinate space. Saved annotated image stays downloadable.
         appState.imageWidth = result.image_width; appState.imageHeight = result.image_height;
-        handleInferenceResult({...result, success: true, inspection_id: id, conclusion: detail.conclusion, annotated_b64: src});
+        handleInferenceResult({...result, success: true, inspection_id: id, image_id: image.id, conclusion: detail.conclusion, annotated_b64: src});
         await showScreen('workspace');
       });
     }

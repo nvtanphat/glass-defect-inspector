@@ -320,3 +320,43 @@ def test_concurrent_reviews_keep_one_version_and_automatic_assessment(client):
     detail = client.get(f"/api/inspections/{session_id}").json()
     assert detail["version"] == 1 and len(detail["reviews"]) == 1
     assert detail["config"]["automatic_assessment"]["conclusion"] == "REVIEW"
+
+
+@pytest.mark.parametrize("model_id", ["yolo26m-base", "yolo26m-roi-vfl", "dfine-m", "fbdnet-m"])
+def test_real_gradcam_is_persisted_and_does_not_change_assessment(client, model_id):
+    require_model(client, model_id)
+    created = upload(client, {"model_id": model_id}).json()
+    image_id = created["images"][0]["id"]
+    endpoint = f"/api/images/{image_id}/gradcam"
+    response = client.post(endpoint)
+    assert response.status_code == 200, response.text
+    metadata = response.json()
+    assert metadata["model_id"] == model_id
+    assert metadata["model_version"] == created["model_version"]
+    assert metadata["nonzero_gradient"]
+    overlay = client.get(metadata["image_url"])
+    assert overlay.status_code == 200
+    assert overlay.headers["content-type"] == "image/jpeg"
+    assert overlay.content.startswith(b"\xff\xd8")
+    assert client.post(endpoint).json() == metadata
+    assert client.get(metadata["image_url"]).content == overlay.content
+    saved = client.get(f"/api/inspections/{created['id']}").json()
+    assert saved["images"][0]["result"]["gradcam"]["query"] == metadata["query"]
+    assert saved["conclusion"] == created["conclusion"]
+    assert (
+        saved["images"][0]["result"]["detections"] == created["images"][0]["result"]["detections"]
+    )
+
+
+def test_gradcam_rejects_stale_checkpoint_and_requires_authentication(client):
+    from glass_inspector.database import Inspection
+
+    require_model(client, "yolo26m-base")
+    created = upload(client).json()
+    image_id = created["images"][0]["id"]
+    endpoint = f"/api/images/{image_id}/gradcam"
+    assert client.post(endpoint, headers={"Authorization": ""}).status_code == 401
+    with client.app.state.sessions.begin() as db:
+        db.get(Inspection, created["id"]).model_version = "0" * 64
+    assert client.post(endpoint).status_code == 409
+    assert client.get(endpoint).status_code == 404

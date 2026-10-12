@@ -13,6 +13,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from fastapi import HTTPException
+from PIL import Image, ImageOps
 from sqlalchemy import func, select, update
 
 from glass_inspector.database import (
@@ -22,6 +23,8 @@ from glass_inspector.database import (
     InspectionReview,
     ModelRecord,
 )
+from glass_inspector.gradcam import VERSION as GRADCAM_VERSION
+from glass_inspector.gradcam import explain
 from glass_inspector.inference_engine import (
     CLASS_NAMES,
     compute_slice_intervals,
@@ -293,12 +296,67 @@ class InspectionService:
     def image_path(self, image_id, kind):
         with self.sessions() as db:
             row = db.get(InspectionImage, image_id)
-            path = (
-                (row.original_path if kind == "original" else row.annotated_path) if row else None
-            )
+            if row and kind == "gradcam":
+                path = (
+                    Path(row.original_path).parent / f"{image_id}.gradcam.jpg"
+                    if (row.result or {}).get("gradcam")
+                    else None
+                )
+            else:
+                path = (
+                    (row.original_path if kind == "original" else row.annotated_path)
+                    if row
+                    else None
+                )
             if not path or not Path(path).is_file():
                 raise HTTPException(404, "Image not found")
             return Path(path)
+
+    def gradcam(self, image_id):
+        if not self.inference.gate.acquire(blocking=False):
+            raise HTTPException(
+                429, "Inference capacity reached; retry later", headers={"Retry-After": "5"}
+            )
+        try:
+            with self.sessions() as db:
+                image = db.get(InspectionImage, image_id)
+                if image is None:
+                    raise HTTPException(404, "Image not found")
+                inspection = db.get(Inspection, image.inspection_id)
+                if inspection.status != "COMPLETED" or not image.result:
+                    raise HTTPException(409, "Complete the inspection before requesting Grad-CAM")
+                path = Path(image.original_path)
+                saved_result = dict(image.result)
+                config = dict(inspection.config)
+                model_id, model_version = inspection.model_id, inspection.model_version
+            output = path.parent / f"{image_id}.gradcam.jpg"
+            cached = saved_result.get("gradcam")
+            if cached and cached.get("version") == GRADCAM_VERSION and output.is_file():
+                return dict(cached, image_url=f"/api/images/{image_id}/gradcam")
+            try:
+                record, weights = self.inference.registry.resolve(model_id)
+            except (ValueError, LookupError) as exc:
+                raise HTTPException(503, "The saved inspection model is unavailable") from exc
+            if record["sha256"] != model_version:
+                raise HTTPException(409, "Checkpoint changed since this inspection")
+            if not path.is_file():
+                raise HTTPException(404, "Original image not found")
+            with Image.open(path) as original:
+                source = ImageOps.exif_transpose(original).convert("RGB")
+            raw, metadata = explain(source, weights, record["adapter"], saved_result, config)
+            metadata.update(model_id=model_id, model_version=model_version)
+            self.atomic_write(output, raw)
+            with self.sessions.begin() as db:
+                image = db.get(InspectionImage, image_id)
+                image.result = dict(image.result, gradcam=metadata)
+            return dict(metadata, image_url=f"/api/images/{image_id}/gradcam")
+        except HTTPException:
+            raise
+        except Exception as exc:
+            log.exception("gradcam_failed", extra={"image_id": image_id})
+            raise HTTPException(503, "Grad-CAM could not be generated for this image") from exc
+        finally:
+            self.inference.gate.release()
 
 
 class InspectionReviewService:
