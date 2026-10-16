@@ -85,6 +85,12 @@ def parse_args() -> argparse.Namespace:
         help="Path to COCO ground truth JSON file for offline evaluation.",
     )
     parser.add_argument(
+        "--hyperparams",
+        type=str,
+        default=str(ROOT / "results" / "optimal_ensemble_hyperparameters.json"),
+        help="Path to optimal hyperparameters JSON file (if available).",
+    )
+    parser.add_argument(
         "--output",
         type=str,
         default=str(ROOT / "results" / "ensemble_results.json"),
@@ -107,9 +113,21 @@ def main() -> None:
         print(f"    - {cls_name:<15}: Model0 (Transformer)={w[0]}, Model1 (CNN)={w[1]}")
     print("=" * 80)
 
+    opt_hp_path = Path(args.hyperparams)
+    loaded_per_class_weights = None
+    if opt_hp_path.is_file():
+        try:
+            with open(opt_hp_path, encoding="utf-8") as f:
+                opt_data = json.load(f)
+            loaded_per_class_weights = {k: v.get("weights", [1.0, 1.0]) for k, v in opt_data.items()}
+            print(f"• Loaded optimal per-class hyperparameters from: {opt_hp_path}")
+        except Exception as e:
+            print(f"• Notice: could not parse {opt_hp_path}: {e}")
+
     ensemble = GlassDefectEnsemble(
         model_paths=args.models,
         weights=args.model_weights,
+        per_class_weights=loaded_per_class_weights,
         iou_threshold=args.iou_thr,
         skip_box_threshold=args.skip_box_thr,
         root_dir=ROOT,

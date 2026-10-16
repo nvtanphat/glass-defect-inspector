@@ -32,6 +32,76 @@ DEFAULT_PER_CLASS_WEIGHTS: dict[str, list[float]] = {
     "LoiTray": [2.0, 0.6],
 }
 
+# Calibrated Per-Class dynamic IoU thresholds:
+DEFAULT_PER_CLASS_IOU: dict[str, float] = {
+    "DiVat": 0.55,
+    "DiVatLoiLom": 0.41,
+    "LoiChi": 0.65,
+    "LoiNhua": 0.59,
+    "LoiTray": 0.43,
+}
+
+# Optimal Per-Class Heterogeneous Routing Hyperparameters (mAP@50:95: 46.10%, mAP@50: 77.65%):
+DEFAULT_OPTIMAL_HYPERPARAMS: dict[str, dict] = {
+    "DiVat": {
+        "mode": "3M_MS_TTA",
+        "iou_thr": 0.55,
+        "weights": [1.0, 2.5, 0.8],
+        "coord_ratio": [0.33, 0.33, 0.34],
+        "boost_3": 1.25,
+        "boost_2": 1.05,
+        "solo_decay": 0.85,
+        "conf_floor": 0.12,
+        "final_ap": 26.28,
+    },
+    "DiVatLoiLom": {
+        "mode": "2M_FBD_YOLO_MS",
+        "iou_thr": 0.41,
+        "weights": [2.0, 1.0],
+        "coord_ratio": [0.60, 0.40],
+        "boost_3": 1.0,
+        "boost_2": 1.22,
+        "solo_decay": 0.85,
+        "conf_floor": 0.03,
+        "final_ap": 35.81,
+    },
+    "LoiChi": {
+        "mode": "2M_FBD_YOLO",
+        "iou_thr": 0.65,
+        "weights": [2.5, 0.5],
+        "coord_ratio": [0.75, 0.25],
+        "boost_3": 1.0,
+        "boost_2": 1.05,
+        "solo_decay": 0.85,
+        "conf_floor": 0.05,
+        "final_ap": 66.88,
+    },
+    "LoiNhua": {
+        "mode": "2M_FBD_YOLO",
+        "iou_thr": 0.59,
+        "weights": [0.8, 2.0],
+        "coord_ratio": [0.60, 0.40],
+        "boost_3": 1.0,
+        "boost_2": 1.05,
+        "solo_decay": 0.85,
+        "conf_floor": 0.05,
+        "final_ap": 57.79,
+    },
+    "LoiTray": {
+        "mode": "3M_MS_TTA",
+        "iou_thr": 0.43,
+        "weights": [0.8, 0.8, 2.5],
+        "coord_ratio": [0.45, 0.45, 0.10],
+        "boost_3": 1.10,
+        "boost_2": 1.05,
+        "solo_decay": 0.85,
+        "conf_floor": 0.18,
+        "final_ap": 43.73,
+    },
+}
+
+DEFAULT_APEX_HYPERPARAMS = DEFAULT_OPTIMAL_HYPERPARAMS
+
 
 def compute_iou_matrix(boxes_a: np.ndarray, boxes_b: np.ndarray) -> np.ndarray:
     """Compute pairwise IoU between two sets of boxes [x1, y1, x2, y2]."""

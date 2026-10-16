@@ -8,12 +8,13 @@ Kết quả đánh giá thực nghiệm trên tập kiểm thử độc lập ch
 
 | Mô hình / Kiến trúc | mAP@50 (%) | mAP@50:95 (%) | Độ trễ (ms) | Tốc độ (FPS) | Đặc tính triển khai |
 |:---|:---:|:---:|:---:|:---:|:---|
-| 👑 **Unified Heterogeneous Triad** | **76,43** | **44,45** | 293,5 ms | ~3,4 FPS | KCS chuyên sâu, kỷ lục SOTA tuyệt đối (đạt đỉnh cả 5/5 lớp) |
-| **Dual-Model WBF Ensemble** | 75,68 | 43,71 | 76,3 ms | ~13,1 FPS | Cân bằng tối ưu giữa độ chính xác vượt trội và tốc độ xử lý |
-| **FBDNet-M (Single)** | 72,47 | 41,81 | 57,3 ms | ~17,5 FPS | Mô hình đơn lẻ cân bằng, phát hiện tốt cạnh biên khuyết tật |
-| **YOLO26m-ROI-VFL (Single)** | 69,13 | 40,09 | 20,7 ms | **~48,3 FPS** | Dây chuyền thời gian thực (Real-Time), xử lý trực tiếp trên chuyền |
+| **Adaptive Heterogeneous Triad** | **77,65** | **46,10** | 291,5 ms | ~3,4 FPS | Tổ hợp 3 mô hình (FBDNet + D-FINE + YOLO) định tuyến thích ứng từng lớp |
+| **Heterogeneous Morphology Triad** | 76,43 | 44,45 | 293,5 ms | ~3,4 FPS | Tổ hợp 3 mô hình định tuyến theo hình thái khuyết tật |
+| **Dual-Model WBF Ensemble** | 75,68 | 43,71 | 76,3 ms | ~13,1 FPS | Cân bằng tối ưu giữa độ chính xác và tốc độ suy luận (FBDNet + YOLO) |
+| **FBDNet-M (Single Model)** | 72,47 | 41,81 | 57,3 ms | ~17,5 FPS | Mô hình đơn lẻ cân bằng, phát hiện tốt cạnh biên khuyết tật |
+| **YOLO26m-ROI-VFL (Single Model)** | 69,13 | 40,09 | 20,7 ms | **~48,3 FPS** | Dây chuyền thời gian thực (Real-Time), xử lý trực tiếp trên chuyền |
 
-👉 Xem phân tích chi tiết từng lớp lỗi, trần lý thuyết Oracle và bảng đối chiếu toàn bộ các mô hình tại [Báo cáo Benchmark Toàn Diện](docs/research/reports/BENCHMARK_REPORT.md).
+👉 Xem phân tích chi tiết từng lớp lỗi, trần lý thuyết Oracle và bảng đối chiếu toàn bộ các mô hình tại [Báo cáo Đánh giá Hiệu năng](docs/research/reports/BENCHMARK_REPORT.md).
 
 ## Cài đặt
 
