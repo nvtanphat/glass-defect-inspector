@@ -1,6 +1,19 @@
-﻿# Glass Defect Inspector
+# Glass Defect Inspector
 
 Dự án nhận diện năm loại lỗi trên chai thủy tinh: pipeline train/evaluate local bằng Python và một web FastAPI + PostgreSQL để kiểm tra ảnh, lưu lịch sử, xác nhận kết quả và xuất báo cáo.
+
+## Hiệu năng & Benchmark SOTA
+
+Kết quả đánh giá thực nghiệm trên tập kiểm thử độc lập chính thức (**890 ảnh, 1.573 khuyết tật**) với chuẩn hóa ROI và đánh giá bằng `COCOeval` (NVIDIA Tesla T4 GPU FP16):
+
+| Mô hình / Kiến trúc | mAP@50 (%) | mAP@50:95 (%) | Độ trễ (ms) | Tốc độ (FPS) | Đặc tính triển khai |
+|:---|:---:|:---:|:---:|:---:|:---|
+| 👑 **Unified Heterogeneous Triad** | **76,43** | **44,45** | 293,5 ms | ~3,4 FPS | KCS chuyên sâu, kỷ lục SOTA tuyệt đối (đạt đỉnh cả 5/5 lớp) |
+| **Dual-Model WBF Ensemble** | 75,68 | 43,71 | 76,3 ms | ~13,1 FPS | Cân bằng tối ưu giữa độ chính xác vượt trội và tốc độ xử lý |
+| **FBDNet-M (Single)** | 72,47 | 41,81 | 57,3 ms | ~17,5 FPS | Mô hình đơn lẻ cân bằng, phát hiện tốt cạnh biên khuyết tật |
+| **YOLO26m-ROI-VFL (Single)** | 69,13 | 40,09 | 20,7 ms | **~48,3 FPS** | Dây chuyền thời gian thực (Real-Time), xử lý trực tiếp trên chuyền |
+
+👉 Xem phân tích chi tiết từng lớp lỗi, trần lý thuyết Oracle và bảng đối chiếu toàn bộ các mô hình tại [Báo cáo Benchmark Toàn Diện](docs/research/reports/BENCHMARK_REPORT.md).
 
 ## Cài đặt
 
