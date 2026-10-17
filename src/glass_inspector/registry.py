@@ -13,11 +13,19 @@ from glass_inspector.inference_engine import (
     WORKSPACE_ROOT,
     load_dfine_model,
     load_yolo_model,
+    run_ensemble_inspection,
     run_inspection,
 )
 from glass_inspector.paths import PACKAGE_DIR, SAMPLES_DIR
 
 MODEL_SPECS = [
+    (
+        "apex-triad-ensemble",
+        "Adaptive Heterogeneous Triad Ensemble (SOTA 46.10%)",
+        "optimal_ensemble_hyperparameters.json",
+        "ensemble",
+        True,
+    ),
     ("yolo11m", "YOLO11m", "yolo11m_best.pt", "yolo", False),
     ("yolo26m-base", "YOLO26m Base", "yolo26m_960_best.pt", "yolo", False),
     ("yolo26m-roi-vfl", "YOLO26m + ROI + VFL", "yolo26m_roi_vfl_best.pt", "yolo", True),
@@ -62,8 +70,12 @@ class ModelRegistry:
                 status="UNAVAILABLE",
                 reason="Not verified in this process",
                 preprocessing="RGB; ROI by exact resolution; "
-                + ("square letterbox 960 / 255" if adapter == "yolo" else "resize 960 / 255"),
-                is_default=model_id == "yolo26m-roi-vfl",
+                + (
+                    "Triad Heterogeneous Ensemble (FBDNet + D-FINE + YOLO)"
+                    if adapter == "ensemble"
+                    else ("square letterbox 960 / 255" if adapter == "yolo" else "resize 960 / 255")
+                ),
+                is_default=model_id == "apex-triad-ensemble",
             )
 
     def probe(self, image: Path | None = None):
@@ -72,7 +84,10 @@ class ModelRegistry:
 
         torch.set_num_threads(2)
         for record in self.records.values():
-            path = self.root / "weights" / record["filename"]
+            if record["adapter"] == "ensemble":
+                path = self.root / "results" / record["filename"]
+            else:
+                path = self.root / "weights" / record["filename"]
             if not path.is_file():
                 record.update(status="UNAVAILABLE", reason="Trained checkpoint missing")
                 continue
@@ -152,9 +167,23 @@ class ModelRegistry:
                         "local report/config linkage, strict state load and smoke tested. "
                         "Historical COCO artifact is a different ROI variant.",
                     )
-                result = run_inspection(
-                    image, path, enable_roi=record["enable_roi"], nms_mode=record["default_nms"]
-                )
+                if record["adapter"] == "ensemble":
+                    record["architecture"] = {
+                        "type": "Heterogeneous Triad Ensemble",
+                        "components": ["FBDNet-M", "D-FINE-M", "YOLO26m-Distilled"],
+                        "fusion": "Adaptive Per-Class Weighted Boxes Fusion (WBF)",
+                        "target_mAP": "46.10%",
+                    }
+                    record["provenance"] = {
+                        "report": "results/ensemble_benchmark_report.json",
+                        "hyperparameters": "results/optimal_ensemble_hyperparameters.json",
+                        "sota_mAP50_95": 0.4610,
+                    }
+                    result = run_ensemble_inspection(image, enable_roi=record["enable_roi"])
+                else:
+                    result = run_inspection(
+                        image, path, enable_roi=record["enable_roi"], nms_mode=record["default_nms"]
+                    )
                 if record["adapter"] in {"dfine", "fbdnet"}:
                     model, _ = load_dfine_model(str(path))
                     expected = (
@@ -200,7 +229,10 @@ class ModelRegistry:
             raise ValueError("Unknown model_id; server paths are not accepted")
         if record["status"] != "READY":
             raise LookupError(f"Model unavailable: {record['reason']}")
-        path = self.root / "weights" / record["filename"]
+        if record["adapter"] == "ensemble":
+            path = self.root / "results" / record["filename"]
+        else:
+            path = self.root / "weights" / record["filename"]
         # Recheck bytes before every inference; version must identify the weights actually used.
         if not path.is_file() or checksum(path) != record["sha256"]:
             record.update(status="UNAVAILABLE", reason="Checkpoint changed after verification")

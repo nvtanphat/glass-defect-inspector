@@ -173,3 +173,40 @@ def test_browser_cookie_cannot_be_forged_or_reused_after_expiry(monkeypatch):
     assert not server.valid_session(b"broken=\xff", "private-password")
     monkeypatch.setattr(server.time, "time", lambda: 1000 + server.SESSION_SECONDS + 1)
     assert not server.valid_session(header, "private-password")
+
+
+def test_ensemble_and_distilled_registry_manifest():
+    from glass_inspector.inference_engine import compute_box_iou, fast_wbf_fusion
+
+    registry = ModelRegistry()
+    manifest = {m["id"]: m for m in registry.public()}
+
+    assert "apex-triad-ensemble" in manifest
+    assert "yolo26m-distilled" in manifest
+    assert manifest["apex-triad-ensemble"]["adapter"] == "ensemble"
+    assert manifest["apex-triad-ensemble"]["is_default"] is True
+    assert manifest["yolo26m-distilled"]["adapter"] == "yolo"
+
+    # Test fast_wbf_fusion
+    b1 = [10.0, 10.0, 50.0, 50.0]
+    b2 = [12.0, 12.0, 48.0, 48.0]
+    iou = compute_box_iou(b1, b2)
+    assert iou > 0.7
+
+    boxes_list = [[b1], [b2]]
+    scores_list = [[0.85], [0.90]]
+    weights = [1.0, 1.0]
+    fused_boxes, fused_scores = fast_wbf_fusion(
+        boxes_list,
+        scores_list,
+        weights,
+        iou_thr=0.5,
+        coord_ratio=[0.5, 0.5],
+        boost_3=1.2,
+        boost_2=1.1,
+        solo_decay=0.85,
+        conf_floor=0.05,
+    )
+    assert len(fused_boxes) == 1
+    assert fused_scores[0] > 0.85
+

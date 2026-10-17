@@ -87,6 +87,17 @@ def explain(image, weights, adapter, result, config, method="gradcam", detection
         detection = next((d for d in detections if d["id"] == detection_id), None)
         if detection is None:
             raise ValueError("Selected detection was not found in this inspection")
+    if adapter == "ensemble":
+        from glass_inspector.paths import WORKSPACE_ROOT
+
+        if detection and detection.get("class_name") in {"LoiTray", "LoiNhua"}:
+            weights = WORKSPACE_ROOT / "weights" / "distilled_student_yolo26m_best.pt"
+            if not weights.is_file():
+                weights = WORKSPACE_ROOT / "weights" / "yolo26m_roi_vfl_best.pt"
+            adapter = "yolo"
+        else:
+            weights = WORKSPACE_ROOT / "weights" / "dfine_m_fbdnet_best.pth"
+            adapter = "fbdnet"
     roi = result.get("roi_box") or [0, 0, *image.size]
     crop = image.crop(tuple(roi))
     origin = [roi[0], roi[1]]
@@ -145,6 +156,9 @@ def explain(image, weights, adapter, result, config, method="gradcam", detection
         wrapper = load_yolo_model(str(weights))
         model = wrapper.model
         head = model.model[-1]
+        if getattr(wrapper, "predictor", None) is None:
+            dummy = np.zeros((32, 32, 3), dtype=np.uint8)
+            wrapper.predict(dummy, imgsz=960, rect=False, verbose=False)
         # Inference uses rect=False. Reuse its transform to preserve exact letterbox/resize.
         pixels = wrapper.predictor.pre_transform([np.asarray(crop)[:, :, ::-1]])[0]
         tensor = torch.from_numpy(np.ascontiguousarray(pixels[:, :, ::-1].transpose(2, 0, 1)))

@@ -119,7 +119,9 @@ def main() -> None:
         try:
             with open(opt_hp_path, encoding="utf-8") as f:
                 opt_data = json.load(f)
-            loaded_per_class_weights = {k: v.get("weights", [1.0, 1.0]) for k, v in opt_data.items()}
+            loaded_per_class_weights = {
+                k: v.get("weights", [1.0, 1.0]) for k, v in opt_data.items()
+            }
             print(f"• Loaded optimal per-class hyperparameters from: {opt_hp_path}")
         except Exception as e:
             print(f"• Notice: could not parse {opt_hp_path}: {e}")

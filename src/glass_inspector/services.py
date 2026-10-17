@@ -29,6 +29,7 @@ from glass_inspector.inference_engine import (
     CLASS_NAMES,
     compute_slice_intervals,
     load_roi_config,
+    run_ensemble_inspection,
     run_inspection,
 )
 from glass_inspector.schemas import DetectionResult, quality_policy
@@ -44,7 +45,10 @@ class InferenceService:
 
     def predict(self, image, record, weights, config):
         options = config.model_dump(exclude={"model_id"})
-        result = run_inspection(image, weights, **options)
+        if record.get("adapter") == "ensemble":
+            result = run_ensemble_inspection(image, **options)
+        else:
+            result = run_inspection(image, weights, **options)
         result.update(model_id=record["id"], model_version=record["sha256"])
         for detection in result["detections"]:
             detection.update(model_id=record["id"], latency_ms=result["latency_ms"])
