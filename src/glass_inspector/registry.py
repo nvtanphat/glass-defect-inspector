@@ -24,6 +24,13 @@ MODEL_SPECS = [
     ("rtdetr-l", "RT-DETR-L", "rtdetr_l_best.pt", "rtdetr", False),
     ("dfine-m", "D-FINE-M", "dfine_m_baseline_reproduced_best.pth", "dfine", True),
     ("fbdnet-m", "FBDNet-M", "dfine_m_fbdnet_best.pth", "fbdnet", True),
+    (
+        "yolo26m-distilled",
+        "YOLO26m Distilled Student (Triad KD)",
+        "distilled_student_yolo26m_best.pt",
+        "yolo",
+        True,
+    ),
 ]
 
 

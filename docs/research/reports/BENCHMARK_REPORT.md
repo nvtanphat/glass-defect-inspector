@@ -19,6 +19,7 @@ Môi trường đánh giá: **NVIDIA Tesla T4 GPU (FP16)**, tập kiểm thử c
 | **RF-DETR-M + AHRD** | Run 100 epoch + High-Resolution Adaptor | 73,59 | — | 42,40 | — | Transformer đơn lẻ tiêu chuẩn | T1 |
 | **FBDNet-M** (Chạy lại đồng loạt) | Input 960, Feature Boundary Detection Network | 72,47 | 41,34 | 41,81 | 32,11 | Kiểm định độc lập cùng protocol | E1 |
 | **D-FINE-M** (Chạy lại đồng loạt) | Input 960, Fine-grained Distribution Refinement | 71,91 | 39,80 | 41,34 | 33,84 | Transformer tối ưu phân phối tọa độ | E1 |
+| **Distilled Student YOLO26m** | Chưng cất tri thức từ Triad Teacher Ensemble (FBDNet + DFINE + YOLO) | 70,10 | 42,08 | **41,01** | 28,79 | Tăng +0.92% mAP, +3.5% mAP_s vào mô hình CNN đơn lẻ | KD1 |
 | **YOLO26m-ROI-VFL** (Chạy lại đồng loạt) | Input 960, ROI + Varifocal Loss + Task-Aligned NMS | 69,13 | 39,46 | 40,09 | 25,29 | CNN Anchor-free tốc độ cao | E1 |
 | **YOLOv8m-P2** | Run 100 epoch + P2 high-resolution head | 69,93 | — | 40,04 | — | Baseline CNN nhiều tầng | T4 |
 | **YOLOv10m** | Run 100 epoch, NMS-free | 68,95 | — | 38,82 | — | Baseline CNN NMS-free | T5 |
@@ -91,3 +92,22 @@ Tất cả các file số liệu, siêu tham số tối ưu và predictions cach
 | **T1** | `kaggle/hourly_monitor/probes/baohuynh05__scale-error-rfdetr-ahrd-evaluation/outputs/output_rfdetr_m_ahrd_seed42/ahrd_evaluation_report.json` | 1.2 KB | Đánh giá RF-DETR-M + AHRD |
 | **T2** | `kaggle-output/scale-error-dfine-m-resume-91-100-v7-metrics/resume_summary.json` | 1.0 KB | Checkpoint D-FINE-M epoch 100 |
 | **T3** | `kaggle/hourly_monitor/probes/nguynvntnpht__scale-error-yolo26-roi-vfl-retrain/outputs/artifacts/evaluation/metrics_nms_True.json` | 1.1 KB | Đánh giá YOLO26m-ROI-VFL |
+| **KD1** | [results/student_teacher_distillation_report.json](file:///D:/HOCsauvaufngdung/scale-error-yolo26/results/student_teacher_distillation_report.json) | 1.5 KB | Báo cáo chưng cất tri thức Triad Teacher $\to$ Student YOLO26m (mAP 41.01%) |
+| **W1** | [weights/distilled_student_yolo26m_best.pt](file:///D:/HOCsauvaufngdung/scale-error-yolo26/weights/distilled_student_yolo26m_best.pt) | 44.1 MB | Trọng số mô hình Student đã chưng cất hoàn chỉnh |
+
+---
+
+## 6. Phân Tích Ma Trận Nhầm Lẫn Chuẩn Hóa (Normalized Confusion Matrices)
+
+Để đo lường độ tin cậy thực tế và mức độ nhầm lẫn giữa các phân lớp khuyết tật cũng như hiện tượng bỏ sót (False Negative - Background), toàn bộ các mô hình chính được kết xuất ma trận nhầm lẫn chuẩn hóa theo giao thức chuẩn COCO (`IoU Threshold = 0.50`, `Confidence Floor = 0.25`):
+
+| Mô hình kiểm tra | Ma trận nhầm lẫn (Confusion Matrix) | Đường cong học tập | Đặc điểm nhận diện & tỷ lệ chính xác lớp |
+| :--- | :---: | :---: | :---|
+| **Adaptive Heterogeneous Triad (Apex Ensemble)** | ![Apex Triad CM](../../assets/apex_ensemble_cm.png) | — | **Lớp chính xác cao nhất:** LoiChi đạt **91%**, DiVat **78%**, DiVatLoiLom **78%**, LoiTray **72%**, LoiNhua **62%**. Hiện tượng bỏ sót vào background giảm sâu nhất toàn dự án. |
+| **FBDNet-M (SOTA Đơn Lẻ)** | ![FBDNet-M CM](../../assets/fbdnet_m_cm.png) | — | Nhận diện biên khuyết tật sắc nét: LoiChi **88%**, DiVatLoiLom **77%**, DiVat **73%**. |
+| **D-FINE-M** | ![D-FINE-M CM](../../assets/dfine_m_cm.png) | [Loss / mAP](../../assets/dfine_m_loss_curve.png) | Phân phối tọa độ FDR tối ưu cho các khuyết tật nhỏ: LoiChi **88%**, DiVat **74%**, LoiNhua **58%**. |
+| **Distilled Student YOLO26m** | ![Distilled YOLO26m CM](../../assets/yolo26m_distilled_cm.png) | [Training Curves](../../assets/yolo26m_distilled_curves.png) | Mô hình CNN sau chưng cất tri thức: LoiChi **88%**, DiVatLoiLom **74%**, DiVat **71%**, giảm 4.2% tỷ lệ nhầm lẫn background so với baseline. |
+| **YOLO26m-ROI-VFL (Baseline)** | ![YOLO26m Baseline CM](../../assets/yolo26m_roi_vfl_cm.png) | — | Mô hình baseline thời gian thực: LoiChi **87%**, DiVatLoiLom **70%**, DiVat **67%**. |
+
+Script tái tạo toàn bộ ma trận: [`scripts/generate_all_confusion_matrices.py`](file:///D:/HOCsauvaufngdung/scale-error-yolo26/scripts/generate_all_confusion_matrices.py)
+
