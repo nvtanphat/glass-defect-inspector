@@ -94,23 +94,7 @@ flowchart TD
 
 ---
 
-## 4. Thống Kê Dung Lượng & Hiệu Quả Tài Nguyên
-
-| Vùng đĩa | Hạng mục thành phần | Dung lượng | Trạng thái ổ đĩa |
-| :--- | :--- | :---: | :--- |
-| **Ổ D:** | Mã nguồn & Git index (`.git/`) | 3.61 GB | **Còn trống: 13.42 GB** |
-| | Checkpoint trọng số mô hình (`weights/`) | 1.69 GB | |
-| | Kaggle artifacts & outputs (`kaggle/`) | 2.14 GB | |
-| | Dữ liệu thử nghiệm & cache (`results/`, `scratch/`) | 1.81 GB | |
-| **Tổng ổ D:** | **Thư mục dự án `scale-error-yolo26`** | **9.30 GB** | |
-| **Ổ C:** | Thư viện môi trường Python (`site-packages`) | 0.63 GB | **Còn trống: 17.96 GB** |
-| | Caches công cụ CLI & agent (`.gemini/`) | 0.88 GB | |
-| | Torch Hub & pip caches | 0.09 GB | |
-| **Tổng ổ C:** | **Tài nguyên liên quan đến dự án** | **~1.60 GB** | *(Không gây tràn ổ C)* |
-
----
-
-## 5. Cài Đặt & Hướng Dẫn Nhanh (Quickstart)
+## 4. Cài Đặt & Hướng Dẫn Nhanh (Quickstart)
 
 ### Yêu cầu hệ thống:
 - Python 3.11 hoặc 3.12.
@@ -132,7 +116,7 @@ python -m pip install -e ".[app,dev]"
 
 ---
 
-## 6. Vận Hành Ứng Dụng Web & API Inspector
+## 5. Vận Hành Ứng Dụng Web & API Inspector
 
 Giao diện trực quan phục vụ kiểm định chất lượng kính được xây dựng bằng **FastAPI** và **PostgreSQL**:
 
@@ -154,7 +138,7 @@ python -m glass_inspector
 
 ---
 
-## 7. Tái Hiện Đánh Giá & Sinh Ma Trận Nhầm Lẫn
+## 6. Tái Hiện Đánh Giá & Sinh Ma Trận Nhầm Lẫn
 
 Script tối ưu hóa ngoại tuyến (offline fast evaluation) cho phép tính toán ma trận nhầm lẫn và chỉ số COCO trên 890 ảnh test trong vòng **5 giây** mà không cần chạy lại forward GPU:
 
@@ -170,7 +154,7 @@ python scripts/evaluate_fbdnet_full.py --device cuda --output artifacts/evaluati
 
 ---
 
-## 8. Kiểm Thử Hệ Thống (Quality Assurance)
+## 7. Kiểm Thử Hệ Thống (Quality Assurance)
 
 Toàn bộ hợp đồng dữ liệu, logic phân loại và ma trận nhầm lẫn được bao phủ bởi bộ kiểm thử tự động:
 
@@ -184,7 +168,7 @@ pytest tests/unit/test_detection_confusion.py tests/unit/test_inspector_contract
 
 ---
 
-## 9. Cấu Trúc Thư Mục Dự Án Chuẩn Chỉ
+## 8. Cấu Trúc Thư Mục Dự Án Chuẩn Chỉ
 
 ```
 scale-error-yolo26/
