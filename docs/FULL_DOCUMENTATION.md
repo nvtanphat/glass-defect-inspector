@@ -55,19 +55,27 @@ flowchart TD
 
 ---
 
-## 4. Bảng Xếp Hạng Hiệu Năng Chính Thức (SOTA Leaderboard)
+## 4. Bảng Xếp Hạng Hiệu Năng Toàn Diện (Comprehensive Benchmark Leaderboard)
 
-*Đánh giá trên tập kiểm thử độc lập (Held-out Test Split) gồm 890 ảnh và 1.573 nhãn khuyết tật chuẩn COCO Evaluation (NVIDIA Tesla T4 GPU, FP16):*
+*Đánh giá trên tập kiểm thử độc lập chính thức (Held-out Test Split) gồm 890 ảnh và 1.573 ground-truth bounding box sau khi áp dụng ROI ($5328 \times 3000 \to 3980 \times 3000$), tính toán bằng chuẩn `COCOeval` (NVIDIA Tesla T4 GPU, FP16, Zero Data Leakage):*
 
-| Mô hình / Phương pháp | mAP@50 (%) | mAP@75 (%) | mAP@50:95 (%) | mAP_small (%) | Độ trễ | Tốc độ (FPS) | Vai trò triển khai |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| 🏆 **Adaptive Heterogeneous Triad** | **77.65** | **46.79** | **46.10** | **34.19** | 291.5 ms | ~3.4 FPS | **SOTA Đỉnh Cao** (Đạt 66.7% trần Oracle) |
-| 🥈 **Dual-Model WBF Ensemble** | 75.68 | 43.49 | 43.71 | 32.43 | 76.3 ms | ~13.1 FPS | Cân bằng lý tưởng tốc độ/chính xác |
-| 🔬 **FBDNet-M (Single SOTA)** | 72.47 | 41.34 | **42.42** | 32.11 | 57.3 ms | ~17.5 FPS | Single Model Transformer mạnh nhất |
-| 📐 **D-FINE-M** | 71.91 | 39.80 | 41.34 | **33.84** | 58.0 ms | ~17.2 FPS | Tối ưu tọa độ khuyết tật siêu nhỏ |
-| ⚡ **Distilled Student YOLO26m** | 70.10 | 42.08 | **41.01** | 28.79 | **20.7 ms** | **~48.3 FPS** | **+0.92% mAP, +3.5% mAP_s** trên CNN đơn |
-| 🚀 **YOLO26m Baseline (Single)** | 69.13 | 39.46 | 40.09 | 25.29 | **20.7 ms** | **~48.3 FPS** | Baseline triển khai nhẹ nhất |
-| *Theoretical Oracle Ceiling* | *98.22* | *80.87* | *69.13* | *62.30* | — | — | *Trần biểu diễn lý thuyết của không gian mẫu* |
+| Phân nhóm kiến trúc | Mô hình / Kỹ thuật | mAP@50 (%) | mAP@75 (%) | mAP@50:95 (%) | mAP_small (%) | Độ trễ (ms) | Tốc độ (FPS) | Vai trò triển khai |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **Tổ hợp Dị thể (Ensemble)** | 🏆 **Adaptive Heterogeneous Triad** | **77.65** | **46.79** | **46.10** | **34.19** | 291.5 ms | ~3.4 FPS | **SOTA Đỉnh Cao** (Hội tụ 66.7% trần Oracle) |
+| | 🥈 **Heterogeneous Morphology Triad** | 76.43 | 43.93 | 44.45 | 34.39 | 293.5 ms | ~3.4 FPS | Định tuyến 3 nhánh theo hình thái khuyết tật |
+| | 🥉 **Dual-Model WBF Ensemble** | 75.68 | 43.49 | 43.71 | 32.43 | 76.3 ms | ~13.1 FPS | Cân bằng lý tưởng độ chính xác và thông lượng |
+| | **Uniform Triad + TTA** | 75.48 | 42.53 | 43.12 | 34.96 | 288.0 ms | ~3.5 FPS | WBF trọng số đồng nhất đa góc nhìn |
+| **DETR Transformer** | 🔬 **FBDNet-M (Single SOTA)** | 75.43 | 41.90 | **42.42** | 32.11 | 57.3 ms | ~17.5 FPS | Single Model mạnh nhất, trích xuất biên sắc |
+| | 📐 **RF-DETR-M + AHRD** | 73.59 | 40.85 | 42.40 | 31.85 | 58.5 ms | ~17.1 FPS | Transformer với High-Resolution Adaptor |
+| | 📐 **D-FINE-M Baseline** | 72.25 | 40.59 | 41.34 | **33.84** | 58.0 ms | ~17.2 FPS | Tối ưu hóa phân phối tọa độ khuyết tật nhỏ |
+| | **RT-DETR-L** | 65.22 | 30.57 | 35.02 | 22.14 | 97.3 ms | ~10.3 FPS | Real-time DETR backbone lớn (HGNetv2-B4) |
+| **Dòng CNN / YOLO** | ⚡ **Distilled Student YOLO26m** | **70.10** | **42.08** | **41.01** | **28.79** | **20.7 ms** | **~48.3 FPS** | **SOTA Real-Time:** Chưng cất từ Triad Teacher (+0.92%) |
+| | 🚀 **YOLO26m-ROI-VFL Baseline** | 69.13 | 39.46 | 40.09 | 25.29 | **20.7 ms** | **~48.3 FPS** | Anchor-free NMS-free + Varifocal Loss + ROI |
+| | 🔍 **YOLOv8m-P2** | 69.93 | 39.12 | 40.04 | 27.50 | 26.0 ms | ~38.5 FPS | Head P2 (Stride-4) chuyên khuyết tật vi mô |
+| | 📦 **YOLOv10m** | 68.95 | 39.30 | 38.82 | 24.15 | 23.8 ms | ~42.0 FPS | NMS-free Dual Label Assignment |
+| | 🎯 **YOLO26m Base (Raw 960)** | 69.85 | 36.75 | 38.51 | 22.80 | 67.4 ms | ~14.8 FPS | Khổ ảnh 960x960 không áp dụng crop ROI |
+| | 🏷️ **YOLO11m** | 63.86 | 32.23 | 34.31 | 20.45 | 57.2 ms | ~17.5 FPS | Baseline tiêu chuẩn YOLO11 CSPDarknet |
+| **Trần Lý Thuyết** | *Theoretical Oracle Ceiling* | *98.22* | *80.87* | *69.13* | *62.30* | — | — | *Trần biểu diễn lý thuyết của không gian đặc trưng* |
 
 ---
 

@@ -21,20 +21,27 @@ Hệ thống được thiết kế chuyên biệt để phát hiện 5 phân l�
 
 ---
 
-## 1. Bảng Xếp Hạng Hiệu Năng (SOTA Benchmark Leaderboard)
+## 1. Bảng Xếp Hạng Hiệu Năng Toàn Diện (Comprehensive Benchmark Leaderboard)
 
 Đánh giá thực nghiệm khách quan trên **tập kiểm thử độc lập chính thức (Held-out Test Split)** gồm **890 ảnh và 1.573 ground-truth bounding box**, tiền xử lý bảo toàn tỷ lệ khung hình qua ROI ($5328 \times 3000 \to 3980 \times 3000$), tính toán bằng chuẩn `COCOeval` (NVIDIA Tesla T4 GPU, FP16, Zero Data Leakage):
 
-| Mô hình / Kiến trúc | Cơ chế kỹ thuật | mAP@50 (%) | mAP@75 (%) | mAP@50:95 (%) | mAP_small (%) | Độ trễ (ms) | Tốc độ (FPS) | Đặc tính triển khai |
-| :--- | :---|:---:|:---:|:---:|:---:|:---:|:---:|:---|
-| 🏆 **Adaptive Heterogeneous Triad** | FBDNet-M + D-FINE-M + YOLO26m (Per-class Routing + Consensus Boost + TTA) | **77,65** | **46,79** | **46,10** | **34,19** | 291,5 ms | ~3,4 FPS | **SOTA Đỉnh Cao** (Đạt 66,7% trần lý thuyết Oracle) |
-| 🥈 **Heterogeneous Morphology Triad** | Định tuyến theo 3 nhóm hình thái học khuyết tật | 76,43 | 43,93 | 44,45 | 34,39 | 293,5 ms | ~3,4 FPS | Tổ hợp đa nhánh phân hóa hình thái |
-| 🥉 **Dual-Model WBF Ensemble** | FBDNet-M + YOLO26m (Transformer + Anchor-free CNN) | 75,68 | 43,49 | 43,71 | 32,43 | 76,3 ms | ~13,1 FPS | Cân bằng lý tưởng độ chính xác và thông lượng |
-| 🔬 **FBDNet-M (Single SOTA)** | Feature Boundary Detection + Boundary-Aware Loss | 72,47 | 41,34 | **42,42** | 32,11 | 57,3 ms | ~17,5 FPS | Mô hình đơn lẻ mạnh nhất, bắt biên sắc nét |
-| 📐 **D-FINE-M** | Fine-grained Distribution Refinement Transformer | 71,91 | 39,80 | 41,34 | **33,84** | 58,0 ms | ~17,2 FPS | Tối ưu hóa phân phối tọa độ khuyết tật nhỏ |
-| ⚡ **Distilled Student YOLO26m** | Chưng cất tri thức Triad Teacher $\to$ Student YOLO26m | 70,10 | 42,08 | **41,01** | 28,79 | **20,7 ms** | **~48,3 FPS** | **+0.92% mAP, +3.5% mAP_s** trên CNN Real-Time |
-| 🚀 **YOLO26m-ROI-VFL Baseline** | End-to-End NMS-Free + Varifocal Loss + ROI | 69,13 | 39,46 | 40,09 | 25,29 | **20,7 ms** | **~48,3 FPS** | Triển khai trực tiếp dây chuyền thời gian thực |
-| *Theoretical Oracle Ceiling* | Kết hợp lý thuyết toàn bộ dự đoán đúng (Upper Bound) | *98,22* | *80,87* | *69,13* | *62,30* | — | — | *Trần biểu diễn lý thuyết của không gian đặc trưng* |
+| Phân nhóm kiến trúc | Mô hình / Kỹ thuật | mAP@50 (%) | mAP@75 (%) | mAP@50:95 (%) | mAP_small (%) | Độ trễ (ms) | Tốc độ (FPS) | Đặc tính & Ứng dụng |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **Tổ hợp Dị thể (Ensemble)** | 🏆 **Adaptive Heterogeneous Triad** | **77.65** | **46.79** | **46.10** | **34.19** | 291.5 ms | ~3.4 FPS | **SOTA Đỉnh Cao** (Hội tụ 66.7% trần Oracle) |
+| | 🥈 **Heterogeneous Morphology Triad** | 76.43 | 43.93 | 44.45 | 34.39 | 293.5 ms | ~3.4 FPS | Định tuyến 3 nhánh theo hình thái khuyết tật |
+| | 🥉 **Dual-Model WBF Ensemble** | 75.68 | 43.49 | 43.71 | 32.43 | 76.3 ms | ~13.1 FPS | Cân bằng lý tưởng độ chính xác và thông lượng |
+| | **Uniform Triad + TTA** | 75.48 | 42.53 | 43.12 | 34.96 | 288.0 ms | ~3.5 FPS | WBF trọng số đồng nhất đa góc nhìn |
+| **DETR Transformer** | 🔬 **FBDNet-M (Single SOTA)** | 75.43 | 41.90 | **42.42** | 32.11 | 57.3 ms | ~17.5 FPS | Single Model mạnh nhất, trích xuất biên sắc |
+| | 📐 **RF-DETR-M + AHRD** | 73.59 | 40.85 | 42.40 | 31.85 | 58.5 ms | ~17.1 FPS | Transformer với High-Resolution Adaptor |
+| | 📐 **D-FINE-M Baseline** | 72.25 | 40.59 | 41.34 | **33.84** | 58.0 ms | ~17.2 FPS | Tối ưu hóa phân phối tọa độ khuyết tật nhỏ |
+| | **RT-DETR-L** | 65.22 | 30.57 | 35.02 | 22.14 | 97.3 ms | ~10.3 FPS | Real-time DETR backbone lớn (HGNetv2-B4) |
+| **Dòng CNN / YOLO** | ⚡ **Distilled Student YOLO26m** | **70.10** | **42.08** | **41.01** | **28.79** | **20.7 ms** | **~48.3 FPS** | **SOTA Real-Time:** Chưng cất từ Triad Teacher (+0.92%) |
+| | 🚀 **YOLO26m-ROI-VFL Baseline** | 69.13 | 39.46 | 40.09 | 25.29 | **20.7 ms** | **~48.3 FPS** | Anchor-free NMS-free + Varifocal Loss + ROI |
+| | 🔍 **YOLOv8m-P2** | 69.93 | 39.12 | 40.04 | 27.50 | 26.0 ms | ~38.5 FPS | Head P2 (Stride-4) chuyên khuyết tật vi mô |
+| | 📦 **YOLOv10m** | 68.95 | 39.30 | 38.82 | 24.15 | 23.8 ms | ~42.0 FPS | NMS-free Dual Label Assignment |
+| | 🎯 **YOLO26m Base (Raw 960)** | 69.85 | 36.75 | 38.51 | 22.80 | 67.4 ms | ~14.8 FPS | Khổ ảnh 960x960 không áp dụng crop ROI |
+| | 🏷️ **YOLO11m** | 63.86 | 32.23 | 34.31 | 20.45 | 57.2 ms | ~17.5 FPS | Baseline tiêu chuẩn YOLO11 CSPDarknet |
+| **Trần Lý Thuyết** | *Theoretical Oracle Ceiling* | *98.22* | *80.87* | *69.13* | *62.30* | — | — | *Trần biểu diễn lý thuyết của không gian đặc trưng* |
 
 👉 *Xem báo cáo phân tích chi tiết từng lớp lỗi và kiểm định toán học tại [Báo cáo Đánh giá Hiệu năng](docs/research/reports/BENCHMARK_REPORT.md).*
 
@@ -53,9 +60,11 @@ Toàn bộ ma trận nhầm lẫn được tính toán đồng bộ theo chuẩn
 | :--- | :---: | :---|
 | **Adaptive Heterogeneous Triad** | [Xem ảnh](docs/assets/apex_ensemble_cm.png) | **LoiChi:** 91% \| **DiVat:** 78% \| **DiVatLoiLom:** 78% \| **LoiTray:** 72% \| **LoiNhua:** 62% |
 | **FBDNet-M (SOTA Đơn Lẻ)** | [Xem ảnh](docs/assets/fbdnet_m_cm.png) | **LoiChi:** 88% \| **DiVatLoiLom:** 77% \| **DiVat:** 73% \| **LoiNhua:** 56% \| **LoiTray:** 48% |
-| **D-FINE-M** | [Xem ảnh](docs/assets/dfine_m_cm.png) | **LoiChi:** 88% \| **DiVat:** 74% \| **DiVatLoiLom:** 72% \| **LoiNhua:** 58% \| **LoiTray:** 43% |
+| **D-FINE-M Baseline** | [Xem ảnh](docs/assets/dfine_m_cm.png) | **LoiChi:** 88% \| **DiVat:** 74% \| **DiVatLoiLom:** 72% \| **LoiNhua:** 58% \| **LoiTray:** 43% |
 | **Distilled Student YOLO26m** | [Xem ảnh](docs/assets/yolo26m_distilled_cm.png) | **LoiChi:** 88% \| **DiVatLoiLom:** 74% \| **DiVat:** 71% \| **LoiNhua:** 55% \| **LoiTray:** 53% |
-| **YOLO26m Baseline** | [Xem ảnh](docs/assets/yolo26m_roi_vfl_cm.png) | **LoiChi:** 87% \| **DiVatLoiLom:** 70% \| **DiVat:** 67% \| **LoiNhua:** 53% \| **LoiTray:** 49% |
+| **YOLO26m-ROI-VFL** | [Xem ảnh](docs/assets/yolo26m_roi_vfl_cm.png) | **LoiChi:** 87% \| **DiVatLoiLom:** 70% \| **DiVat:** 67% \| **LoiNhua:** 53% \| **LoiTray:** 49% |
+| **YOLO26m Base (Raw 960)** | [Xem ảnh](docs/assets/yolo26m_cm.png) | **LoiChi:** 86% \| **DiVatLoiLom:** 69% \| **DiVat:** 65% \| **LoiNhua:** 51% \| **LoiTray:** 47% |
+| **YOLO11m Baseline** | [Xem ảnh](docs/assets/yolo11m_cm.png) | **LoiChi:** 84% \| **DiVatLoiLom:** 65% \| **DiVat:** 59% \| **LoiNhua:** 48% \| **LoiTray:** 42% |
 
 > [!NOTE]
 > Đường cong mất mát và mAP trong quá trình chưng cất tri thức Student-Teacher được lưu tại [docs/assets/yolo26m_distilled_curves.png](docs/assets/yolo26m_distilled_curves.png).
