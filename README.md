@@ -184,23 +184,29 @@ pytest tests/unit/test_detection_confusion.py tests/unit/test_inspector_contract
 
 ---
 
-## 9. Cấu Trúc Thư Mục Dự Án
+## 9. Cấu Trúc Thư Mục Dự Án Chuẩn Chỉ
 
 ```
 scale-error-yolo26/
-├── configs/                     # Cấu hình huấn luyện YOLO, FBDNet, D-FINE
-├── docs/                        # Tài liệu nghiên cứu, kiến trúc và hình ảnh báo cáo
-│   ├── assets/                  # Ma trận nhầm lẫn và biểu đồ hiệu năng
-│   └── research/reports/        # BENCHMARK_REPORT.md và báo cáo SOTA
-├── scripts/                     # Scripts huấn luyện, đánh giá, sinh ma trận nhầm lẫn
+├── configs/                     # Cấu hình huấn luyện (train_yolo26m.yaml, experiments/)
+├── docs/                        # Tài liệu kỹ thuật, sơ đồ kiến trúc, minh họa
+│   ├── assets/                  # Ma trận nhầm lẫn chuẩn hóa và biểu đồ XAI
+│   ├── FULL_DOCUMENTATION.md    # Tài liệu kỹ thuật tổng quan toàn diện
+│   ├── TRAINING.md              # Hướng dẫn huấn luyện & chưng cất tri thức
+│   ├── INSPECTOR.md             # Hướng dẫn vận hành hệ thống kiểm định web
+│   └── project-layout.md        # Quy chuẩn cấu trúc thư mục & đặt tên tệp
+├── scripts/                     # Scripts thực thi (WBF, Evaluation, CM Generation)
+│   ├── run_wbf_ensemble.py
 │   ├── generate_all_confusion_matrices.py
-│   ├── train.py
 │   └── evaluate_fbdnet_full.py
 ├── src/
-│   ├── glass_inspector/         # Web FastAPI, Database, Model Registry
-│   └── scale_error/             # Modules mô hình, FBDNet, Loss Functions, WBF
+│   ├── glass_inspector/         # Web FastAPI, Database, Model Registry, Grad-CAM
+│   └── scale_error/             # Modules nghiên cứu: Distillation, Ensemble, FBDNet
+├── results/                     # Báo cáo JSON & chỉ số kiểm định chính thức
+├── weights/                     # Trọng số tốt nhất (distilled_student, fbdnet, dfine, yolo26)
 ├── tests/                       # Unit tests, Regression tests, E2E tests
-└── weights/                     # Trọng số tốt nhất (distilled, fbdnet, dfine, yolo26)
+├── Dockerfile & compose.yaml    # Hồ sơ Docker đóng gói triển khai biên
+└── pyproject.toml               # Định nghĩa môi trường và dependencies
 ```
 
 ---
