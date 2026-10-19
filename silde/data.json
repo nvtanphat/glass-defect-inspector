@@ -1,0 +1,180 @@
+{
+  "source": "Báo cáo Word đính kèm, tháng 10/2026",
+  "benchmark": [
+    {
+      "name": "Adaptive Heterogeneous Triad",
+      "ap_50": 77.65,
+      "ap_75": 46.79,
+      "ap_5095": 46.1,
+      "ap_small": 34.19,
+      "latency_ms": 291.5,
+      "fps": 3.4,
+      "protocol": "E1"
+    },
+    {
+      "name": "Morphology Triad",
+      "ap_50": 76.43,
+      "ap_75": 43.93,
+      "ap_5095": 44.45,
+      "ap_small": 34.39,
+      "latency_ms": 293.5,
+      "fps": 3.4,
+      "protocol": "E1"
+    },
+    {
+      "name": "Dual-Model WBF",
+      "ap_50": 75.68,
+      "ap_75": 43.49,
+      "ap_5095": 43.71,
+      "ap_small": 32.43,
+      "latency_ms": 76.3,
+      "fps": 13.1,
+      "protocol": "E1"
+    },
+    {
+      "name": "Uniform Triad + TTA",
+      "ap_50": 75.48,
+      "ap_75": 42.53,
+      "ap_5095": 43.12,
+      "ap_small": 34.96,
+      "latency_ms": 288.0,
+      "fps": 3.5,
+      "protocol": "E1"
+    },
+    {
+      "name": "FBDNet-M",
+      "ap_50": 75.43,
+      "ap_75": null,
+      "ap_5095": 42.42,
+      "ap_small": null,
+      "latency_ms": 57.3,
+      "fps": 17.5,
+      "protocol": "F1"
+    },
+    {
+      "name": "RF-DETR-M + AHRD",
+      "ap_50": 73.59,
+      "ap_75": null,
+      "ap_5095": 42.4,
+      "ap_small": null,
+      "latency_ms": 58.5,
+      "fps": 17.1,
+      "protocol": "T1"
+    },
+    {
+      "name": "D-FINE-M",
+      "ap_50": 71.91,
+      "ap_75": 39.8,
+      "ap_5095": 41.34,
+      "ap_small": 33.84,
+      "latency_ms": 58.0,
+      "fps": 17.2,
+      "protocol": "E1"
+    },
+    {
+      "name": "Distilled Student YOLO26m",
+      "ap_50": 70.1,
+      "ap_75": 42.08,
+      "ap_5095": 41.01,
+      "ap_small": 28.79,
+      "latency_ms": 20.7,
+      "fps": 48.3,
+      "protocol": "KD1"
+    },
+    {
+      "name": "YOLO26m ROI-VFL",
+      "ap_50": 69.13,
+      "ap_75": 39.46,
+      "ap_5095": 40.09,
+      "ap_small": 25.29,
+      "latency_ms": 20.7,
+      "fps": 48.3,
+      "protocol": "E1"
+    },
+    {
+      "name": "YOLOv8m-P2",
+      "ap_50": 69.93,
+      "ap_75": null,
+      "ap_5095": 40.04,
+      "ap_small": null,
+      "latency_ms": 26.0,
+      "fps": 38.5,
+      "protocol": "T4"
+    },
+    {
+      "name": "YOLOv10m",
+      "ap_50": 68.95,
+      "ap_75": null,
+      "ap_5095": 38.82,
+      "ap_small": null,
+      "latency_ms": 23.8,
+      "fps": 42.0,
+      "protocol": "T5"
+    },
+    {
+      "name": "YOLO26m Raw 960",
+      "ap_50": 69.85,
+      "ap_75": 36.75,
+      "ap_5095": 38.51,
+      "ap_small": 22.8,
+      "latency_ms": 67.4,
+      "fps": 14.8,
+      "protocol": "[8]"
+    },
+    {
+      "name": "RT-DETR-L",
+      "ap_50": 65.22,
+      "ap_75": null,
+      "ap_5095": 35.02,
+      "ap_small": null,
+      "latency_ms": 97.3,
+      "fps": 10.3,
+      "protocol": "T6"
+    },
+    {
+      "name": "YOLO11m",
+      "ap_50": 63.86,
+      "ap_75": null,
+      "ap_5095": 34.31,
+      "ap_small": null,
+      "latency_ms": 57.2,
+      "fps": 17.5,
+      "protocol": "T7"
+    }
+  ],
+  "ap_by_class_E1": {
+    "YOLO26m ROI-VFL": {
+      "DiVat": 17.76,
+      "DiVatLoiLom": 30.3,
+      "LoiChi": 62.99,
+      "LoiNhua": 53.0,
+      "LoiTray": 36.41
+    },
+    "D-FINE-M": {
+      "DiVat": 23.39,
+      "DiVatLoiLom": 32.79,
+      "LoiChi": 64.77,
+      "LoiNhua": 53.81,
+      "LoiTray": 31.92
+    },
+    "Dual WBF": {
+      "DiVat": 22.96,
+      "DiVatLoiLom": 35.0,
+      "LoiChi": 65.34,
+      "LoiNhua": 56.1,
+      "LoiTray": 39.16
+    },
+    "Adaptive Triad": {
+      "DiVat": 26.28,
+      "DiVatLoiLom": 35.81,
+      "LoiChi": 66.88,
+      "LoiNhua": 57.79,
+      "LoiTray": 43.73
+    }
+  },
+  "notes": [
+    "FBDNet-M 42,42% theo F1, không phải phép đo E1 cùng giao thức",
+    "Student 41,01% theo KD1; Adaptive 46,10% theo E1",
+    "Giá trị không có nguồn không được suy diễn là 0"
+  ]
+}
