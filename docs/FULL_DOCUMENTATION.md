@@ -118,8 +118,7 @@ docker compose --env-file inspector.env up -d --build
 Dịch vụ hoạt động tại cổng `http://127.0.0.1:8501`. Người dùng đăng nhập bằng khóa bí mật `INSPECTOR_API_TOKEN`.
 
 ### Trực quan hóa giải thích mô hình (Explainable AI - XAI):
-* **HiResCAM:** Bảo toàn độ phân giải không gian của gradient, hiển thị chi tiết ranh giới của các dị vật kích thước milimet.
-* **Grad-CAM:** Hiển thị bản đồ nhiệt tập trung vùng chú ý của mạng nơ-ron trước khi đưa ra quyết định chấp thuận hay loại bỏ phôi kính.
+* **Grad-CAM tiêu chuẩn (GAP):** Hiển thị bản đồ nhiệt tập trung vùng kích hoạt của mạng nơ-ron trước khi đưa ra quyết định chấp thuận hay loại bỏ phôi kính, tối ưu hóa và tinh giản thống nhất một cơ chế giải thích duy nhất.
 
 ---
 

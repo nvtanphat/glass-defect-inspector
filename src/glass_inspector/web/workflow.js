@@ -37,23 +37,23 @@ async function imageUrl(url) {
 }
 
 function gradcamLabel(metadata) {
-  const method = metadata.method === 'hirescam' ? 'HiResCAM' : 'Grad-CAM';
-  if (metadata.flat_cam || !metadata.nonzero_gradient) return `${method} không có tín hiệu rõ cho dự đoán này.`;
+  if (metadata.flat_cam || !metadata.nonzero_gradient) return 'Grad-CAM không có tín hiệu rõ cho dự đoán này.';
   const target = metadata.target_kind === 'detection' ? 'Giải thích lỗi' : 'Chưa có lỗi vượt ngưỡng; giải thích ứng viên';
   const selected = metadata.detection_id ? ` #${metadata.detection_id}` : '';
-  return `${method} · ${target}${selected}: ${defectLabel(metadata.target_class)}. Màu nóng = ảnh hưởng lớn hơn; không phải ranh giới lỗi.`;
+  return `Grad-CAM · ${target}${selected}: ${defectLabel(metadata.target_class)}. Màu nóng = ảnh hưởng lớn hơn; không phải ranh giới lỗi.`;
 }
 
-async function loadGradcam(imageId, method = 'hirescam', detectionId = null) {
-  const query = new URLSearchParams({method});
+async function loadGradcam(imageId, detectionId = null) {
+  const query = new URLSearchParams();
   if (detectionId) query.set('detection_id', detectionId);
-  const metadata = await fetchFromApi(`/api/images/${encodeURIComponent(imageId)}/gradcam?${query}`, {method: 'POST'});
+  const qStr = query.toString() ? `?${query.toString()}` : '';
+  const metadata = await fetchFromApi(`/api/images/${encodeURIComponent(imageId)}/gradcam${qStr}`, {method: 'POST'});
   return {metadata, url: await imageUrl(metadata.image_url),
     detail: metadata.detail_url ? await imageUrl(metadata.detail_url) : null};
 }
 
 function currentExplanationKey() {
-  return `${appState.imageId}:${document.getElementById('cam-method').value}:${appState.selectedDefectId || 'auto'}`;
+  return `${appState.imageId}:${appState.selectedDefectId || 'auto'}`;
 }
 
 function resetExplanationView() {
@@ -68,8 +68,6 @@ function resetExplanationView() {
   if (selected?.crop_b64) roiThumbnail.src = selected.crop_b64;
   document.getElementById('gradcam-caption').textContent = 'Chọn lỗi trong bảng, rồi xem vùng ảnh hưởng đến đúng lỗi đó.';
 }
-
-document.getElementById('cam-method').addEventListener('change', resetExplanationView);
 
 document.getElementById('btn-gradcam').addEventListener('click', async () => {
   const control = document.getElementById('btn-gradcam');
@@ -91,7 +89,7 @@ document.getElementById('btn-gradcam').addEventListener('click', async () => {
   caption.textContent = 'Đang tính vùng chú ý từ model đã kiểm tra ảnh này.';
   try {
     if (!appState.gradcamImage) {
-      const loaded = await loadGradcam(imageId, document.getElementById('cam-method').value, appState.selectedDefectId);
+      const loaded = await loadGradcam(imageId, appState.selectedDefectId);
       if (key !== currentExplanationKey()) return;
       appState.gradcamImage = loaded.url;
       appState.gradcamMetadata = loaded.metadata;
@@ -209,9 +207,6 @@ async function openInspection(id) {
     node('p', result ? `${result.total_defects} lỗi · ${durationLabel(result.latency_ms)}` : 'Chưa có kết quả hoàn chỉnh', imageCard);
     if (result) {
       const camBox = node('div', null, imageCard);
-      const camMethod = node('select', null, camBox, {'aria-label': 'Cách giải thích ảnh đã lưu'});
-      camMethod.add(new Option('HiResCAM · chi tiết', 'hirescam'));
-      camMethod.add(new Option('Grad-CAM · tổng thể', 'gradcam'));
       const camTarget = node('select', null, camBox, {'aria-label': 'Lỗi cần giải thích'});
       for (const d of result.detections) camTarget.add(new Option(`Lỗi #${d.id} · ${defectLabel(d.class_name)}`, d.id));
       if (!result.detections.length) camTarget.add(new Option('Ứng viên chưa vượt ngưỡng', ''));
@@ -226,15 +221,15 @@ async function openInspection(id) {
         }
         camButton.disabled = true;
         camNote.textContent = 'Đang tạo bản đồ chú ý…';
-        const selection = `${camMethod.value}:${camTarget.value}`;
+        const selection = `${camTarget.value}`;
         try {
-          const loaded = await loadGradcam(image.id, camMethod.value, camTarget.value || null);
-          if (epoch !== workflowEpoch || selection !== `${camMethod.value}:${camTarget.value}`) return;
+          const loaded = await loadGradcam(image.id, camTarget.value || null);
+          if (epoch !== workflowEpoch || selection !== `${camTarget.value}`) return;
           camImage.src = loaded.url;
           camImage.hidden = false;
           camButton.textContent = 'Ẩn bản đồ';
           camNote.textContent = gradcamLabel(loaded.metadata);
-          const download = node('a', 'Tải ảnh vùng chú ý', camBox, {href: loaded.url, download: `${loaded.metadata.method}-${image.id}.jpg`});
+          const download = node('a', 'Tải ảnh vùng chú ý', camBox, {href: loaded.url, download: `gradcam-${image.id}.jpg`});
           download.style.cssText = 'display:inline-block;margin:8px;color:#1d4ed8';
         } catch (error) {
           camNote.textContent = 'Chưa tạo được Grad-CAM. Bạn có thể thử lại.';
@@ -247,7 +242,6 @@ async function openInspection(id) {
         camButton.textContent = 'Xem vùng chú ý'; camButton.disabled = false;
         camBox.querySelectorAll('a').forEach(link => link.remove());
       };
-      camMethod.addEventListener('change', resetSavedCam);
       camTarget.addEventListener('change', resetSavedCam);
       const table = node('table', null, imageCard);
       for (const d of result.detections) {

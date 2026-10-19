@@ -95,7 +95,7 @@ def test_gradcam_toggle_saved_history_and_image_reset(page):
     ) as pending:
         page.locator("#btn-gradcam").click()
     assert pending.value.status == 200, pending.value.text()
-    assert pending.value.json()["method"] == "hirescam"
+    assert pending.value.json()["method"] == "gradcam"
     assert pending.value.json()["detection_id"] == page.evaluate("appState.selectedDefectId")
     page.wait_for_function(
         "document.getElementById('btn-gradcam').getAttribute('aria-pressed') === 'true'"
@@ -104,7 +104,7 @@ def test_gradcam_toggle_saved_history_and_image_reset(page):
     page.screenshot(path=str(ROOT / "docs/assets/inspector-gradcam.png"), full_page=True)
     with page.expect_download() as downloaded:
         page.locator("#btn-save-image").click()
-    assert "hirescam" in downloaded.value.suggested_filename
+    assert "gradcam" in downloaded.value.suggested_filename
     page.locator("#btn-gradcam").click()
     assert page.locator("#viewport-img").get_attribute("src") == original
     page.locator("[data-screen=history]").click()
@@ -112,14 +112,8 @@ def test_gradcam_toggle_saved_history_and_image_reset(page):
     page.get_by_role("button", name="Xem vùng chú ý", exact=True).click()
     page.get_by_alt_text("Bản đồ Grad-CAM trên ảnh kiểm định").wait_for(state="visible")
     assert page.get_by_role("link", name="Tải ảnh vùng chú ý").is_visible()
-    page.get_by_label("Cách giải thích ảnh đã lưu").select_option("gradcam")
-    with page.expect_response(
-        lambda response: response.url.split("?")[0].endswith("/gradcam")
-        and response.request.method == "POST",
-        timeout=90000,
-    ) as switched:
-        page.get_by_role("button", name="Xem vùng chú ý", exact=True).click()
-    assert switched.value.status == 200 and switched.value.json()["method"] == "gradcam"
+    page.get_by_role("button", name="Ẩn bản đồ", exact=True).click()
+    assert page.get_by_alt_text("Bản đồ Grad-CAM trên ảnh kiểm định").is_hidden()
     run_image(page, confidence=1)
     page.locator("#btn-gradcam").click()
     page.wait_for_function(

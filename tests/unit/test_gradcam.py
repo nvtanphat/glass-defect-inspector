@@ -25,15 +25,6 @@ def test_saved_score_distinguishes_overlapping_queries_of_the_same_class():
     assert select_query(logits, boxes, [0, 0, 10, 10], 0, score) == (0, 0)
 
 
-def test_hirescam_keeps_local_gradient_instead_of_spreading_it_across_the_image():
-    features = [torch.ones(1, 1, 2, 2)]
-    gradients = [torch.tensor([[[[0.0, 0.0], [0.0, 1.0]]]])]
-    context, metadata = normalize_cam(features, gradients, (2, 2))
-    assert metadata["flat_cam"] and not context.any()
-    local, metadata = normalize_cam(features, gradients, (2, 2), "hirescam")
-    assert np.array_equal(local, [[0, 0], [0, 1]])
-    assert not metadata["flat_cam"]
-
 
 def test_cam_preserves_spatial_signal_and_reports_flat_maps():
     features = [torch.tensor([[[[0.0, 1.0], [2.0, 3.0]]]])]

@@ -301,32 +301,21 @@ class InspectionService:
         with self.sessions() as db:
             row = db.get(InspectionImage, image_id)
             if row and kind in {"gradcam", "cam-detail"}:
-                if method:
-                    key = f"{method}:{detection_id or 'auto'}"
-                    metadata = (row.result or {}).get("explanations", {}).get(key)
-                    suffix = ".detail" if kind == "cam-detail" else ""
+                suffix = ".detail" if kind == "cam-detail" else ""
+                key = f"gradcam:{detection_id or 'auto'}"
+                metadata = (row.result or {}).get("explanations", {}).get(key)
+                if metadata:
                     path = (
                         Path(row.original_path).parent
-                        / f"{image_id}.{method}.{detection_id or 'auto'}{suffix}.jpg"
-                        if metadata
-                        else None
+                        / f"{image_id}.gradcam.{detection_id or 'auto'}{suffix}.jpg"
                     )
                 else:
-                    metadata = (row.result or {}).get("gradcam")
-                    if metadata and metadata.get("method") in {"gradcam", "hirescam"}:
-                        method = metadata["method"]
-                        detection_id = metadata.get("requested_detection_id")
-                        suffix = ".detail" if kind == "cam-detail" else ""
-                        path = (
-                            Path(row.original_path).parent
-                            / f"{image_id}.{method}.{detection_id or 'auto'}{suffix}.jpg"
-                        )
-                    else:
-                        path = (
-                            Path(row.original_path).parent / f"{image_id}.gradcam.jpg"
-                            if metadata and kind == "gradcam"
-                            else None
-                        )
+                    path = (
+                        Path(row.original_path).parent
+                        / f"{image_id}.gradcam.{detection_id or 'auto'}{suffix}.jpg"
+                    )
+                    if not path.is_file() and kind == "gradcam":
+                        path = Path(row.original_path).parent / f"{image_id}.gradcam.jpg"
             else:
                 path = (
                     (row.original_path if kind == "original" else row.annotated_path)
@@ -358,13 +347,13 @@ class InspectionService:
                 d["id"] == detection_id for d in saved_result.get("detections", [])
             ):
                 raise HTTPException(422, "Selected detection was not found in this inspection")
-            key = f"{method}:{detection_id or 'auto'}"
-            output = path.parent / f"{image_id}.{method}.{detection_id or 'auto'}.jpg"
-            image_url = f"/api/images/{image_id}/gradcam?method={method}"
-            detail_url = f"/api/images/{image_id}/cam-detail?method={method}"
+            key = f"gradcam:{detection_id or 'auto'}"
+            output = path.parent / f"{image_id}.gradcam.{detection_id or 'auto'}.jpg"
+            image_url = f"/api/images/{image_id}/gradcam"
+            detail_url = f"/api/images/{image_id}/cam-detail"
             if detection_id is not None:
-                image_url += f"&detection_id={detection_id}"
-                detail_url += f"&detection_id={detection_id}"
+                image_url += f"?detection_id={detection_id}"
+                detail_url += f"?detection_id={detection_id}"
             cached = saved_result.get("explanations", {}).get(key)
             if (
                 cached
@@ -388,7 +377,7 @@ class InspectionService:
             with Image.open(path) as original:
                 source = ImageOps.exif_transpose(original).convert("RGB")
             raw, metadata = explain(
-                source, weights, record["adapter"], saved_result, config, method, detection_id
+                source, weights, record["adapter"], saved_result, config, detection_id=detection_id
             )
             metadata.update(
                 model_id=model_id, model_version=model_version, requested_detection_id=detection_id

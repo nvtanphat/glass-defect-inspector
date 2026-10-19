@@ -280,11 +280,7 @@
 
       <!-- Main Viewport Box with Overlay Detections (Takes ALL available vertical space) -->
       <div class="gradcam-tools">
-        <select id="cam-method" aria-label="Cách giải thích ảnh">
-          <option value="hirescam">HiResCAM · chi tiết</option>
-          <option value="gradcam">Grad-CAM · tổng thể</option>
-        </select>
-        <button type="button" id="btn-gradcam" disabled aria-pressed="false">Xem vùng chú ý</button>
+        <button type="button" id="btn-gradcam" disabled aria-pressed="false">Xem vùng chú ý (Grad-CAM)</button>
         <span id="gradcam-caption" class="gradcam-note" role="status">Kiểm tra ảnh để xem vùng model chú ý.</span>
       </div>
       <div id="viewport-container" class="relative flex-1 min-h-0 bg-neutral-900 overflow-hidden flex items-center justify-center">

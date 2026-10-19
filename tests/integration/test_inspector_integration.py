@@ -323,17 +323,16 @@ def test_concurrent_reviews_keep_one_version_and_automatic_assessment(client):
 
 
 @pytest.mark.parametrize("model_id", ["yolo26m-base", "yolo26m-roi-vfl", "dfine-m", "fbdnet-m"])
-@pytest.mark.parametrize("method", ["gradcam", "hirescam"])
-def test_real_gradcam_is_persisted_and_does_not_change_assessment(client, model_id, method):
+def test_real_gradcam_is_persisted_and_does_not_change_assessment(client, model_id):
     require_model(client, model_id)
     created = upload(client, {"model_id": model_id}).json()
     image_id = created["images"][0]["id"]
-    endpoint = f"/api/images/{image_id}/gradcam?method={method}"
+    endpoint = f"/api/images/{image_id}/gradcam"
     response = client.post(endpoint)
     assert response.status_code == 200, response.text
     metadata = response.json()
     assert metadata["model_id"] == model_id
-    assert metadata["method"] == method
+    assert metadata["method"] == "gradcam"
     assert metadata["model_version"] == created["model_version"]
     assert metadata["nonzero_gradient"]
     assert not metadata["flat_cam"], "Real sample should expose spatial Grad-CAM signal"
@@ -364,7 +363,7 @@ def test_selected_defects_have_separate_explanations_and_cache_files(client):
     snapshots = []
     for detection in detections[:2]:
         endpoint = (
-            f"/api/images/{image['id']}/gradcam?method=hirescam&detection_id={detection['id']}"
+            f"/api/images/{image['id']}/gradcam?detection_id={detection['id']}"
         )
         response = client.post(endpoint)
         assert response.status_code == 200, response.text

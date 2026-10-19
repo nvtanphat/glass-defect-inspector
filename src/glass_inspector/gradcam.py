@@ -47,7 +47,7 @@ def select_query(logits, boxes, target_box=None, category=None, target_score=Non
     return int(query), category
 
 
-def normalize_cam(features, gradients, size, method="gradcam"):
+def normalize_cam(features, gradients, size):
     maps = []
     gradient_sum = 0.0
     for feature, gradient in zip(features, gradients, strict=True):
@@ -56,7 +56,7 @@ def normalize_cam(features, gradients, size, method="gradcam"):
         if not torch.isfinite(gradient).all() or not torch.isfinite(feature).all():
             raise ValueError("Nonfinite explanation")
         gradient_sum += float(gradient.detach().abs().sum())
-        weights = gradient if method == "hirescam" else gradient.mean(dim=(-2, -1), keepdim=True)
+        weights = gradient.mean(dim=(-2, -1), keepdim=True)
         cam = (weights * feature).sum(1, keepdim=True).relu()
         maps.append(
             torch.nn.functional.interpolate(cam, size=size, mode="bilinear", align_corners=False)[
@@ -77,7 +77,7 @@ def _xyxy(boxes):
     return torch.cat((boxes[:, :2] - boxes[:, 2:] / 2, boxes[:, :2] + boxes[:, 2:] / 2), dim=1)
 
 
-def explain(image, weights, adapter, result, config, method="gradcam", detection_id=None):
+def explain(image, weights, adapter, result, config, detection_id=None):
     """Return an overlay JPEG and metadata; never update weights or quality decisions."""
     image = image.convert("RGB")
     detections = result.get("detections", [])
@@ -216,11 +216,10 @@ def explain(image, weights, adapter, result, config, method="gradcam", detection
             score = logits[query, category]
             gradients = torch.autograd.grad(score, features + backbone_features, allow_unused=True)
             cam, metadata = normalize_cam(
-                features, gradients[: len(features)], tensor.shape[-2:], method
+                features, gradients[: len(features)], tensor.shape[-2:]
             )
             if (
                 metadata["flat_cam"]
-                and method == "gradcam"
                 and backbone_features
                 and any(gradient is not None for gradient in gradients[len(features) :])
             ):
@@ -252,7 +251,7 @@ def explain(image, weights, adapter, result, config, method="gradcam", detection
     full.save(stream, "JPEG", quality=90)
     metadata.update(
         version=VERSION,
-        method=method,
+        method="gradcam",
         detection_id=detection["id"] if detection else None,
         target_class=CLASS_NAMES[category],
         score=probability,
