@@ -18,6 +18,7 @@ Tài liệu này quy định cấu trúc tổ chức mã nguồn, tài nguyên d
 | `reports/` | **Biên bản kiểm định chi tiết theo ngày:** Lưu trữ báo cáo kiểm định chuyên sâu, ảnh so sánh lỗi và phân tích trường hợp ngoại lệ. | Lưu trữ theo thư mục ngày tháng rõ ràng. |
 | `tests/` | **Bộ kiểm thử tự động:** Unit tests (`tests/unit/`), contract tests, regression tests và browser E2E tests. | Phải đảm bảo 100% test pass trước khi triển khai mô hình. |
 | `docs/` | **Tài liệu dự án & Minh họa:** Hướng dẫn kỹ thuật (`FULL_DOCUMENTATION.md`, `TRAINING.md`, `INSPECTOR.md`), hình ảnh ma trận nhầm lẫn (`docs/assets/`) và báo cáo nghiên cứu. | Cập nhật đồng bộ khi có thay đổi kiến trúc hoặc dữ liệu. |
+| `slides/` | **Trình chiếu báo cáo NCKH:** Slide web tỷ lệ 16:9 chạy trực tiếp trên trình duyệt bằng HTML5/CSS3/JS thuần, tích hợp hình trích từ báo cáo và lightbox demo hệ thống. | Tách biệt với tài liệu Markdown trong `docs/`. |
 | `kaggle/` | **Môi trường & Công cụ Kaggle:** Các script phục vụ đẩy kernel, đồng bộ checkpoint và giám sát huấn luyện trên nền tảng Kaggle GPU. | Chứa tài khoản tại `.kaggle_accounts.json` (được bảo vệ bởi `.gitignore`). |
 | `migrations/` | **Alembic Database Migrations:** Quản lý lịch sử nâng cấp schema cơ sở dữ liệu PostgreSQL cho dịch vụ kiểm định. | Không chỉnh sửa các migration đã áp dụng vào production. |
 

@@ -188,12 +188,15 @@ scale-error-yolo26/
 │   ├── TRAINING.md              # Hướng dẫn huấn luyện & chưng cất tri thức
 │   ├── INSPECTOR.md             # Hướng dẫn vận hành hệ thống kiểm định web
 │   └── project-layout.md        # Quy chuẩn cấu trúc thư mục & đặt tên tệp
-├── scripts/                     # Scripts thực thi (WBF, Evaluation, CM Generation)
+├── scripts/                     # Scripts thực thi (WBF, Evaluation, CM Generation, Gate)
 │   ├── run_wbf_ensemble.py
+│   ├── verify_model_gate.py
+│   ├── export_active_learning_dataset.py
 │   ├── generate_all_confusion_matrices.py
 │   └── evaluate_fbdnet_full.py
+├── slides/                      # Slide trình chiếu báo cáo NCKH (HTML5/CSS3 16:9)
 ├── src/
-│   ├── glass_inspector/         # Web FastAPI, Database, Model Registry, Grad-CAM
+│   ├── glass_inspector/         # Web FastAPI, Database, Model Registry, Grad-CAM, Data Guard
 │   └── scale_error/             # Modules nghiên cứu: Distillation, Ensemble, FBDNet
 ├── results/                     # Báo cáo JSON & chỉ số kiểm định chính thức
 ├── weights/                     # Trọng số tốt nhất (distilled_student, fbdnet, dfine, yolo26)
