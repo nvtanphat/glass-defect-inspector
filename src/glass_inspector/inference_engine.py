@@ -122,12 +122,21 @@ def load_dfine_model(weights_path: str) -> tuple[Any, Any]:
     if str(dfine_dir) not in sys.path:
         sys.path.insert(0, str(dfine_dir))
 
+    import src
+    dfine_src = str(dfine_dir / "src")
+    if hasattr(src, "__path__") and dfine_src not in src.__path__:
+        src.__path__.append(dfine_src)
+
     # D-FINE imports PyTorch's TensorBoard logger for registration. It does not
     # need TensorFlow; use TensorBoard's own supported no-TensorFlow API.
     import tensorboard.compat
     from tensorboard.compat import tensorflow_stub
 
     tensorboard.compat.tf = tensorflow_stub
+    sys.modules["tensorflow"] = tensorflow_stub
+    import src.nn.backbone.hgnetv2
+    import src.nn.backbone.hgnetv2_fbd
+    import src.zoo
     from src.core import YAMLConfig
 
     if "fbdnet" in Path(weights_path).name:
