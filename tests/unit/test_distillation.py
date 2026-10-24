@@ -4,15 +4,26 @@ from __future__ import annotations
 
 import torch
 
-from src.scale_error.distillation.consensus_target_generator import (
-    ConsensusTargetGenerator,
-    PerClassDistillationConfig,
-    compute_box_iou,
-)
-from src.scale_error.distillation.losses import (
-    compute_smooth_class_weights,
-    make_vfl_loss_elements,
-)
+try:
+    from scale_error.distillation.consensus_target_generator import (
+        ConsensusTargetGenerator,
+        PerClassDistillationConfig,
+        compute_box_iou,
+    )
+    from scale_error.distillation.losses import (
+        compute_smooth_class_weights,
+        make_vfl_loss_elements,
+    )
+except ModuleNotFoundError:
+    from src.scale_error.distillation.consensus_target_generator import (
+        ConsensusTargetGenerator,
+        PerClassDistillationConfig,
+        compute_box_iou,
+    )
+    from src.scale_error.distillation.losses import (
+        compute_smooth_class_weights,
+        make_vfl_loss_elements,
+    )
 
 
 def test_smooth_class_weights_clamps_extreme_imbalance():

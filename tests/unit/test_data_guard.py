@@ -5,7 +5,10 @@ from __future__ import annotations
 import numpy as np
 from PIL import Image
 
-from src.glass_inspector.data_guard import analyze_image_quality
+try:
+    from glass_inspector.data_guard import analyze_image_quality
+except ModuleNotFoundError:
+    from src.glass_inspector.data_guard import analyze_image_quality
 
 
 def test_normal_image_passes_guard():

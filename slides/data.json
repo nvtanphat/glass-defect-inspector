@@ -2,11 +2,21 @@
   "source": "Báo cáo Word đính kèm, tháng 10/2026",
   "benchmark": [
     {
-      "name": "Adaptive Heterogeneous Triad",
-      "ap_50": 77.65,
-      "ap_75": 46.79,
-      "ap_5095": 46.1,
-      "ap_small": 34.19,
+      "name": "Hybrid Apex (Morphology Dynamic Routing)",
+      "ap_50": 77.64,
+      "ap_75": 46.88,
+      "ap_5095": 46.17,
+      "ap_small": 35.09,
+      "latency_ms": 295.0,
+      "fps": 3.4,
+      "protocol": "E1"
+    },
+    {
+      "name": "Adaptive Heterogeneous Triad (Zero-Leakage)",
+      "ap_50": 76.35,
+      "ap_75": 45.71,
+      "ap_5095": 44.6,
+      "ap_small": 34.08,
       "latency_ms": 291.5,
       "fps": 3.4,
       "protocol": "E1"
@@ -44,9 +54,9 @@
     {
       "name": "FBDNet-M",
       "ap_50": 75.43,
-      "ap_75": null,
+      "ap_75": 41.9,
       "ap_5095": 42.42,
-      "ap_small": null,
+      "ap_small": 28.86,
       "latency_ms": 57.3,
       "fps": 17.5,
       "protocol": "F1"
@@ -54,9 +64,9 @@
     {
       "name": "RF-DETR-M + AHRD",
       "ap_50": 73.59,
-      "ap_75": null,
+      "ap_75": 40.85,
       "ap_5095": 42.4,
-      "ap_small": null,
+      "ap_small": 31.85,
       "latency_ms": 58.5,
       "fps": 17.1,
       "protocol": "T1"
@@ -94,9 +104,9 @@
     {
       "name": "YOLOv8m-P2",
       "ap_50": 69.93,
-      "ap_75": null,
+      "ap_75": 39.12,
       "ap_5095": 40.04,
-      "ap_small": null,
+      "ap_small": 27.5,
       "latency_ms": 26.0,
       "fps": 38.5,
       "protocol": "T4"
@@ -104,9 +114,9 @@
     {
       "name": "YOLOv10m",
       "ap_50": 68.95,
-      "ap_75": null,
+      "ap_75": 39.3,
       "ap_5095": 38.82,
-      "ap_small": null,
+      "ap_small": 24.15,
       "latency_ms": 23.8,
       "fps": 42.0,
       "protocol": "T5"
@@ -124,9 +134,9 @@
     {
       "name": "RT-DETR-L",
       "ap_50": 65.22,
-      "ap_75": null,
+      "ap_75": 30.57,
       "ap_5095": 35.02,
-      "ap_small": null,
+      "ap_small": 22.14,
       "latency_ms": 97.3,
       "fps": 10.3,
       "protocol": "T6"
@@ -134,9 +144,9 @@
     {
       "name": "YOLO11m",
       "ap_50": 63.86,
-      "ap_75": null,
+      "ap_75": 32.23,
       "ap_5095": 34.31,
-      "ap_small": null,
+      "ap_small": 20.45,
       "latency_ms": 57.2,
       "fps": 17.5,
       "protocol": "T7"
@@ -174,7 +184,7 @@
   },
   "notes": [
     "FBDNet-M 42,42% theo F1, không phải phép đo E1 cùng giao thức",
-    "Student 41,01% theo KD1; Adaptive 46,10% theo E1",
+    "Student 41,01% theo KD1; Adaptive 44,60% theo E1",
     "Giá trị không có nguồn không được suy diễn là 0"
   ]
 }

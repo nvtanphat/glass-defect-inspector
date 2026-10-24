@@ -55,6 +55,7 @@ _scan_tfevents.py
 
 # Private execution tooling and generated evidence stay local.
 /reports/
+BaoCaoSanPham_NCKH*
 build/
 dist/
 *.egg-info/

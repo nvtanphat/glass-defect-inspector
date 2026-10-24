@@ -51,6 +51,7 @@ packages = ["src/scale_error", "src/glass_inspector"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
@@ -77,13 +78,5 @@ pythonpath = ["src", "."]
 "tests/research/test_fbd_modules.py" = ["E402"]
 "tests/research/test_fbdnet_nwd_smoke.py" = ["E402", "F401", "I001"]
 "tests/research/test_scale_aware_nwd.py" = ["E402", "E501", "F401", "I001"]
-"scripts/check_benchmarks.py" = ["B007", "E501", "F401", "I001", "UP015"]
-"scripts/compare_fbdnet_e0_e1.py" = ["E501", "F541", "UP006", "UP015", "UP035", "UP045"]
-"scripts/eval_ahrd_experiment.py" = ["B007", "B905", "E402", "E501", "E741", "F401", "F841", "I001"]
-"scripts/eval_dfine.py" = ["E402", "E501", "F401", "F841", "I001", "UP031"]
-# Repository bootstrap and long report prose intentionally exceed normal source layout.
-"scripts/evaluate_fbdnet.py" = ["E402", "E501"]
-"scripts/evaluate_fbdnet_full.py" = ["E501"]
-"scripts/plot_confusion_matrices.py" = ["E501", "I001"]
-"scripts/run_ahrd_experiment.py" = ["E501", "F401"]
-"scripts/visualize_gradcam.py" = ["E501", "F401", "I001"]
+"processing/*.py" = ["E501", "I001"]
+"scripts/*.py" = ["B007", "B905", "E402", "E501", "E741", "F401", "F841", "I001", "UP015", "UP031"]
