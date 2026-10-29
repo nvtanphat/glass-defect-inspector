@@ -37,7 +37,12 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from scale_error.data.validate import label_path_for_image, list_images, parse_yolo_label_file, read_names  # noqa: E402
+from scale_error.data.validate import (
+    label_path_for_image,
+    list_images,
+    parse_yolo_label_file,
+    read_names,
+)  # noqa: E402
 
 
 def collect_box_edges_by_size(
@@ -147,7 +152,9 @@ def main() -> None:
         print(f"{key}: n_boxes={n_boxes}")
         print(f"  raw envelope xyxyn: {[round(v, 4) for v in roi['raw_envelope_xyxyn']]}")
         print(f"  ROI xyxyn (with margin): {[round(v, 4) for v in roi['roi_xyxyn']]}")
-        print(f"  ROI covers {roi['roi_width_frac']*100:.1f}% x {roi['roi_height_frac']*100:.1f}% of the frame")
+        print(
+            f"  ROI covers {roi['roi_width_frac'] * 100:.1f}% x {roi['roi_height_frac'] * 100:.1f}% of the frame"
+        )
 
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)

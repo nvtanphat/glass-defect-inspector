@@ -26,6 +26,7 @@ from pycocotools.cocoeval import COCOeval
 ROOT = Path(__file__).resolve().parents[1]
 CLASS_NAMES = ["DiVat", "DiVatLoiLom", "LoiChi", "LoiNhua", "LoiTray"]
 
+
 def compute_iou(box1, box2):
     x1 = max(box1[0], box2[0])
     y1 = max(box1[1], box2[1])
@@ -36,6 +37,7 @@ def compute_iou(box1, box2):
     a2 = max(0.0, box2[2] - box2[0]) * max(0.0, box2[3] - box2[1])
     union = a1 + a2 - inter
     return inter / union if union > 0 else 0.0
+
 
 def fast_wbf_engine(
     boxes_list,
@@ -148,6 +150,7 @@ def fast_wbf_engine(
 
     return out_boxes, out_scores
 
+
 def generate_predictions_with_config(config_dict, raw_streams):
     all_preds = []
     for c_idx, c_name in enumerate(CLASS_NAMES):
@@ -189,7 +192,15 @@ def generate_predictions_with_config(config_dict, raw_streams):
                 raise ValueError(f"Unknown mode: {mode}")
 
             fb, fs = fast_wbf_engine(
-                b_list, s_list, weights, iou_thr, coord_ratio, boost_3, boost_2, solo_decay, conf_floor
+                b_list,
+                s_list,
+                weights,
+                iou_thr,
+                coord_ratio,
+                boost_3,
+                boost_2,
+                solo_decay,
+                conf_floor,
             )
             for b, score in zip(fb, fs, strict=False):
                 all_preds.append(
@@ -201,6 +212,7 @@ def generate_predictions_with_config(config_dict, raw_streams):
                     }
                 )
     return all_preds
+
 
 def evaluate_preds(coco_gt, all_preds, detailed=True):
     coco_dt = coco_gt.loadRes(all_preds) if all_preds else coco_gt.loadRes([])
@@ -227,6 +239,7 @@ def evaluate_preds(coco_gt, all_preds, detailed=True):
         res["per_class"] = per_class
         res["evaluator"] = ev
     return res
+
 
 def main():
     print("=== Starting Comprehensive Ablation and Statistical Evaluation ===")
@@ -362,12 +375,36 @@ def main():
         cfg_no_decay[c]["solo_decay"] = 1.0
 
     experiment_list = [
-        ("Vanilla_WBF", cfg_vanilla, "Baseline: Đồng thể 3 nhánh, trọng số [1,1,1], IoU=0.55, floor=0.05"),
-        ("Step1_Morphology_Routing", cfg_routing_only, "Thêm định tuyến hình thái (kích hoạt 2/3 nhánh theo lớp)"),
-        ("Step2_Class_Weights_Coord", cfg_routing_weights, "Thêm vector trọng số & tỷ lệ tọa độ theo lớp"),
-        ("Step3_Class_IoU_Floor", cfg_routing_weights_thr, "Thêm ngưỡng IoU và sàn tin cậy theo lớp"),
-        ("Step4_Full_Adaptive_Triad", cfg_full, "Đề xuất hoàn chỉnh: Bổ sung Consensus Boost & Solo Decay"),
-        ("LOO_No_Routing", cfg_no_routing, "Loại bỏ định tuyến hình thái (ép 3 nhánh cho cả 5 lớp)"),
+        (
+            "Vanilla_WBF",
+            cfg_vanilla,
+            "Baseline: Đồng thể 3 nhánh, trọng số [1,1,1], IoU=0.55, floor=0.05",
+        ),
+        (
+            "Step1_Morphology_Routing",
+            cfg_routing_only,
+            "Thêm định tuyến hình thái (kích hoạt 2/3 nhánh theo lớp)",
+        ),
+        (
+            "Step2_Class_Weights_Coord",
+            cfg_routing_weights,
+            "Thêm vector trọng số & tỷ lệ tọa độ theo lớp",
+        ),
+        (
+            "Step3_Class_IoU_Floor",
+            cfg_routing_weights_thr,
+            "Thêm ngưỡng IoU và sàn tin cậy theo lớp",
+        ),
+        (
+            "Step4_Full_Adaptive_Triad",
+            cfg_full,
+            "Đề xuất hoàn chỉnh: Bổ sung Consensus Boost & Solo Decay",
+        ),
+        (
+            "LOO_No_Routing",
+            cfg_no_routing,
+            "Loại bỏ định tuyến hình thái (ép 3 nhánh cho cả 5 lớp)",
+        ),
         ("LOO_No_Weights", cfg_no_weights, "Loại bỏ trọng số lớp (đưa về trọng số đồng đều)"),
         ("LOO_No_Class_IoU", cfg_no_iou_opt, "Loại bỏ ngưỡng IoU lớp (cố định IoU=0.55)"),
         ("LOO_No_Class_Floor", cfg_no_floor_opt, "Loại bỏ sàn tin cậy lớp (cố định floor=0.05)"),
@@ -385,7 +422,9 @@ def main():
         res.pop("evaluator", None)
         res["description"] = desc
         ablation_results[key] = res
-        print(f" -> {key}: mAP50_95 = {res['mAP50_95']}%, AP50 = {res['mAP50']}%, AP75 = {res['mAP75']}%, AP_s = {res['mAP_s']}%")
+        print(
+            f" -> {key}: mAP50_95 = {res['mAP50_95']}%, AP50 = {res['mAP50']}%, AP75 = {res['mAP75']}%, AP_s = {res['mAP_s']}%"
+        )
 
     # Save ablation summary
     ablation_out_path = ROOT / "results" / "wbf_ablation_study_results.json"
@@ -409,27 +448,36 @@ def main():
             # FBDNet-M (f_orig)
             for b, score in zip(s["f_orig"][c_idx][0], s["f_orig"][c_idx][1], strict=False):
                 if score >= 0.01:
-                    single_models_preds["FBDNet-M"].append({
-                        "image_id": img_id, "category_id": c_idx,
-                        "bbox": [b[0], b[1], max(0.0, b[2] - b[0]), max(0.0, b[3] - b[1])],
-                        "score": float(score)
-                    })
+                    single_models_preds["FBDNet-M"].append(
+                        {
+                            "image_id": img_id,
+                            "category_id": c_idx,
+                            "bbox": [b[0], b[1], max(0.0, b[2] - b[0]), max(0.0, b[3] - b[1])],
+                            "score": float(score),
+                        }
+                    )
             # D-FINE-M (d_orig)
             for b, score in zip(s["d_orig"][c_idx][0], s["d_orig"][c_idx][1], strict=False):
                 if score >= 0.01:
-                    single_models_preds["D-FINE-M"].append({
-                        "image_id": img_id, "category_id": c_idx,
-                        "bbox": [b[0], b[1], max(0.0, b[2] - b[0]), max(0.0, b[3] - b[1])],
-                        "score": float(score)
-                    })
+                    single_models_preds["D-FINE-M"].append(
+                        {
+                            "image_id": img_id,
+                            "category_id": c_idx,
+                            "bbox": [b[0], b[1], max(0.0, b[2] - b[0]), max(0.0, b[3] - b[1])],
+                            "score": float(score),
+                        }
+                    )
             # YOLO26m-ROI (y_orig)
             for b, score in zip(s["y_orig"][c_idx][0], s["y_orig"][c_idx][1], strict=False):
                 if score >= 0.01:
-                    single_models_preds["YOLO26m-ROI"].append({
-                        "image_id": img_id, "category_id": c_idx,
-                        "bbox": [b[0], b[1], max(0.0, b[2] - b[0]), max(0.0, b[3] - b[1])],
-                        "score": float(score)
-                    })
+                    single_models_preds["YOLO26m-ROI"].append(
+                        {
+                            "image_id": img_id,
+                            "category_id": c_idx,
+                            "bbox": [b[0], b[1], max(0.0, b[2] - b[0]), max(0.0, b[3] - b[1])],
+                            "score": float(score),
+                        }
+                    )
 
     # Evaluate single models
     bench_models = {
@@ -473,7 +521,9 @@ def main():
     # and compute COCOeval. Running 1000 COCOeval might take ~30 mins if naive.
     # Instead, let's do B=250 resamples (statistically well-converged for central limit theorem/percentiles),
     # or calculate fast per-image Average Precision for paired Wilcoxon & Bootstrap!
-    print("Pre-calculating per-image matching stats for statistical significance & fast bootstrap...")
+    print(
+        "Pre-calculating per-image matching stats for statistical significance & fast bootstrap..."
+    )
     # Let's run B=200 full COCOeval bootstrap samples:
     B_samples = 200
     bootstrap_records = {m_name: [] for m_name in bench_models}
@@ -500,26 +550,34 @@ def main():
                 v_id = virtual_img_id * 1000 + k
                 b_gt_imgs.append({"id": v_id, "width": 3980, "height": 3000})
                 for ann in anns_by_img[orig_id]:
-                    b_gt_anns.append({
-                        "id": ann_counter,
-                        "image_id": v_id,
-                        "category_id": ann["category_id"],
-                        "bbox": ann["bbox"],
-                        "area": ann.get("area", ann["bbox"][2] * ann["bbox"][3]),
-                        "iscrowd": 0,
-                    })
+                    b_gt_anns.append(
+                        {
+                            "id": ann_counter,
+                            "image_id": v_id,
+                            "category_id": ann["category_id"],
+                            "bbox": ann["bbox"],
+                            "area": ann.get("area", ann["bbox"][2] * ann["bbox"][3]),
+                            "iscrowd": 0,
+                        }
+                    )
                     ann_counter += 1
                 for m_name in ["FBDNet-M", "Adaptive_Triad", "Vanilla_WBF"]:
                     for p in indexed_preds[m_name][orig_id]:
-                        b_preds[m_name].append({
-                            "image_id": v_id,
-                            "category_id": p["category_id"],
-                            "bbox": p["bbox"],
-                            "score": p["score"],
-                        })
+                        b_preds[m_name].append(
+                            {
+                                "image_id": v_id,
+                                "category_id": p["category_id"],
+                                "bbox": p["bbox"],
+                                "score": p["score"],
+                            }
+                        )
 
         sub_coco_gt = COCO()
-        sub_coco_gt.dataset = {"images": b_gt_imgs, "annotations": b_gt_anns, "categories": gt_dict["categories"]}
+        sub_coco_gt.dataset = {
+            "images": b_gt_imgs,
+            "annotations": b_gt_anns,
+            "categories": gt_dict["categories"],
+        }
         sub_coco_gt.createIndex()
 
         # Evaluate Adaptive Triad
@@ -582,15 +640,27 @@ def main():
     for m_name in ["Adaptive_Triad", "Vanilla_WBF", "FBDNet-M", "D-FINE-M", "YOLO26m-ROI"]:
         ev = eval_objects[m_name]
         # Precision averaged across all 10 IoU thresholds (50:95) and all 5 classes
-        prec_all_ious = ev.eval["precision"][:, :, :, 0, 2] # shape (10, 101, 5)
+        prec_all_ious = ev.eval["precision"][:, :, :, 0, 2]  # shape (10, 101, 5)
         # Average across classes and IoUs
         prec_mean = np.mean(prec_all_ious, axis=(0, 2))
-        pr_data[m_name] = {"recall": rec_levels.tolist(), "precision": [round(float(p), 4) for p in prec_mean]}
-        plt.plot(rec_levels, prec_mean, label=f"{m_name} (mAP: {model_bench_metrics[m_name]['mAP50_95']}%)", linewidth=2.0)
+        pr_data[m_name] = {
+            "recall": rec_levels.tolist(),
+            "precision": [round(float(p), 4) for p in prec_mean],
+        }
+        plt.plot(
+            rec_levels,
+            prec_mean,
+            label=f"{m_name} (mAP: {model_bench_metrics[m_name]['mAP50_95']}%)",
+            linewidth=2.0,
+        )
 
     plt.xlabel("Recall", fontsize=12)
     plt.ylabel("Precision (Average IoU 0.50:0.95)", fontsize=12)
-    plt.title("Precision–Recall Curves Comparison across Detection Systems", fontsize=14, fontweight="bold")
+    plt.title(
+        "Precision–Recall Curves Comparison across Detection Systems",
+        fontsize=14,
+        fontweight="bold",
+    )
     plt.grid(True, linestyle="--", alpha=0.6)
     plt.legend(fontsize=11, loc="lower left")
     plt.tight_layout()
@@ -604,10 +674,19 @@ def main():
     ev_ada = eval_objects["Adaptive_Triad"]
     for c_idx, c_name in enumerate(CLASS_NAMES):
         prec_c = np.mean(ev_ada.eval["precision"][:, :, c_idx, 0, 2], axis=0)
-        plt.plot(rec_levels, prec_c, label=f"{c_name} (AP: {model_bench_metrics['Adaptive_Triad']['per_class'][c_name]}%)", linewidth=2.0)
+        plt.plot(
+            rec_levels,
+            prec_c,
+            label=f"{c_name} (AP: {model_bench_metrics['Adaptive_Triad']['per_class'][c_name]}%)",
+            linewidth=2.0,
+        )
     plt.xlabel("Recall", fontsize=12)
     plt.ylabel("Precision (Average IoU 0.50:0.95)", fontsize=12)
-    plt.title("Per-Class Precision–Recall Curves for Adaptive Heterogeneous Triad", fontsize=14, fontweight="bold")
+    plt.title(
+        "Per-Class Precision–Recall Curves for Adaptive Heterogeneous Triad",
+        fontsize=14,
+        fontweight="bold",
+    )
     plt.grid(True, linestyle="--", alpha=0.6)
     plt.legend(fontsize=11, loc="lower left")
     plt.tight_layout()
@@ -623,10 +702,10 @@ def main():
         # Evaluate matches at IoU=0.50
         # For each image, match predictions to GT boxes with greedy Hungarian/IoU
         tp_count = 0
-        fp_bg_count = 0      # IoU < 0.1 with any box
-        fp_loc_count = 0     # 0.1 <= IoU < 0.5 with true box of same class
-        fp_cls_count = 0     # IoU >= 0.5 with box of different class
-        fp_dup_count = 0     # IoU >= 0.5 with already matched true box
+        fp_bg_count = 0  # IoU < 0.1 with any box
+        fp_loc_count = 0  # 0.1 <= IoU < 0.5 with true box of same class
+        fp_cls_count = 0  # IoU >= 0.5 with box of different class
+        fp_dup_count = 0  # IoU >= 0.5 with already matched true box
         matched_gt_ids = set()
 
         for img_id in all_img_ids:
@@ -637,7 +716,7 @@ def main():
             matched_gts_in_img = set()
 
             for p in p_sorted:
-                p_b = p["bbox"] # [x, y, w, h]
+                p_b = p["bbox"]  # [x, y, w, h]
                 p_xyxy = [p_b[0], p_b[1], p_b[0] + p_b[2], p_b[1] + p_b[3]]
                 c_pred = p["category_id"]
 
@@ -652,7 +731,7 @@ def main():
                     if iou > best_iou:
                         best_iou = iou
                         best_gt_idx = g_idx
-                        same_cls = (c_pred == g["category_id"])
+                        same_cls = c_pred == g["category_id"]
 
                 if best_iou >= 0.5:
                     if same_cls:
@@ -678,7 +757,11 @@ def main():
 
         precision_50 = tp_count / (tp_count + total_fp) if (tp_count + total_fp) > 0 else 0
         recall_50 = tp_count / total_gt if total_gt > 0 else 0
-        f1_50 = (2 * precision_50 * recall_50 / (precision_50 + recall_50)) if (precision_50 + recall_50) > 0 else 0
+        f1_50 = (
+            (2 * precision_50 * recall_50 / (precision_50 + recall_50))
+            if (precision_50 + recall_50) > 0
+            else 0
+        )
 
         error_analysis[m_name] = {
             "Total_Detections": len(preds),
@@ -693,12 +776,14 @@ def main():
                 "Poor_Localization": fp_loc_count,
                 "Class_Confusion": fp_cls_count,
                 "Duplicate_Detection": fp_dup_count,
-            }
+            },
         }
 
     print("\nError Analysis Summary (IoU=0.50):")
     for m_name, err in error_analysis.items():
-        print(f"[{m_name}] TP: {err['True_Positives_TP']}, FP: {err['Total_False_Positives_FP']} (BG: {err['FP_Breakdown']['Background_Hallucination']}), FN: {err['False_Negatives_FN']}, F1: {err['F1_Score_at_50']}%")
+        print(
+            f"[{m_name}] TP: {err['True_Positives_TP']}, FP: {err['Total_False_Positives_FP']} (BG: {err['FP_Breakdown']['Background_Hallucination']}), FN: {err['False_Negatives_FN']}, F1: {err['F1_Score_at_50']}%"
+        )
 
     # 4. Exemplar Identification (Success vs Failure cases of WBF)
     print("\nSearching for Exemplar Success & Failure Cases...")
@@ -719,36 +804,84 @@ def main():
             gt_xyxy = [gt_box[0], gt_box[1], gt_box[0] + gt_box[2], gt_box[1] + gt_box[3]]
             c_gt = gts[0]["category_id"]
 
-            ious_fbd = [compute_iou([b["bbox"][0], b["bbox"][1], b["bbox"][0]+b["bbox"][2], b["bbox"][1]+b["bbox"][3]], gt_xyxy) for b in p_fbd if b["category_id"] == c_gt]
-            ious_ada = [compute_iou([b["bbox"][0], b["bbox"][1], b["bbox"][0]+b["bbox"][2], b["bbox"][1]+b["bbox"][3]], gt_xyxy) for b in p_ada if b["category_id"] == c_gt]
-            ious_yolo = [compute_iou([b["bbox"][0], b["bbox"][1], b["bbox"][0]+b["bbox"][2], b["bbox"][1]+b["bbox"][3]], gt_xyxy) for b in p_yolo if b["category_id"] == c_gt]
+            ious_fbd = [
+                compute_iou(
+                    [
+                        b["bbox"][0],
+                        b["bbox"][1],
+                        b["bbox"][0] + b["bbox"][2],
+                        b["bbox"][1] + b["bbox"][3],
+                    ],
+                    gt_xyxy,
+                )
+                for b in p_fbd
+                if b["category_id"] == c_gt
+            ]
+            ious_ada = [
+                compute_iou(
+                    [
+                        b["bbox"][0],
+                        b["bbox"][1],
+                        b["bbox"][0] + b["bbox"][2],
+                        b["bbox"][1] + b["bbox"][3],
+                    ],
+                    gt_xyxy,
+                )
+                for b in p_ada
+                if b["category_id"] == c_gt
+            ]
+            ious_yolo = [
+                compute_iou(
+                    [
+                        b["bbox"][0],
+                        b["bbox"][1],
+                        b["bbox"][0] + b["bbox"][2],
+                        b["bbox"][1] + b["bbox"][3],
+                    ],
+                    gt_xyxy,
+                )
+                for b in p_yolo
+                if b["category_id"] == c_gt
+            ]
 
             max_ada = max(ious_ada) if ious_ada else 0
             max_fbd = max(ious_fbd) if ious_fbd else 0
             max_yolo = max(ious_yolo) if ious_yolo else 0
 
             # Success Case: Adaptive has high IoU (>0.75) and confidence, whereas YOLO/FBD missed it or had bad IoU
-            if max_ada >= 0.70 and (max_fbd < 0.50 or max_yolo < 0.50) and len(exemplars["success_cases"]) < 3:
-                exemplars["success_cases"].append({
-                    "image_id": img_id,
-                    "defect_class": CLASS_NAMES[c_gt],
-                    "gt_box": gt_box,
-                    "adaptive_iou": round(float(max_ada), 3),
-                    "fbdnet_iou": round(float(max_fbd), 3),
-                    "yolo_iou": round(float(max_yolo), 3),
-                    "mechanism": "Bổ trợ đa kiến trúc (Multi-model rescue) & tinh chỉnh tọa độ bù khuyết."
-                })
+            if (
+                max_ada >= 0.70
+                and (max_fbd < 0.50 or max_yolo < 0.50)
+                and len(exemplars["success_cases"]) < 3
+            ):
+                exemplars["success_cases"].append(
+                    {
+                        "image_id": img_id,
+                        "defect_class": CLASS_NAMES[c_gt],
+                        "gt_box": gt_box,
+                        "adaptive_iou": round(float(max_ada), 3),
+                        "fbdnet_iou": round(float(max_fbd), 3),
+                        "yolo_iou": round(float(max_yolo), 3),
+                        "mechanism": "Bổ trợ đa kiến trúc (Multi-model rescue) & tinh chỉnh tọa độ bù khuyết.",
+                    }
+                )
 
             # Failure Case: GT missed by Adaptive (due to high conf_floor or solo decay) or over-decayed
-            if max_ada < 0.50 and (max_fbd >= 0.60 or max_yolo >= 0.60) and len(exemplars["failure_cases"]) < 3:
-                exemplars["failure_cases"].append({
-                    "image_id": img_id,
-                    "defect_class": CLASS_NAMES[c_gt],
-                    "gt_box": gt_box,
-                    "adaptive_iou": round(float(max_ada), 3),
-                    "fbdnet_iou": round(float(max_fbd), 3),
-                    "mechanism": "Solo decay hoặc conf_floor quá chặt dẫn tới triệt tiêu phát hiện đơn độc thực sự."
-                })
+            if (
+                max_ada < 0.50
+                and (max_fbd >= 0.60 or max_yolo >= 0.60)
+                and len(exemplars["failure_cases"]) < 3
+            ):
+                exemplars["failure_cases"].append(
+                    {
+                        "image_id": img_id,
+                        "defect_class": CLASS_NAMES[c_gt],
+                        "gt_box": gt_box,
+                        "adaptive_iou": round(float(max_ada), 3),
+                        "fbdnet_iou": round(float(max_fbd), 3),
+                        "mechanism": "Solo decay hoặc conf_floor quá chặt dẫn tới triệt tiêu phát hiện đơn độc thực sự.",
+                    }
+                )
 
     # Save comprehensive results
     final_output = {
@@ -765,6 +898,7 @@ def main():
 
     print(f"\nAll tasks complete! Total time: {time.time() - start_t0:.1f}s")
     print(f"Exported full report to {out_file}")
+
 
 if __name__ == "__main__":
     main()

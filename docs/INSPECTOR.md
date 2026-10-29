@@ -50,7 +50,7 @@ Bản đồ và cache được lưu theo từng lỗi bằng cơ chế Grad-CAM 
 ```bash
 python -m alembic check
 python -m pytest tests/unit tests/research -q
-python scripts/verify_inspector.py --url http://127.0.0.1:8501
+python -m pytest tests/integration -q
 ```
 
 Integration cần `INSPECTOR_TEST_DATABASE_URL` tới database test riêng đã migrate. Browser tests cần `INSPECTOR_E2E_URL`, `INSPECTOR_E2E_TOKEN`, Chromium (`python -m playwright install chromium`). Không chạy tests lên database vận hành.

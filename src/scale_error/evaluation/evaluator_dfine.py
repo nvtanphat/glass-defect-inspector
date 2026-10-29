@@ -76,6 +76,7 @@ def evaluate_dfine(
         _generate_experiment_config,
         _yolo_to_coco_json,
     )
+
     eval_dir = output_json.parent / "dfine_eval_data"
     eval_dir.mkdir(parents=True, exist_ok=True)
     test_json = eval_dir / "test.json"
@@ -107,21 +108,22 @@ def evaluate_dfine(
     # 3. Run evaluation via D-FINE's train.py --test-only
     print(f"[D-FINE] Evaluating checkpoint: {weights}")
     cmd = [
-        sys.executable, str(dfine_repo / "train.py"),
-        "-c", str(model_config),
-        "-r", str(weights),
+        sys.executable,
+        str(dfine_repo / "train.py"),
+        "-c",
+        str(model_config),
+        "-r",
+        str(weights),
         "--test-only",
-        "--device", f"cuda:{device}",
+        "--device",
+        f"cuda:{device}",
     ]
 
     print(f"[D-FINE] Command: {' '.join(cmd)}")
-    result = subprocess.run(
-        cmd, capture_output=True, text=True, cwd=str(dfine_repo)
-    )
+    result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(dfine_repo))
     if result.returncode != 0:
         raise RuntimeError(
-            "D-FINE evaluation failed with exit code "
-            f"{result.returncode}:\n{result.stderr[-4000:]}"
+            f"D-FINE evaluation failed with exit code {result.returncode}:\n{result.stderr[-4000:]}"
         )
 
     # 4. Parse COCO evaluation output
@@ -200,6 +202,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     evaluate_dfine(
-        args.weights, args.dfine_repo, args.data, args.output,
-        eval_size=args.eval_size, device=args.device,
+        args.weights,
+        args.dfine_repo,
+        args.data,
+        args.output,
+        eval_size=args.eval_size,
+        device=args.device,
     )

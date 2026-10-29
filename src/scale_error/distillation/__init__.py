@@ -6,11 +6,11 @@ into a single high-speed YOLO26 student model.
 
 from __future__ import annotations
 
-from src.scale_error.distillation.consensus_target_generator import (
+from scale_error.distillation.consensus_target_generator import (
     ConsensusTargetGenerator,
     PerClassDistillationConfig,
 )
-from src.scale_error.distillation.losses import (
+from scale_error.distillation.losses import (
     ConfidenceWeightedVFLLoss,
     compute_smooth_class_weights,
 )

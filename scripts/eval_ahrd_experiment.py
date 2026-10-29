@@ -33,11 +33,14 @@ Usage:
 import sys
 import types
 from importlib.machinery import ModuleSpec
+
 _tf_stub = types.ModuleType("tensorflow")
 _tf_stub.__version__ = "stub"
 _tf_stub.__spec__ = ModuleSpec("tensorflow", loader=None)
 _tf_stub.__path__ = []
-_tf_stub.io = types.SimpleNamespace(gfile=types.SimpleNamespace(join=lambda *a: "/".join(str(x) for x in a)))
+_tf_stub.io = types.SimpleNamespace(
+    gfile=types.SimpleNamespace(join=lambda *a: "/".join(str(x) for x in a))
+)
 sys.modules["tensorflow"] = _tf_stub
 
 import argparse
@@ -59,6 +62,7 @@ if str(DFINE_DIR) not in sys.path:
     sys.path.insert(0, str(DFINE_DIR))
 
 from src.core import YAMLConfig
+
 # Ensure AHRD modules are registered
 import src.zoo.dfine.ahrd  # noqa: F401
 
@@ -87,7 +91,9 @@ def compute_iou(box1: list[float], box2: list[float]) -> float:
     return inter / union if union > 0 else 0.0
 
 
-def measure_model_complexity(model: torch.nn.Module, input_size=(1, 3, 960, 960), device="cpu") -> dict[str, Any]:
+def measure_model_complexity(
+    model: torch.nn.Module, input_size=(1, 3, 960, 960), device="cpu"
+) -> dict[str, Any]:
     """Measure total params, trainable params, and FLOPs."""
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -95,6 +101,7 @@ def measure_model_complexity(model: torch.nn.Module, input_size=(1, 3, 960, 960)
     gflops = 0.0
     try:
         from torchprofile import profile_macs
+
         dummy = torch.randn(*input_size).to(device)
         macs = profile_macs(model, dummy)
         gflops = (macs * 2) / 1e9
@@ -109,7 +116,9 @@ def measure_model_complexity(model: torch.nn.Module, input_size=(1, 3, 960, 960)
     }
 
 
-def measure_latency_and_vram(model: torch.nn.Module, input_size=(1, 3, 960, 960), device="cpu", num_warmup=20, num_runs=50) -> dict[str, Any]:
+def measure_latency_and_vram(
+    model: torch.nn.Module, input_size=(1, 3, 960, 960), device="cpu", num_warmup=20, num_runs=50
+) -> dict[str, Any]:
     """Benchmark inference latency and peak VRAM."""
     model.eval()
     dummy = torch.randn(*input_size).to(device)
@@ -149,7 +158,9 @@ def measure_latency_and_vram(model: torch.nn.Module, input_size=(1, 3, 960, 960)
     }
 
 
-def evaluate_bbox_scale_breakdown(gt_json_path: Path, all_predictions: list[dict[str, Any]], iou_th=0.5, conf_th=0.5) -> dict[str, Any]:
+def evaluate_bbox_scale_breakdown(
+    gt_json_path: Path, all_predictions: list[dict[str, Any]], iou_th=0.5, conf_th=0.5
+) -> dict[str, Any]:
     """Compute detection rate and false negatives binned by min(w, h) in pixels."""
     gt_data = json.loads(gt_json_path.read_text(encoding="utf-8"))
     annotations = gt_data.get("annotations", [])
@@ -233,7 +244,9 @@ def evaluate_bbox_scale_breakdown(gt_json_path: Path, all_predictions: list[dict
     return scale_results
 
 
-def evaluate_per_class_fn_fp(gt_json_path: Path, all_predictions: list[dict[str, Any]], iou_th=0.5, conf_th=0.5) -> dict[str, Any]:
+def evaluate_per_class_fn_fp(
+    gt_json_path: Path, all_predictions: list[dict[str, Any]], iou_th=0.5, conf_th=0.5
+) -> dict[str, Any]:
     """Compute per-class Precision, Recall, False Negatives, False Positives."""
     gt_data = json.loads(gt_json_path.read_text(encoding="utf-8"))
     annotations = gt_data.get("annotations", [])
@@ -292,8 +305,12 @@ def evaluate_per_class_fn_fp(gt_json_path: Path, all_predictions: list[dict[str,
         gt_c = class_stats[c]["tp"] + class_stats[c]["fn"]
         pred_c = class_stats[c]["tp"] + class_stats[c]["fp"]
         class_stats[c]["gt"] = gt_c
-        class_stats[c]["recall"] = round((class_stats[c]["tp"] / gt_c) * 100, 2) if gt_c > 0 else 0.0
-        class_stats[c]["precision"] = round((class_stats[c]["tp"] / pred_c) * 100, 2) if pred_c > 0 else 0.0
+        class_stats[c]["recall"] = (
+            round((class_stats[c]["tp"] / gt_c) * 100, 2) if gt_c > 0 else 0.0
+        )
+        class_stats[c]["precision"] = (
+            round((class_stats[c]["tp"] / pred_c) * 100, 2) if pred_c > 0 else 0.0
+        )
 
     return class_stats
 
@@ -305,7 +322,15 @@ def run_coco_eval(gt_json_path: Path, predictions: list[dict[str, Any]]) -> dict
 
     coco_gt = COCO(str(gt_json_path))
     if not predictions:
-        return {"mAP50_95": 0.0, "mAP50": 0.0, "mAP75": 0.0, "AP_s": 0.0, "AP_m": 0.0, "AP_l": 0.0, "per_class": {}}
+        return {
+            "mAP50_95": 0.0,
+            "mAP50": 0.0,
+            "mAP75": 0.0,
+            "AP_s": 0.0,
+            "AP_m": 0.0,
+            "AP_l": 0.0,
+            "per_class": {},
+        }
 
     coco_dt = coco_gt.loadRes(predictions)
     evaluator = COCOeval(coco_gt, coco_dt, "bbox")
@@ -349,11 +374,31 @@ def run_coco_eval(gt_json_path: Path, predictions: list[dict[str, Any]]) -> dict
 def parse_args():
     parser = argparse.ArgumentParser(description="Evaluate RF-DETR-M / AHRD Experiment")
     parser.add_argument("-c", "--config", type=str, required=True, help="YAML config path")
-    parser.add_argument("-w", "--weights", type=str, required=True, help="Model weights checkpoint (.pth)")
-    parser.add_argument("--gt-json", type=str, default="results/data_roi/test/test.json", help="Path to test.json ground truth")
-    parser.add_argument("--img-dir", type=str, default="results/data_roi/test", help="Path to test ROI images directory")
-    parser.add_argument("-o", "--output-json", type=str, default="results/eval_ahrd_report.json", help="Output JSON path")
-    parser.add_argument("--device", type=str, default="cuda:0" if torch.cuda.is_available() else "cpu")
+    parser.add_argument(
+        "-w", "--weights", type=str, required=True, help="Model weights checkpoint (.pth)"
+    )
+    parser.add_argument(
+        "--gt-json",
+        type=str,
+        default="results/data_roi/test/test.json",
+        help="Path to test.json ground truth",
+    )
+    parser.add_argument(
+        "--img-dir",
+        type=str,
+        default="results/data_roi/test",
+        help="Path to test ROI images directory",
+    )
+    parser.add_argument(
+        "-o",
+        "--output-json",
+        type=str,
+        default="results/eval_ahrd_report.json",
+        help="Output JSON path",
+    )
+    parser.add_argument(
+        "--device", type=str, default="cuda:0" if torch.cuda.is_available() else "cpu"
+    )
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--conf-th", type=float, default=0.5)
     parser.add_argument("--iou-th", type=float, default=0.5)
@@ -399,7 +444,9 @@ def main():
     print("\n[*] Measuring Model Complexity & Latency...")
     complexity = measure_model_complexity(full_model.model, device=args.device)
     perf = measure_latency_and_vram(full_model, device=args.device)
-    print(f"  Params:  {complexity['total_params_M']} M (Trainable: {complexity['trainable_params_M']} M)")
+    print(
+        f"  Params:  {complexity['total_params_M']} M (Trainable: {complexity['trainable_params_M']} M)"
+    )
     print(f"  Latency: {perf['latency_ms']} ms ({perf['fps']} FPS)")
     print(f"  VRAM:    {perf['peak_vram_mb']} MB")
 
@@ -433,31 +480,45 @@ def main():
 
             for b, s, l in zip(boxes, scores, labels):
                 x1, y1, x2, y2 = b
-                predictions.append({
-                    "image_id": info["id"],
-                    "category_id": int(l),
-                    "bbox": [float(x1), float(y1), float(x2 - x1), float(y2 - y1)],
-                    "score": float(s),
-                })
+                predictions.append(
+                    {
+                        "image_id": info["id"],
+                        "category_id": int(l),
+                        "bbox": [float(x1), float(y1), float(x2 - x1), float(y2 - y1)],
+                        "score": float(s),
+                    }
+                )
 
     # 1. COCO metrics
     print("\n[+] Computing Standard COCO Metrics...")
     coco_metrics = run_coco_eval(gt_path, predictions)
-    print(f"  mAP@50:95: {coco_metrics['mAP50_95']}% | mAP@50: {coco_metrics['mAP50']}% | mAP@75: {coco_metrics['mAP75']}%")
-    print(f"  AP_small:  {coco_metrics['AP_s']}% | AP_med: {coco_metrics['AP_m']}% | AP_large: {coco_metrics['AP_l']}%")
+    print(
+        f"  mAP@50:95: {coco_metrics['mAP50_95']}% | mAP@50: {coco_metrics['mAP50']}% | mAP@75: {coco_metrics['mAP75']}%"
+    )
+    print(
+        f"  AP_small:  {coco_metrics['AP_s']}% | AP_med: {coco_metrics['AP_m']}% | AP_large: {coco_metrics['AP_l']}%"
+    )
 
     # 2. Per-class FN/FP & Precision/Recall
     print("\n[+] Computing Per-Class Detection & False Negatives...")
-    class_stats = evaluate_per_class_fn_fp(gt_path, predictions, iou_th=args.iou_th, conf_th=args.conf_th)
+    class_stats = evaluate_per_class_fn_fp(
+        gt_path, predictions, iou_th=args.iou_th, conf_th=args.conf_th
+    )
     for c in CLASS_NAMES:
         cs = class_stats[c]
-        print(f"  - {c:<12}: P = {cs['precision']:>5.1f}% | R = {cs['recall']:>5.1f}% | FN = {cs['fn']:>4} | FP = {cs['fp']:>4}")
+        print(
+            f"  - {c:<12}: P = {cs['precision']:>5.1f}% | R = {cs['recall']:>5.1f}% | FN = {cs['fn']:>4} | FP = {cs['fp']:>4}"
+        )
 
     # 3. Bounding box scale breakdown (after resize)
     print("\n[+] Computing Bounding Box Scale Breakdown (min(w, h) in pixels)...")
-    scale_stats = evaluate_bbox_scale_breakdown(gt_path, predictions, iou_th=args.iou_th, conf_th=args.conf_th)
+    scale_stats = evaluate_bbox_scale_breakdown(
+        gt_path, predictions, iou_th=args.iou_th, conf_th=args.conf_th
+    )
     for bin_name, bdata in scale_stats.items():
-        print(f"  - {bin_name:<11}: GT = {bdata['gt_count']:>4} | Recall = {bdata['recall']:>5.1f}% | FN = {bdata['fn_count']:>4} (Miss Rate: {bdata['fn_rate']:>5.1f}%)")
+        print(
+            f"  - {bin_name:<11}: GT = {bdata['gt_count']:>4} | Recall = {bdata['recall']:>5.1f}% | FN = {bdata['fn_count']:>4} (Miss Rate: {bdata['fn_rate']:>5.1f}%)"
+        )
 
     # Save output report
     report = {

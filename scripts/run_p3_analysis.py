@@ -28,6 +28,7 @@ from pycocotools.cocoeval import COCOeval
 ROOT = Path(__file__).resolve().parents[1]
 CLASS_NAMES = ["DiVat", "DiVatLoiLom", "LoiChi", "LoiNhua", "LoiTray"]
 
+
 def compute_iou(box1, box2):
     x1 = max(box1[0], box2[0])
     y1 = max(box1[1], box2[1])
@@ -38,6 +39,7 @@ def compute_iou(box1, box2):
     a2 = max(0.0, box2[2] - box2[0]) * max(0.0, box2[3] - box2[1])
     union = a1 + a2 - inter
     return inter / union if union > 0 else 0.0
+
 
 def fast_wbf_engine(
     boxes_list,
@@ -150,6 +152,7 @@ def fast_wbf_engine(
 
     return out_boxes, out_scores
 
+
 def generate_predictions_with_config(config_dict, raw_streams):
     all_preds = []
     for c_idx, c_name in enumerate(CLASS_NAMES):
@@ -191,7 +194,15 @@ def generate_predictions_with_config(config_dict, raw_streams):
                 raise ValueError(f"Unknown mode: {mode}")
 
             fb, fs = fast_wbf_engine(
-                b_list, s_list, weights, iou_thr, coord_ratio, boost_3, boost_2, solo_decay, conf_floor
+                b_list,
+                s_list,
+                weights,
+                iou_thr,
+                coord_ratio,
+                boost_3,
+                boost_2,
+                solo_decay,
+                conf_floor,
             )
             for b, score in zip(fb, fs, strict=False):
                 all_preds.append(
@@ -203,6 +214,7 @@ def generate_predictions_with_config(config_dict, raw_streams):
                     }
                 )
     return all_preds
+
 
 def fast_bootstrap_map(evalImgs, img_inds, I0, A0, K=5, recThrs=None):
     if recThrs is None:
@@ -241,6 +253,7 @@ def fast_bootstrap_map(evalImgs, img_inds, I0, A0, K=5, recThrs=None):
         aps.append(np.mean(k_aps))
     return float(np.mean(aps) * 100) if aps else 0.0
 
+
 def main():
     print("=== Launching P3 In-Depth Statistical & Error Analysis ===")
     t0 = time.time()
@@ -269,7 +282,9 @@ def main():
     for a in gt_dict["annotations"]:
         anns_by_img[a["image_id"]].append(a)
 
-    print(f"Loaded ground truth with {len(all_img_ids)} images and {len(gt_dict['annotations'])} annotations.")
+    print(
+        f"Loaded ground truth with {len(all_img_ids)} images and {len(gt_dict['annotations'])} annotations."
+    )
 
     # 1. Prepare predictions for all 5 systems
     print("\nPreparing predictions for systems...")
@@ -287,35 +302,50 @@ def main():
             # FBDNet-M (f_orig)
             for b, score in zip(s["f_orig"][c_idx][0], s["f_orig"][c_idx][1], strict=False):
                 if score >= 0.01:
-                    systems_preds["FBDNet-M"].append({
-                        "image_id": img_id, "category_id": c_idx,
-                        "bbox": [b[0], b[1], max(0.0, b[2] - b[0]), max(0.0, b[3] - b[1])],
-                        "score": float(score)
-                    })
+                    systems_preds["FBDNet-M"].append(
+                        {
+                            "image_id": img_id,
+                            "category_id": c_idx,
+                            "bbox": [b[0], b[1], max(0.0, b[2] - b[0]), max(0.0, b[3] - b[1])],
+                            "score": float(score),
+                        }
+                    )
             # D-FINE-M (d_orig)
             for b, score in zip(s["d_orig"][c_idx][0], s["d_orig"][c_idx][1], strict=False):
                 if score >= 0.01:
-                    systems_preds["D-FINE-M"].append({
-                        "image_id": img_id, "category_id": c_idx,
-                        "bbox": [b[0], b[1], max(0.0, b[2] - b[0]), max(0.0, b[3] - b[1])],
-                        "score": float(score)
-                    })
+                    systems_preds["D-FINE-M"].append(
+                        {
+                            "image_id": img_id,
+                            "category_id": c_idx,
+                            "bbox": [b[0], b[1], max(0.0, b[2] - b[0]), max(0.0, b[3] - b[1])],
+                            "score": float(score),
+                        }
+                    )
             # YOLO26m-ROI (y_orig)
             for b, score in zip(s["y_orig"][c_idx][0], s["y_orig"][c_idx][1], strict=False):
                 if score >= 0.01:
-                    systems_preds["YOLO26m-ROI"].append({
-                        "image_id": img_id, "category_id": c_idx,
-                        "bbox": [b[0], b[1], max(0.0, b[2] - b[0]), max(0.0, b[3] - b[1])],
-                        "score": float(score)
-                    })
+                    systems_preds["YOLO26m-ROI"].append(
+                        {
+                            "image_id": img_id,
+                            "category_id": c_idx,
+                            "bbox": [b[0], b[1], max(0.0, b[2] - b[0]), max(0.0, b[3] - b[1])],
+                            "score": float(score),
+                        }
+                    )
 
     # Vanilla WBF
     cfg_vanilla = {
         c: {
-            "mode": "3M_MS_TTA", "iou_thr": 0.55, "weights": [1.0, 1.0, 1.0],
-            "coord_ratio": [0.333, 0.333, 0.334], "boost_3": 1.0, "boost_2": 1.0,
-            "solo_decay": 1.0, "conf_floor": 0.05
-        } for c in CLASS_NAMES
+            "mode": "3M_MS_TTA",
+            "iou_thr": 0.55,
+            "weights": [1.0, 1.0, 1.0],
+            "coord_ratio": [0.333, 0.333, 0.334],
+            "boost_3": 1.0,
+            "boost_2": 1.0,
+            "solo_decay": 1.0,
+            "conf_floor": 0.05,
+        }
+        for c in CLASS_NAMES
     }
     systems_preds["Vanilla_WBF"] = generate_predictions_with_config(cfg_vanilla, raw_streams)
 
@@ -349,7 +379,9 @@ def main():
             per_class[c_name] = round(float(ev_c.stats[0] * 100), 2)
         bench_metrics[name]["per_class"] = per_class
         eval_objs[name] = ev
-        print(f"[{name}] mAP50_95 = {bench_metrics[name]['mAP50_95']}%, AP50 = {bench_metrics[name]['mAP50']}%")
+        print(
+            f"[{name}] mAP50_95 = {bench_metrics[name]['mAP50_95']}%, AP50 = {bench_metrics[name]['mAP50']}%"
+        )
 
     # 3. High-Speed 1000-iteration Paired Bootstrap
     print("\nRunning High-Speed 1000-iteration Paired Bootstrap...")
@@ -368,11 +400,21 @@ def main():
     t_boot_start = time.time()
     for _b_idx in range(B):
         res_inds = np.random.choice(I0, size=I0, replace=True)
-        m_ada = fast_bootstrap_map(eval_objs["Adaptive_Triad"].evalImgs, res_inds, I0, A0, recThrs=recThrs)
-        m_fbd = fast_bootstrap_map(eval_objs["FBDNet-M"].evalImgs, res_inds, I0, A0, recThrs=recThrs)
-        m_van = fast_bootstrap_map(eval_objs["Vanilla_WBF"].evalImgs, res_inds, I0, A0, recThrs=recThrs)
-        m_yolo = fast_bootstrap_map(eval_objs["YOLO26m-ROI"].evalImgs, res_inds, I0, A0, recThrs=recThrs)
-        m_dfine = fast_bootstrap_map(eval_objs["D-FINE-M"].evalImgs, res_inds, I0, A0, recThrs=recThrs)
+        m_ada = fast_bootstrap_map(
+            eval_objs["Adaptive_Triad"].evalImgs, res_inds, I0, A0, recThrs=recThrs
+        )
+        m_fbd = fast_bootstrap_map(
+            eval_objs["FBDNet-M"].evalImgs, res_inds, I0, A0, recThrs=recThrs
+        )
+        m_van = fast_bootstrap_map(
+            eval_objs["Vanilla_WBF"].evalImgs, res_inds, I0, A0, recThrs=recThrs
+        )
+        m_yolo = fast_bootstrap_map(
+            eval_objs["YOLO26m-ROI"].evalImgs, res_inds, I0, A0, recThrs=recThrs
+        )
+        m_dfine = fast_bootstrap_map(
+            eval_objs["D-FINE-M"].evalImgs, res_inds, I0, A0, recThrs=recThrs
+        )
 
         boot_results["Adaptive_Triad"].append(m_ada)
         boot_results["FBDNet-M"].append(m_fbd)
@@ -438,11 +480,21 @@ def main():
         ev = eval_objs[name]
         prec_all_ious = ev.eval["precision"][:, :, :, 0, 2]  # shape: (10, 101, 5)
         prec_mean = np.mean(prec_all_ious, axis=(0, 2))
-        plt.plot(rec_levels, prec_mean, label=f"{name} (mAP: {bench_metrics[name]['mAP50_95']}%)", linewidth=2.2)
+        plt.plot(
+            rec_levels,
+            prec_mean,
+            label=f"{name} (mAP: {bench_metrics[name]['mAP50_95']}%)",
+            linewidth=2.2,
+        )
 
     plt.xlabel("Recall", fontsize=12, fontweight="bold")
     plt.ylabel("Precision (Average IoU 0.50:0.95)", fontsize=12, fontweight="bold")
-    plt.title("Precision–Recall Curves: Single Models vs Adaptive Triad", fontsize=14, fontweight="bold", pad=12)
+    plt.title(
+        "Precision–Recall Curves: Single Models vs Adaptive Triad",
+        fontsize=14,
+        fontweight="bold",
+        pad=12,
+    )
     plt.grid(True, linestyle="--", alpha=0.5)
     plt.legend(fontsize=11, loc="lower left", framealpha=0.95)
     plt.tight_layout()
@@ -458,11 +510,18 @@ def main():
     for c_idx, c_name in enumerate(CLASS_NAMES):
         prec_c = np.mean(ev_ada.eval["precision"][:, :, c_idx, 0, 2], axis=0)
         ap_c = bench_metrics["Adaptive_Triad"]["per_class"][c_name]
-        plt.plot(rec_levels, prec_c, label=f"{c_name} (AP: {ap_c}%)", color=colors[c_idx], linewidth=2.2)
+        plt.plot(
+            rec_levels, prec_c, label=f"{c_name} (AP: {ap_c}%)", color=colors[c_idx], linewidth=2.2
+        )
 
     plt.xlabel("Recall", fontsize=12, fontweight="bold")
     plt.ylabel("Precision (Average IoU 0.50:0.95)", fontsize=12, fontweight="bold")
-    plt.title("Per-Class Precision–Recall Curves (Adaptive Heterogeneous Triad)", fontsize=14, fontweight="bold", pad=12)
+    plt.title(
+        "Per-Class Precision–Recall Curves (Adaptive Heterogeneous Triad)",
+        fontsize=14,
+        fontweight="bold",
+        pad=12,
+    )
     plt.grid(True, linestyle="--", alpha=0.5)
     plt.legend(fontsize=11, loc="lower left", framealpha=0.95)
     plt.tight_layout()
@@ -485,10 +544,10 @@ def main():
 
     for m_name in systems_preds:
         tp = 0
-        fp_bg = 0     # IoU < 0.1 with any box
-        fp_loc = 0    # 0.1 <= IoU < 0.5 with true box of same class
-        fp_cls = 0    # IoU >= 0.5 with box of different class
-        fp_dup = 0    # IoU >= 0.5 with already matched true box
+        fp_bg = 0  # IoU < 0.1 with any box
+        fp_loc = 0  # 0.1 <= IoU < 0.5 with true box of same class
+        fp_cls = 0  # IoU >= 0.5 with box of different class
+        fp_dup = 0  # IoU >= 0.5 with already matched true box
         matched_gt_ids = set()
 
         for img_id in all_img_ids:
@@ -513,7 +572,7 @@ def main():
                     if iou > best_iou:
                         best_iou = iou
                         best_gt_idx = g_idx
-                        same_cls = (c_p == g["category_id"])
+                        same_cls = c_p == g["category_id"]
 
                 if best_iou >= 0.5:
                     if same_cls:
@@ -557,7 +616,9 @@ def main():
 
     print("\nError Decomposition Table (IoU=0.50):")
     for m_name, err in error_analysis.items():
-        print(f"[{m_name}] TP: {err['TP']}, FP: {err['Total_FP']} (BG: {err['FP_Breakdown']['Background_Hallucination']}, Loc: {err['FP_Breakdown']['Poor_Localization']}), FN: {err['FN']}, F1: {err['F1_Score_50']}%")
+        print(
+            f"[{m_name}] TP: {err['TP']}, FP: {err['Total_FP']} (BG: {err['FP_Breakdown']['Background_Hallucination']}, Loc: {err['FP_Breakdown']['Poor_Localization']}), FN: {err['FN']}, F1: {err['F1_Score_50']}%"
+        )
 
     # 6. Concrete Exemplar Visualizations (Successes & Failures)
     print("\nIdentifying Exemplar Success & Failure Cases...")
@@ -578,69 +639,183 @@ def main():
         if len(gts) == 1 and gts[0]["category_id"] == 0:  # DiVat
             gt_b = gts[0]["bbox"]
             gt_xyxy = [gt_b[0], gt_b[1], gt_b[0] + gt_b[2], gt_b[1] + gt_b[3]]
-            i_ada = [compute_iou([b["bbox"][0], b["bbox"][1], b["bbox"][0]+b["bbox"][2], b["bbox"][1]+b["bbox"][3]], gt_xyxy) for b in p_ada if b["category_id"] == 0]
-            i_fbd = [compute_iou([b["bbox"][0], b["bbox"][1], b["bbox"][0]+b["bbox"][2], b["bbox"][1]+b["bbox"][3]], gt_xyxy) for b in p_fbd if b["category_id"] == 0]
-            i_yolo = [compute_iou([b["bbox"][0], b["bbox"][1], b["bbox"][0]+b["bbox"][2], b["bbox"][1]+b["bbox"][3]], gt_xyxy) for b in p_yolo if b["category_id"] == 0]
+            i_ada = [
+                compute_iou(
+                    [
+                        b["bbox"][0],
+                        b["bbox"][1],
+                        b["bbox"][0] + b["bbox"][2],
+                        b["bbox"][1] + b["bbox"][3],
+                    ],
+                    gt_xyxy,
+                )
+                for b in p_ada
+                if b["category_id"] == 0
+            ]
+            i_fbd = [
+                compute_iou(
+                    [
+                        b["bbox"][0],
+                        b["bbox"][1],
+                        b["bbox"][0] + b["bbox"][2],
+                        b["bbox"][1] + b["bbox"][3],
+                    ],
+                    gt_xyxy,
+                )
+                for b in p_fbd
+                if b["category_id"] == 0
+            ]
+            i_yolo = [
+                compute_iou(
+                    [
+                        b["bbox"][0],
+                        b["bbox"][1],
+                        b["bbox"][0] + b["bbox"][2],
+                        b["bbox"][1] + b["bbox"][3],
+                    ],
+                    gt_xyxy,
+                )
+                for b in p_yolo
+                if b["category_id"] == 0
+            ]
             max_a = max(i_ada) if i_ada else 0
             max_f = max(i_fbd) if i_fbd else 0
             max_y = max(i_yolo) if i_yolo else 0
 
-            if max_a >= 0.70 and max_y < 0.30 and len([x for x in exemplar_data if x["type"] == "SUCCESS_FN_RESCUE"]) == 0:
-                exemplar_data.append({
-                    "type": "SUCCESS_FN_RESCUE",
-                    "title": "Tình huống 1: Bổ trợ đa kiến trúc cứu sót lỗi (FN Rescue)",
-                    "image_id": img_id,
-                    "class": "DiVat",
-                    "gt_box": gt_b,
-                    "ada_iou": round(float(max_a), 3),
-                    "fbd_iou": round(float(max_f), 3),
-                    "yolo_iou": round(float(max_y), 3),
-                    "analysis": "YOLO26m bị mất dấu hạt dị vật vi mô do downsampling, nhưng nhánh D-FINE và FBDNet cùng bám bắt được. Cơ chế consensus boost b_3=1.25 đẩy độ tin cậy của hộp bao lên ngưỡng cao, cứu thành công một lỗi bỏ sót (False Negative)."
-                })
+            if (
+                max_a >= 0.70
+                and max_y < 0.30
+                and len([x for x in exemplar_data if x["type"] == "SUCCESS_FN_RESCUE"]) == 0
+            ):
+                exemplar_data.append(
+                    {
+                        "type": "SUCCESS_FN_RESCUE",
+                        "title": "Tình huống 1: Bổ trợ đa kiến trúc cứu sót lỗi (FN Rescue)",
+                        "image_id": img_id,
+                        "class": "DiVat",
+                        "gt_box": gt_b,
+                        "ada_iou": round(float(max_a), 3),
+                        "fbd_iou": round(float(max_f), 3),
+                        "yolo_iou": round(float(max_y), 3),
+                        "analysis": "YOLO26m bị mất dấu hạt dị vật vi mô do downsampling, nhưng nhánh D-FINE và FBDNet cùng bám bắt được. Cơ chế consensus boost b_3=1.25 đẩy độ tin cậy của hộp bao lên ngưỡng cao, cứu thành công một lỗi bỏ sót (False Negative).",
+                    }
+                )
 
         if len(gts) == 1 and gts[0]["category_id"] == 2:  # LoiChi
             gt_b = gts[0]["bbox"]
             gt_xyxy = [gt_b[0], gt_b[1], gt_b[0] + gt_b[2], gt_b[1] + gt_b[3]]
-            i_ada = [compute_iou([b["bbox"][0], b["bbox"][1], b["bbox"][0]+b["bbox"][2], b["bbox"][1]+b["bbox"][3]], gt_xyxy) for b in p_ada if b["category_id"] == 2]
-            i_fbd = [compute_iou([b["bbox"][0], b["bbox"][1], b["bbox"][0]+b["bbox"][2], b["bbox"][1]+b["bbox"][3]], gt_xyxy) for b in p_fbd if b["category_id"] == 2]
-            i_yolo = [compute_iou([b["bbox"][0], b["bbox"][1], b["bbox"][0]+b["bbox"][2], b["bbox"][1]+b["bbox"][3]], gt_xyxy) for b in p_yolo if b["category_id"] == 2]
+            i_ada = [
+                compute_iou(
+                    [
+                        b["bbox"][0],
+                        b["bbox"][1],
+                        b["bbox"][0] + b["bbox"][2],
+                        b["bbox"][1] + b["bbox"][3],
+                    ],
+                    gt_xyxy,
+                )
+                for b in p_ada
+                if b["category_id"] == 2
+            ]
+            i_fbd = [
+                compute_iou(
+                    [
+                        b["bbox"][0],
+                        b["bbox"][1],
+                        b["bbox"][0] + b["bbox"][2],
+                        b["bbox"][1] + b["bbox"][3],
+                    ],
+                    gt_xyxy,
+                )
+                for b in p_fbd
+                if b["category_id"] == 2
+            ]
+            i_yolo = [
+                compute_iou(
+                    [
+                        b["bbox"][0],
+                        b["bbox"][1],
+                        b["bbox"][0] + b["bbox"][2],
+                        b["bbox"][1] + b["bbox"][3],
+                    ],
+                    gt_xyxy,
+                )
+                for b in p_yolo
+                if b["category_id"] == 2
+            ]
             max_a = max(i_ada) if i_ada else 0
             max_f = max(i_fbd) if i_fbd else 0
             max_y = max(i_yolo) if i_yolo else 0
 
-            if max_a > max_f + 0.05 and max_a > max_y + 0.05 and len([x for x in exemplar_data if x["type"] == "SUCCESS_BOX_REFINEMENT"]) == 0:
-                exemplar_data.append({
-                    "type": "SUCCESS_BOX_REFINEMENT",
-                    "title": "Tình huống 2: Tinh chỉnh tọa độ hộp bao (Localization Refinement)",
-                    "image_id": img_id,
-                    "class": "LoiChi",
-                    "gt_box": gt_b,
-                    "ada_iou": round(float(max_a), 3),
-                    "fbd_iou": round(float(max_f), 3),
-                    "yolo_iou": round(float(max_y), 3),
-                    "analysis": "Trên khuyết tật sợi nứt mảnh có tỷ lệ khung hình cực lớn, FBDNet thiên lệch chiều dọc còn YOLO thiên lệch chiều ngang. Trung bình trọng số phân bổ coord_ratio [0.33, 0.33, 0.34] dung hợp tọa độ giúp IoU của Adaptive Triad đạt mốc cao hơn cả hai mô hình thành phần đơn lẻ."
-                })
+            if (
+                max_a > max_f + 0.05
+                and max_a > max_y + 0.05
+                and len([x for x in exemplar_data if x["type"] == "SUCCESS_BOX_REFINEMENT"]) == 0
+            ):
+                exemplar_data.append(
+                    {
+                        "type": "SUCCESS_BOX_REFINEMENT",
+                        "title": "Tình huống 2: Tinh chỉnh tọa độ hộp bao (Localization Refinement)",
+                        "image_id": img_id,
+                        "class": "LoiChi",
+                        "gt_box": gt_b,
+                        "ada_iou": round(float(max_a), 3),
+                        "fbd_iou": round(float(max_f), 3),
+                        "yolo_iou": round(float(max_y), 3),
+                        "analysis": "Trên khuyết tật sợi nứt mảnh có tỷ lệ khung hình cực lớn, FBDNet thiên lệch chiều dọc còn YOLO thiên lệch chiều ngang. Trung bình trọng số phân bổ coord_ratio [0.33, 0.33, 0.34] dung hợp tọa độ giúp IoU của Adaptive Triad đạt mốc cao hơn cả hai mô hình thành phần đơn lẻ.",
+                    }
+                )
 
         # Failure Case: False suppression
         if len(gts) == 1 and gts[0]["category_id"] == 3:  # LoiNhua
             gt_b = gts[0]["bbox"]
             gt_xyxy = [gt_b[0], gt_b[1], gt_b[0] + gt_b[2], gt_b[1] + gt_b[3]]
-            i_ada = [compute_iou([b["bbox"][0], b["bbox"][1], b["bbox"][0]+b["bbox"][2], b["bbox"][1]+b["bbox"][3]], gt_xyxy) for b in p_ada if b["category_id"] == 3]
-            i_fbd = [compute_iou([b["bbox"][0], b["bbox"][1], b["bbox"][0]+b["bbox"][2], b["bbox"][1]+b["bbox"][3]], gt_xyxy) for b in p_fbd if b["category_id"] == 3]
+            i_ada = [
+                compute_iou(
+                    [
+                        b["bbox"][0],
+                        b["bbox"][1],
+                        b["bbox"][0] + b["bbox"][2],
+                        b["bbox"][1] + b["bbox"][3],
+                    ],
+                    gt_xyxy,
+                )
+                for b in p_ada
+                if b["category_id"] == 3
+            ]
+            i_fbd = [
+                compute_iou(
+                    [
+                        b["bbox"][0],
+                        b["bbox"][1],
+                        b["bbox"][0] + b["bbox"][2],
+                        b["bbox"][1] + b["bbox"][3],
+                    ],
+                    gt_xyxy,
+                )
+                for b in p_fbd
+                if b["category_id"] == 3
+            ]
             max_a = max(i_ada) if i_ada else 0
             max_f = max(i_fbd) if i_fbd else 0
 
-            if max_a < 0.40 and max_f >= 0.60 and len([x for x in exemplar_data if x["type"] == "FAILURE_SOLO_SUPPRESSION"]) == 0:
-                exemplar_data.append({
-                    "type": "FAILURE_SOLO_SUPPRESSION",
-                    "title": "Tình huống 3: Triệt tiêu quá mức do Solo Decay (Failure Case)",
-                    "image_id": img_id,
-                    "class": "LoiNhua",
-                    "gt_box": gt_b,
-                    "ada_iou": round(float(max_a), 3),
-                    "fbd_iou": round(float(max_f), 3),
-                    "analysis": "Vùng nhựa mờ tương phản rất thấp chỉ được một mình FBDNet phát hiện ở ngưỡng tin cậy vừa phải (score=0.14). Do chỉ có một nhánh phát hiện đơn độc, hệ số solo_decay=0.85 đã dìm điểm số xuống dưới sàn conf_floor=0.05, dẫn tới bỏ sót đáng tiếc."
-                })
+            if (
+                max_a < 0.40
+                and max_f >= 0.60
+                and len([x for x in exemplar_data if x["type"] == "FAILURE_SOLO_SUPPRESSION"]) == 0
+            ):
+                exemplar_data.append(
+                    {
+                        "type": "FAILURE_SOLO_SUPPRESSION",
+                        "title": "Tình huống 3: Triệt tiêu quá mức do Solo Decay (Failure Case)",
+                        "image_id": img_id,
+                        "class": "LoiNhua",
+                        "gt_box": gt_b,
+                        "ada_iou": round(float(max_a), 3),
+                        "fbd_iou": round(float(max_f), 3),
+                        "analysis": "Vùng nhựa mờ tương phản rất thấp chỉ được một mình FBDNet phát hiện ở ngưỡng tin cậy vừa phải (score=0.14). Do chỉ có một nhánh phát hiện đơn độc, hệ số solo_decay=0.85 đã dìm điểm số xuống dưới sàn conf_floor=0.05, dẫn tới bỏ sót đáng tiếc.",
+                    }
+                )
 
     # Plot Visualizations for Exemplars
     fig, axes = plt.subplots(1, 3, figsize=(18, 5.5), dpi=300)
@@ -656,27 +831,104 @@ def main():
         cx, cy = 500, 500
         w, h = 250, 150 if ex["class"] != "LoiChi" else 400
         # GT Box (Green)
-        gt_rect = patches.Rectangle((cx - w/2, cy - h/2), w, h, linewidth=3, edgecolor="#00FF00", facecolor="none", label="Ground Truth")
+        gt_rect = patches.Rectangle(
+            (cx - w / 2, cy - h / 2),
+            w,
+            h,
+            linewidth=3,
+            edgecolor="#00FF00",
+            facecolor="none",
+            label="Ground Truth",
+        )
         ax.add_patch(gt_rect)
 
         if ex["type"] == "SUCCESS_FN_RESCUE":
             # YOLO missed (not drawn), FBD loose, Ada tight
-            fbd_rect = patches.Rectangle((cx - w/2 - 40, cy - h/2 - 30), w + 70, h + 60, linewidth=2, edgecolor="#FF9900", linestyle="--", facecolor="none", label=f"FBDNet (IoU: {ex['fbd_iou']})")
-            ada_rect = patches.Rectangle((cx - w/2 - 10, cy - h/2 - 10), w + 20, h + 20, linewidth=2.5, edgecolor="#00E5FF", facecolor="none", label=f"Adaptive Triad (IoU: {ex['ada_iou']})")
+            fbd_rect = patches.Rectangle(
+                (cx - w / 2 - 40, cy - h / 2 - 30),
+                w + 70,
+                h + 60,
+                linewidth=2,
+                edgecolor="#FF9900",
+                linestyle="--",
+                facecolor="none",
+                label=f"FBDNet (IoU: {ex['fbd_iou']})",
+            )
+            ada_rect = patches.Rectangle(
+                (cx - w / 2 - 10, cy - h / 2 - 10),
+                w + 20,
+                h + 20,
+                linewidth=2.5,
+                edgecolor="#00E5FF",
+                facecolor="none",
+                label=f"Adaptive Triad (IoU: {ex['ada_iou']})",
+            )
             ax.add_patch(fbd_rect)
             ax.add_patch(ada_rect)
-            ax.text(cx, cy - h/2 - 60, "YOLO: Missed (FN)", color="#FF5555", fontsize=11, ha="center", fontweight="bold")
+            ax.text(
+                cx,
+                cy - h / 2 - 60,
+                "YOLO: Missed (FN)",
+                color="#FF5555",
+                fontsize=11,
+                ha="center",
+                fontweight="bold",
+            )
         elif ex["type"] == "SUCCESS_BOX_REFINEMENT":
-            fbd_rect = patches.Rectangle((cx - w/2 - 50, cy - h/2 + 20), w + 30, h - 30, linewidth=2, edgecolor="#FF9900", linestyle="--", facecolor="none", label=f"FBDNet (IoU: {ex['fbd_iou']})")
-            yolo_rect = patches.Rectangle((cx - w/2 + 30, cy - h/2 - 40), w - 20, h + 50, linewidth=2, edgecolor="#FF33FF", linestyle=":", facecolor="none", label=f"YOLO26m (IoU: {ex['yolo_iou']})")
-            ada_rect = patches.Rectangle((cx - w/2 - 5, cy - h/2 - 5), w + 10, h + 10, linewidth=2.5, edgecolor="#00E5FF", facecolor="none", label=f"Adaptive Triad (IoU: {ex['ada_iou']})")
+            fbd_rect = patches.Rectangle(
+                (cx - w / 2 - 50, cy - h / 2 + 20),
+                w + 30,
+                h - 30,
+                linewidth=2,
+                edgecolor="#FF9900",
+                linestyle="--",
+                facecolor="none",
+                label=f"FBDNet (IoU: {ex['fbd_iou']})",
+            )
+            yolo_rect = patches.Rectangle(
+                (cx - w / 2 + 30, cy - h / 2 - 40),
+                w - 20,
+                h + 50,
+                linewidth=2,
+                edgecolor="#FF33FF",
+                linestyle=":",
+                facecolor="none",
+                label=f"YOLO26m (IoU: {ex['yolo_iou']})",
+            )
+            ada_rect = patches.Rectangle(
+                (cx - w / 2 - 5, cy - h / 2 - 5),
+                w + 10,
+                h + 10,
+                linewidth=2.5,
+                edgecolor="#00E5FF",
+                facecolor="none",
+                label=f"Adaptive Triad (IoU: {ex['ada_iou']})",
+            )
             ax.add_patch(fbd_rect)
             ax.add_patch(yolo_rect)
             ax.add_patch(ada_rect)
-        else: # FAILURE
-            fbd_rect = patches.Rectangle((cx - w/2 - 15, cy - h/2 - 15), w + 30, h + 30, linewidth=2, edgecolor="#FF9900", linestyle="--", facecolor="none", label=f"FBDNet Single (IoU: {ex['fbd_iou']})")
+        else:  # FAILURE
+            fbd_rect = patches.Rectangle(
+                (cx - w / 2 - 15, cy - h / 2 - 15),
+                w + 30,
+                h + 30,
+                linewidth=2,
+                edgecolor="#FF9900",
+                linestyle="--",
+                facecolor="none",
+                label=f"FBDNet Single (IoU: {ex['fbd_iou']})",
+            )
             ax.add_patch(fbd_rect)
-            ax.text(cx, cy, "SUPPRESSED BY SOLO DECAY", color="#FF3333", fontsize=12, ha="center", fontweight="bold", bbox=dict(boxstyle="round", facecolor="black", alpha=0.8))
+            ax.text(
+                cx,
+                cy,
+                "SUPPRESSED BY SOLO DECAY",
+                color="#FF3333",
+                fontsize=12,
+                ha="center",
+                fontweight="bold",
+                bbox=dict(boxstyle="round", facecolor="black", alpha=0.8),
+            )
 
         ax.set_title(ex["title"], fontsize=12, fontweight="bold", pad=10)
         ax.legend(loc="lower right", fontsize=9)
@@ -702,13 +954,16 @@ def main():
             "bootstrap_samples": B,
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             "execution_duration_sec": round(time.time() - t0, 1),
-        }
+        },
     }
 
     out_json = ROOT / "results" / "comprehensive_ablation_and_analysis_report.json"
     with open(out_json, "w", encoding="utf-8") as f:
         json.dump(master_report, f, indent=2, ensure_ascii=False)
-    print(f"\nAll P3 tasks successfully completed and exported to {out_json} in {time.time() - t0:.1f}s!")
+    print(
+        f"\nAll P3 tasks successfully completed and exported to {out_json} in {time.time() - t0:.1f}s!"
+    )
+
 
 if __name__ == "__main__":
     main()

@@ -43,9 +43,7 @@ def analyze(
         label_path = label_path_for_image(image_path, images_root, labels_root)
         gt, _ = parse_yolo_label_file(label_path, nc)
 
-        result = model.predict(
-            str(image_path), imgsz=imgsz, conf=conf, device=0, verbose=False
-        )[0]
+        result = model.predict(str(image_path), imgsz=imgsz, conf=conf, device=0, verbose=False)[0]
         h, w = result.orig_shape
         gt_xyxy = [_xywhn_to_xyxy(box, w, h) for box in gt]
         gt_cls = [int(box[0]) for box in gt]

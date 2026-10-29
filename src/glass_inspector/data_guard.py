@@ -16,10 +16,10 @@ import numpy as np
 from PIL import Image
 
 # Operational thresholds calibrated on industrial glass surface dataset
-MIN_BRIGHTNESS = 35.0   # Below this, surface defect texture is lost in shadows
+MIN_BRIGHTNESS = 35.0  # Below this, surface defect texture is lost in shadows
 MAX_BRIGHTNESS = 225.0  # Above this, reflections wash out subtle scratch edges
-MIN_CONTRAST = 18.0     # Minimum standard deviation of grayscale pixels
-MIN_SHARPNESS = 45.0    # Laplacian variance threshold; lower indicates defocus or vibration blur
+MIN_CONTRAST = 18.0  # Minimum standard deviation of grayscale pixels
+MIN_SHARPNESS = 45.0  # Laplacian variance threshold; lower indicates defocus or vibration blur
 
 
 def analyze_image_quality(

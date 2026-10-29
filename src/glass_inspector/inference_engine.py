@@ -123,6 +123,7 @@ def load_dfine_model(weights_path: str) -> tuple[Any, Any]:
         sys.path.insert(0, str(dfine_dir))
 
     import src
+
     dfine_src = str(dfine_dir / "src")
     if hasattr(src, "__path__") and dfine_src not in src.__path__:
         src.__path__.append(dfine_src)
@@ -676,36 +677,30 @@ def fast_wbf_fusion(
                     + m1[0][1] * (coord_ratio[1] / cw_sum)
                     + m2[0][1] * (coord_ratio[2] / cw_sum)
                 ).tolist()
-                s_avg = (
-                    m0[0][2] * weights[0] + m1[0][2] * weights[1] + m2[0][2] * weights[2]
-                ) / (weights[0] + weights[1] + weights[2])
+                s_avg = (m0[0][2] * weights[0] + m1[0][2] * weights[1] + m2[0][2] * weights[2]) / (
+                    weights[0] + weights[1] + weights[2]
+                )
                 score = min(1.0, s_avg * boost_3)
             elif m0 and m1:
                 cw_sum = coord_ratio[0] + coord_ratio[1]
                 box = (
                     m0[0][1] * (coord_ratio[0] / cw_sum) + m1[0][1] * (coord_ratio[1] / cw_sum)
                 ).tolist()
-                s_avg = (m0[0][2] * weights[0] + m1[0][2] * weights[1]) / (
-                    weights[0] + weights[1]
-                )
+                s_avg = (m0[0][2] * weights[0] + m1[0][2] * weights[1]) / (weights[0] + weights[1])
                 score = min(1.0, s_avg * boost_2)
             elif m0 and m2:
                 cw_sum = coord_ratio[0] + coord_ratio[2]
                 box = (
                     m0[0][1] * (coord_ratio[0] / cw_sum) + m2[0][1] * (coord_ratio[2] / cw_sum)
                 ).tolist()
-                s_avg = (m0[0][2] * weights[0] + m2[0][2] * weights[2]) / (
-                    weights[0] + weights[2]
-                )
+                s_avg = (m0[0][2] * weights[0] + m2[0][2] * weights[2]) / (weights[0] + weights[2])
                 score = min(1.0, s_avg * boost_2)
             elif m1 and m2:
                 cw_sum = coord_ratio[1] + coord_ratio[2]
                 box = (
                     m1[0][1] * (coord_ratio[1] / cw_sum) + m2[0][1] * (coord_ratio[2] / cw_sum)
                 ).tolist()
-                s_avg = (m1[0][2] * weights[1] + m2[0][2] * weights[2]) / (
-                    weights[1] + weights[2]
-                )
+                s_avg = (m1[0][2] * weights[1] + m2[0][2] * weights[2]) / (weights[1] + weights[2])
                 score = min(1.0, s_avg * boost_2)
             elif m0:
                 box = m0[0][1].tolist()
@@ -724,9 +719,7 @@ def fast_wbf_fusion(
                 box = (
                     m0[0][1] * (coord_ratio[0] / cw_sum) + m1[0][1] * (coord_ratio[1] / cw_sum)
                 ).tolist()
-                s_avg = (m0[0][2] * weights[0] + m1[0][2] * weights[1]) / (
-                    weights[0] + weights[1]
-                )
+                s_avg = (m0[0][2] * weights[0] + m1[0][2] * weights[1]) / (weights[0] + weights[1])
                 score = min(1.0, s_avg * boost_2)
             elif m0:
                 box = m0[0][1].tolist()
@@ -807,16 +800,28 @@ def run_ensemble_inspection(
     infer_start = time.perf_counter()
     # Predict with candidate models using sensitive floor to allow consensus detection
     d_fbd, t_fbd = _predict_single_image(
-        crop_img, fbd_path, is_dfine=True, conf_threshold=0.03,
-        iou_threshold=iou_threshold, nms_mode=nms_mode,
+        crop_img,
+        fbd_path,
+        is_dfine=True,
+        conf_threshold=0.03,
+        iou_threshold=iou_threshold,
+        nms_mode=nms_mode,
     )
     d_dfine, t_dfine = _predict_single_image(
-        crop_img, dfine_path, is_dfine=True, conf_threshold=0.03,
-        iou_threshold=iou_threshold, nms_mode=nms_mode,
+        crop_img,
+        dfine_path,
+        is_dfine=True,
+        conf_threshold=0.03,
+        iou_threshold=iou_threshold,
+        nms_mode=nms_mode,
     )
     d_yolo, t_yolo = _predict_single_image(
-        crop_img, yolo_path, is_dfine=False, conf_threshold=0.03,
-        iou_threshold=iou_threshold, nms_mode=nms_mode,
+        crop_img,
+        yolo_path,
+        is_dfine=False,
+        conf_threshold=0.03,
+        iou_threshold=iou_threshold,
+        nms_mode=nms_mode,
     )
     infer_ms = (time.perf_counter() - infer_start) * 1000
 
@@ -859,8 +864,15 @@ def run_ensemble_inspection(
             s_list = [m_data["fbd"][1], m_data["yolo"][1]]
 
         fb, fs = fast_wbf_fusion(
-            b_list, s_list, weights, iou_thr, coord_ratio,
-            boost_3, boost_2, solo_decay, conf_floor,
+            b_list,
+            s_list,
+            weights,
+            iou_thr,
+            coord_ratio,
+            boost_3,
+            boost_2,
+            solo_decay,
+            conf_floor,
         )
         for b, score in zip(fb, fs, strict=False):
             if score >= conf_threshold:

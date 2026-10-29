@@ -11,11 +11,11 @@ CLASS_NAMES = ["DiVat", "DiVatLoiLom", "LoiChi", "LoiNhua", "LoiTray"]
 
 # Per-class geometric clustering thresholds from optimal Apex Ensemble
 DEFAULT_CLASS_IOU: dict[str, float] = {
-    "DiVat": 0.55,         # Compact micro particles: prevent merging adjacent particles
-    "DiVatLoiLom": 0.41,   # Optical refraction bubbles
-    "LoiChi": 0.65,        # Elongated directional line bubbles: tight boundary fit
-    "LoiNhua": 0.59,       # Soft-textured resin stain
-    "LoiTray": 0.43,       # High aspect-ratio scratch: prevent false splitting
+    "DiVat": 0.55,  # Compact micro particles: prevent merging adjacent particles
+    "DiVatLoiLom": 0.41,  # Optical refraction bubbles
+    "LoiChi": 0.65,  # Elongated directional line bubbles: tight boundary fit
+    "LoiNhua": 0.59,  # Soft-textured resin stain
+    "LoiTray": 0.43,  # High aspect-ratio scratch: prevent false splitting
 }
 
 DEFAULT_CLASS_DISCOVERY_FLOOR: dict[str, float] = {
@@ -120,10 +120,12 @@ class ConsensusTargetGenerator:
                 if best_c_idx >= 0:
                     clusters[best_c_idx]["items"].append((m_idx, b_arr, s))
                 else:
-                    clusters.append({
-                        "center": b_arr.copy(),
-                        "items": [(m_idx, b_arr, s)],
-                    })
+                    clusters.append(
+                        {
+                            "center": b_arr.copy(),
+                            "items": [(m_idx, b_arr, s)],
+                        }
+                    )
 
             for cluster in clusters:
                 c_items = cluster["items"]
@@ -214,12 +216,14 @@ class ConsensusTargetGenerator:
                 box_to_use = gt_b
                 conf_score = 1.0  # Ground truth default confidence
 
-            refined_targets.append({
-                "cls": c_id,
-                "box": box_to_use,
-                "score": float(conf_score),
-                "is_discovered": False,
-            })
+            refined_targets.append(
+                {
+                    "cls": c_id,
+                    "box": box_to_use,
+                    "score": float(conf_score),
+                    "is_discovered": False,
+                }
+            )
 
         # Step 2: Teacher consensus discovery of unlabeled micro-defects
         for t_idx, (t_cls, t_box, t_score, t_agree) in enumerate(fused_teachers):
@@ -234,8 +238,8 @@ class ConsensusTargetGenerator:
             discovery_floor = self.config.discovery_floors.get(c_name, 0.35)
 
             # Accept if consensus of >= 2 teachers exceeds floor, or solo teacher is high confidence
-            is_valid_consensus = (t_agree >= 2 and t_score >= discovery_floor)
-            is_high_conf_solo = (t_agree == 1 and t_score >= self.config.solo_discovery_floor)
+            is_valid_consensus = t_agree >= 2 and t_score >= discovery_floor
+            is_high_conf_solo = t_agree == 1 and t_score >= self.config.solo_discovery_floor
 
             if is_valid_consensus or is_high_conf_solo:
                 # Ensure box stays within image bounds
@@ -245,12 +249,14 @@ class ConsensusTargetGenerator:
                 y2 = max(0.0, min(float(t_box[3]), float(image_height)))
 
                 if (x2 - x1) > 2.0 and (y2 - y1) > 2.0:
-                    refined_targets.append({
-                        "cls": t_cls,
-                        "box": [x1, y1, x2, y2],
-                        "score": float(t_score),
-                        "is_discovered": True,
-                    })
+                    refined_targets.append(
+                        {
+                            "cls": t_cls,
+                            "box": [x1, y1, x2, y2],
+                            "score": float(t_score),
+                            "is_discovered": True,
+                        }
+                    )
                     stats["discovered"] += 1
 
         stats["total_distilled"] = len(refined_targets)

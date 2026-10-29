@@ -209,4 +209,3 @@ def test_ensemble_and_distilled_registry_manifest():
     )
     assert len(fused_boxes) == 1
     assert fused_scores[0] > 0.85
-

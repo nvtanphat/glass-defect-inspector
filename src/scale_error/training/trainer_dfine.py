@@ -60,12 +60,14 @@ def _yolo_to_coco_json(
     for img_id, img_path in enumerate(image_files, start=1):
         img = Image.open(img_path)
         w, h = img.size
-        images_list.append({
-            "id": img_id,
-            "file_name": img_path.name,
-            "width": w,
-            "height": h,
-        })
+        images_list.append(
+            {
+                "id": img_id,
+                "file_name": img_path.name,
+                "width": w,
+                "height": h,
+            }
+        )
 
         label_path = labels_dir / f"{img_path.stem}.txt"
         if not label_path.exists():
@@ -82,14 +84,16 @@ def _yolo_to_coco_json(
             y = (cy - bh / 2) * h
             abs_w = bw * w
             abs_h = bh * h
-            annotations.append({
-                "id": ann_id,
-                "image_id": img_id,
-                "category_id": cls_id,
-                "bbox": [round(x, 2), round(y, 2), round(abs_w, 2), round(abs_h, 2)],
-                "area": round(abs_w * abs_h, 2),
-                "iscrowd": 0,
-            })
+            annotations.append(
+                {
+                    "id": ann_id,
+                    "image_id": img_id,
+                    "category_id": cls_id,
+                    "bbox": [round(x, 2), round(y, 2), round(abs_w, 2), round(abs_h, 2)],
+                    "area": round(abs_w * abs_h, 2),
+                    "iscrowd": 0,
+                }
+            )
             ann_id += 1
 
     categories = [{"id": i, "name": name} for i, name in enumerate(class_names)]
@@ -282,13 +286,7 @@ def _generate_experiment_config(
         "lr_warmup_scheduler": {"warmup_duration": 0},
     }
 
-    config_path = (
-        dfine_repo
-        / "configs"
-        / "dfine"
-        / "custom"
-        / config_name
-    )
+    config_path = dfine_repo / "configs" / "dfine" / "custom" / config_name
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(
         yaml.safe_dump(config, sort_keys=False, allow_unicode=True),
@@ -452,37 +450,55 @@ def train_dfine(
     )
 
     # 4. Run training
-    print(f"[D-FINE] Starting training: {epochs} epochs, eval_size={eval_size}, batch_size={batch_size}")
+    print(
+        f"[D-FINE] Starting training: {epochs} epochs, eval_size={eval_size}, batch_size={batch_size}"
+    )
     checkpoint_flag = "-r" if resume_checkpoint else "-t"
     checkpoint_path = resume_checkpoint or pretrained_weights
 
     import torch
+
     num_gpus = torch.cuda.device_count() if torch.cuda.is_available() else 0
-    effective_nproc = nproc_per_node if nproc_per_node is not None else (num_gpus if num_gpus >= 2 else 1)
+    effective_nproc = (
+        nproc_per_node if nproc_per_node is not None else (num_gpus if num_gpus >= 2 else 1)
+    )
 
     if effective_nproc >= 2:
         print(f"[D-FINE] Launching 2-GPU DDP via torchrun (nproc_per_node={effective_nproc})...")
         cmd = [
-            sys.executable, "-m", "torch.distributed.run",
+            sys.executable,
+            "-m",
+            "torch.distributed.run",
             f"--nproc_per_node={effective_nproc}",
             "--master_port=7777",
             str(dfine_repo / "train.py"),
-            "-c", str(model_config),
-            checkpoint_flag, str(Path(checkpoint_path).resolve()),
+            "-c",
+            str(model_config),
+            checkpoint_flag,
+            str(Path(checkpoint_path).resolve()),
             "--use-amp",
-            "--seed", "42",
-            "--output-dir", str(output_dir),
-            "--summary-dir", str(output_dir / "summary"),
+            "--seed",
+            "42",
+            "--output-dir",
+            str(output_dir),
+            "--summary-dir",
+            str(output_dir / "summary"),
         ]
     else:
         cmd = [
-            sys.executable, str(dfine_repo / "train.py"),
-            "-c", str(model_config),
-            checkpoint_flag, str(Path(checkpoint_path).resolve()),
+            sys.executable,
+            str(dfine_repo / "train.py"),
+            "-c",
+            str(model_config),
+            checkpoint_flag,
+            str(Path(checkpoint_path).resolve()),
             "--use-amp",
-            "--seed", "42",
-            "--output-dir", str(output_dir),
-            "--summary-dir", str(output_dir / "summary"),
+            "--seed",
+            "42",
+            "--output-dir",
+            str(output_dir),
+            "--summary-dir",
+            str(output_dir / "summary"),
         ]
 
     print(f"[D-FINE] Command: {' '.join(cmd)}")
@@ -495,7 +511,6 @@ def train_dfine(
     except FileNotFoundError:
         print(f"[D-FINE] Checkpoint note: outputs saved in {output_dir}")
     return output_dir
-
 
 
 if __name__ == "__main__":
@@ -517,7 +532,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     train_dfine(
-        args.data, args.dfine_repo, args.weights, args.output_dir,
-        epochs=args.epochs, eval_size=args.eval_size, batch_size=args.batch_size,
+        args.data,
+        args.dfine_repo,
+        args.weights,
+        args.output_dir,
+        epochs=args.epochs,
+        eval_size=args.eval_size,
+        batch_size=args.batch_size,
         stop_augment_epoch=args.stop_augment_epoch,
     )

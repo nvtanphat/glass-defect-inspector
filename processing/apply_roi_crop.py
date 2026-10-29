@@ -29,7 +29,12 @@ import cv2
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from scale_error.data.validate import label_path_for_image, list_images, parse_yolo_label_file, read_names  # noqa: E402
+from scale_error.data.validate import (
+    label_path_for_image,
+    list_images,
+    parse_yolo_label_file,
+    read_names,
+)  # noqa: E402
 
 
 def _crop_boxes_to_roi(
@@ -133,7 +138,9 @@ def apply_roi_split(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dataset-root", required=True, help="Root with train/ (and optionally valid/) YOLO splits")
+    parser.add_argument(
+        "--dataset-root", required=True, help="Root with train/ (and optionally valid/) YOLO splits"
+    )
     parser.add_argument("--roi-config", default="processing/roi_config.json")
     parser.add_argument("--output-root", required=True)
     parser.add_argument(
@@ -162,7 +169,9 @@ def main() -> None:
             print(f"Skipping {split}: no images/ dir at {split_dir}")
             continue
         print(f"Cropping {split} ...")
-        stats = apply_roi_split(split_dir, output_root / split, roi_config, len(names), args.min_area_keep_frac)
+        stats = apply_roi_split(
+            split_dir, output_root / split, roi_config, len(names), args.min_area_keep_frac
+        )
         summary[split] = stats
         print(
             f"  {split}: {stats['images_cropped']} cropped, {stats['images_passthrough']} passthrough, "

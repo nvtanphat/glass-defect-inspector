@@ -4,26 +4,15 @@ from __future__ import annotations
 
 import torch
 
-try:
-    from scale_error.distillation.consensus_target_generator import (
-        ConsensusTargetGenerator,
-        PerClassDistillationConfig,
-        compute_box_iou,
-    )
-    from scale_error.distillation.losses import (
-        compute_smooth_class_weights,
-        make_vfl_loss_elements,
-    )
-except ModuleNotFoundError:
-    from src.scale_error.distillation.consensus_target_generator import (
-        ConsensusTargetGenerator,
-        PerClassDistillationConfig,
-        compute_box_iou,
-    )
-    from src.scale_error.distillation.losses import (
-        compute_smooth_class_weights,
-        make_vfl_loss_elements,
-    )
+from scale_error.distillation.consensus_target_generator import (
+    ConsensusTargetGenerator,
+    PerClassDistillationConfig,
+    compute_box_iou,
+)
+from scale_error.distillation.losses import (
+    compute_smooth_class_weights,
+    make_vfl_loss_elements,
+)
 
 
 def test_smooth_class_weights_clamps_extreme_imbalance():
@@ -82,8 +71,8 @@ def test_refine_ground_truth_subpixel_and_discovery():
     # - Candidate 1 matches GT with slight offset -> should be refined
     # - Candidate 2 is a new defect discovered by 2 teachers (agreement=2) -> should be discovered
     fused_teachers = [
-        (0, [104.0, 102.0, 202.0, 198.0], 0.92, 3),   # matched
-        (4, [500.0, 500.0, 520.0, 650.0], 0.75, 2),   # discovered scratch (LoiTray)
+        (0, [104.0, 102.0, 202.0, 198.0], 0.92, 3),  # matched
+        (4, [500.0, 500.0, 520.0, 650.0], 0.75, 2),  # discovered scratch (LoiTray)
     ]
 
     refined, stats = generator.refine_ground_truth(

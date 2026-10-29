@@ -38,11 +38,23 @@ EXPERIMENT_CONFIGS = {
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Run RF-DETR-M AHRD Experiment")
-    parser.add_argument("--exp", choices=["e0", "e1", "both"], required=True, help="Experiment to run")
-    parser.add_argument("--seeds", type=int, nargs="+", default=[42, 43, 44], help="Random seeds (default: 42 43 44)")
-    parser.add_argument("--weights", type=str, default="weights/dfine_m_coco.pth", help="Pretrained tuning weights")
+    parser.add_argument(
+        "--exp", choices=["e0", "e1", "both"], required=True, help="Experiment to run"
+    )
+    parser.add_argument(
+        "--seeds",
+        type=int,
+        nargs="+",
+        default=[42, 43, 44],
+        help="Random seeds (default: 42 43 44)",
+    )
+    parser.add_argument(
+        "--weights", type=str, default="weights/dfine_m_coco.pth", help="Pretrained tuning weights"
+    )
     parser.add_argument("--device", type=str, default="0", help="GPU device ID")
-    parser.add_argument("--dry-run", action="store_true", help="Perform architecture check without training")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Perform architecture check without training"
+    )
     return parser.parse_args()
 
 

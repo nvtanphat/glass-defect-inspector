@@ -258,8 +258,8 @@ def weighted_boxes_fusion(
                     dtype=np.float32,
                 )
                 sum_w = np.sum(cluster_weights)
-                center_box = (
-                    np.sum(cluster_boxes * cluster_weights[:, None], axis=0) / max(sum_w, 1e-8)
+                center_box = np.sum(cluster_boxes * cluster_weights[:, None], axis=0) / max(
+                    sum_w, 1e-8
                 )
 
                 # IoU between current box and cluster center

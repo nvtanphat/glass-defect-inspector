@@ -72,10 +72,7 @@ def make_vfl_loss_elements(
     one_hot = (target_scores_typed > 0).to(dtype)
 
     p = pred_scores.sigmoid()
-    vfl_weight = (
-        alpha * p.pow(gamma) * (1.0 - one_hot)
-        + target_scores_typed * one_hot
-    )
+    vfl_weight = alpha * p.pow(gamma) * (1.0 - one_hot) + target_scores_typed * one_hot
     bce = F.binary_cross_entropy_with_logits(
         pred_scores.float(), target_scores_typed.float(), reduction="none"
     ).to(dtype)

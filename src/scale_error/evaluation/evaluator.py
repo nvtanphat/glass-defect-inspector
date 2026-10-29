@@ -28,7 +28,11 @@ def evaluate(
     nms: bool = True,
 ) -> dict:
     weights = Path(weights)
-    model_cls = RTDETR if "rtdetr" in weights.stem.lower() or "rtdetr" in str(weights.parent).lower() else YOLO
+    model_cls = (
+        RTDETR
+        if "rtdetr" in weights.stem.lower() or "rtdetr" in str(weights.parent).lower()
+        else YOLO
+    )
     model = model_cls(str(weights))
     metrics = model.val(
         data=str(Path(data_yaml).resolve()),

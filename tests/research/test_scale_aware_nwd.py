@@ -40,13 +40,17 @@ from scale_error.training.nwd_loss import ScaleAwareNWDLoss
 def test_nwd_zero_loss_identical_boxes():
     """Verify that identical predicted and ground-truth boxes yield exactly zero loss."""
     loss_fn = ScaleAwareNWDLoss(c=16.0, scale_aware=True, img_size=(960, 960))
-    boxes = torch.tensor([
-        [0.5, 0.5, 0.1, 0.1],
-        [0.2, 0.3, 0.05, 0.05],
-        [0.8, 0.7, 0.2, 0.15],
-    ])
+    boxes = torch.tensor(
+        [
+            [0.5, 0.5, 0.1, 0.1],
+            [0.2, 0.3, 0.05, 0.05],
+            [0.8, 0.7, 0.2, 0.15],
+        ]
+    )
     loss = loss_fn(boxes, boxes, num_boxes=3)
-    assert torch.isclose(loss, torch.tensor(0.0), atol=1e-5), f"Expected 0.0 loss, got {loss.item()}"
+    assert torch.isclose(loss, torch.tensor(0.0), atol=1e-5), (
+        f"Expected 0.0 loss, got {loss.item()}"
+    )
     assert torch.isfinite(loss), "Loss must be finite"
 
 
@@ -131,7 +135,9 @@ def test_dfine_criterion_e0_baseline():
 
     # Dummy batch with 2 queries and 1 target
     outputs = {
-        "pred_boxes": torch.tensor([[[0.5, 0.5, 0.2, 0.2], [0.1, 0.1, 0.1, 0.1]]], requires_grad=True),
+        "pred_boxes": torch.tensor(
+            [[[0.5, 0.5, 0.2, 0.2], [0.1, 0.1, 0.1, 0.1]]], requires_grad=True
+        ),
         "pred_logits": torch.randn(1, 2, 5),
     }
     targets = [{"boxes": torch.tensor([[0.5, 0.5, 0.2, 0.2]]), "labels": torch.tensor([0])}]
@@ -162,7 +168,9 @@ def test_dfine_criterion_e1_scale_aware_nwd():
 
     # Slightly offset prediction
     outputs = {
-        "pred_boxes": torch.tensor([[[0.52, 0.51, 0.18, 0.19], [0.1, 0.1, 0.1, 0.1]]], requires_grad=True),
+        "pred_boxes": torch.tensor(
+            [[[0.52, 0.51, 0.18, 0.19], [0.1, 0.1, 0.1, 0.1]]], requires_grad=True
+        ),
         "pred_logits": torch.randn(1, 2, 5),
     }
     targets = [{"boxes": torch.tensor([[0.5, 0.5, 0.2, 0.2]]), "labels": torch.tensor([0])}]
@@ -174,7 +182,9 @@ def test_dfine_criterion_e1_scale_aware_nwd():
     assert "loss_nwd" in loss_dict
     assert loss_dict["loss_nwd"].item() > 0.0
 
-    total_loss = loss_dict["loss_bbox"] * 5.0 + loss_dict["loss_giou"] * 2.0 + loss_dict["loss_nwd"] * 0.2
+    total_loss = (
+        loss_dict["loss_bbox"] * 5.0 + loss_dict["loss_giou"] * 2.0 + loss_dict["loss_nwd"] * 0.2
+    )
     total_loss.backward()
     assert outputs["pred_boxes"].grad is not None
     assert torch.isfinite(outputs["pred_boxes"].grad).all()

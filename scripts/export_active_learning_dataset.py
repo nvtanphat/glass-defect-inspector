@@ -18,20 +18,22 @@ from pathlib import Path
 
 # Add project root to path
 ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+SRC = ROOT / "src"
+for p in (str(ROOT), str(SRC)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
 import yaml  # noqa: E402
 from sqlalchemy import select  # noqa: E402
 
-from src.glass_inspector.database import (  # noqa: E402
+from glass_inspector.database import (  # noqa: E402
     Detection,
     Inspection,
     InspectionImage,
     InspectionReview,
     connect,
 )
-from src.glass_inspector.inference_engine import CLASS_NAMES  # noqa: E402
+from glass_inspector.inference_engine import CLASS_NAMES  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:

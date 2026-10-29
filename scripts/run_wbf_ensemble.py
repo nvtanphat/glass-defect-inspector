@@ -19,13 +19,15 @@ import json
 import sys
 from pathlib import Path
 
-# Add project root to sys.path
+# Add project root and src to sys.path
 ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+SRC = ROOT / "src"
+for p in (str(ROOT), str(SRC)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
-from src.scale_error.ensemble.ensemble_pipeline import GlassDefectEnsemble  # noqa: E402
-from src.scale_error.ensemble.wbf import DEFAULT_PER_CLASS_WEIGHTS  # noqa: E402
+from scale_error.ensemble.ensemble_pipeline import GlassDefectEnsemble  # noqa: E402
+from scale_error.ensemble.wbf import DEFAULT_PER_CLASS_WEIGHTS  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:
@@ -170,7 +172,7 @@ def main() -> None:
         print(f"   • Total Defects Detected: {result['num_detections']}")
         for idx, det in enumerate(result["detections"]):
             c_name, c_conf, c_box = det["class_name"], det["confidence"], det["bbox"]
-            print(f"     [{idx+1}] {c_name:<12} | Conf: {c_conf:.3f} | BBox: {c_box}")
+            print(f"     [{idx + 1}] {c_name:<12} | Conf: {c_conf:.3f} | BBox: {c_box}")
         t_total = result["timing_ms"]["total_pipeline_ms"]
         t_wbf = result["timing_ms"]["fusion_wbf_ms"]
         print(f"   • Total Latency: {t_total} ms (WBF: {t_wbf} ms)")

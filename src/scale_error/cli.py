@@ -88,9 +88,15 @@ def main() -> None:
 
     elif args.cmd == "train-dfine":
         from scale_error.training.trainer_dfine import train_dfine
+
         train_dfine(
-            args.data, args.dfine_repo, args.weights, args.output_dir,
-            epochs=args.epochs, eval_size=args.eval_size, batch_size=args.batch_size,
+            args.data,
+            args.dfine_repo,
+            args.weights,
+            args.output_dir,
+            epochs=args.epochs,
+            eval_size=args.eval_size,
+            batch_size=args.batch_size,
             resume_checkpoint=args.resume,
         )
 
@@ -104,9 +110,14 @@ def main() -> None:
 
     elif args.cmd == "evaluate-dfine":
         from scale_error.evaluation.evaluator_dfine import evaluate_dfine
+
         evaluate_dfine(
-            args.weights, args.dfine_repo, args.data, args.output,
-            eval_size=args.eval_size, device=args.device,
+            args.weights,
+            args.dfine_repo,
+            args.data,
+            args.output,
+            eval_size=args.eval_size,
+            device=args.device,
         )
 
     elif args.cmd == "predict":

@@ -107,10 +107,13 @@ flowchart LR
 * **Số lượng ground-truth box:** 1.573 box sau khi áp dụng ROI.
 * **Định dạng tính toán:** COCO standard (`COCOeval`, tính mAP tại 10 ngưỡng IoU từ 0.50 đến 0.95 với bước nhảy 0.05).
 
-### Lệnh chạy đánh giá ngoại tuyến siêu tốc (Offline Fast Evaluator):
+### Lệnh chạy đánh giá phân tích toàn diện & kiểm định:
 ```bash
-# Đánh giá và sinh toàn bộ ma trận nhầm lẫn chuẩn hóa vào docs/assets/ trong 5 giây
-python scripts/generate_all_confusion_matrices.py
+# Đánh giá kiểm định WBF định tuyến theo hình thái khuyết tật
+python scripts/eval_morphology_wbf.py
+
+# Phân tích cắt bỏ thành phần (Ablation), Bootstrap 95% CI và trích xuất chỉ số
+python scripts/run_comprehensive_ablation_and_analysis.py
 ```
 
 ### Lệnh chạy kiểm định chuyên sâu FBDNet:

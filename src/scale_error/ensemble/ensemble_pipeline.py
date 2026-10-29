@@ -14,8 +14,8 @@ from typing import Any
 
 from PIL import Image
 
-from src.glass_inspector.paths import WORKSPACE_ROOT
-from src.scale_error.ensemble.wbf import (
+from glass_inspector.paths import WORKSPACE_ROOT
+from scale_error.ensemble.wbf import (
     CLASS_NAMES,
     DEFAULT_PER_CLASS_WEIGHTS,
     fuse_detection_lists,
@@ -63,7 +63,7 @@ class GlassDefectEnsemble:
         if self._is_initialized:
             return
 
-        from src.glass_inspector.inference_engine import load_dfine_model, load_yolo_model
+        from glass_inspector.inference_engine import load_dfine_model, load_yolo_model
 
         self.loaded_models = []
         for path, mtype in zip(self.model_paths, self.model_types, strict=False):
@@ -98,7 +98,7 @@ class GlassDefectEnsemble:
                 - timing_ms: breakdown of inference and fusion time
         """
         self.load_models()
-        from src.glass_inspector.inference_engine import run_inspection
+        from glass_inspector.inference_engine import run_inspection
 
         if isinstance(image, (str, Path)):
             pil_img = Image.open(image).convert("RGB")
@@ -213,9 +213,7 @@ class GlassDefectEnsemble:
                 for m in matching:
                     cls_id = int(m["category_id"])
                     cls_name = (
-                        CLASS_NAMES[cls_id]
-                        if 0 <= cls_id < len(CLASS_NAMES)
-                        else f"Class_{cls_id}"
+                        CLASS_NAMES[cls_id] if 0 <= cls_id < len(CLASS_NAMES) else f"Class_{cls_id}"
                     )
                     conf = float(m["score"])
                     # COCO bbox: [x, y, w, h] -> [x1, y1, x2, y2]

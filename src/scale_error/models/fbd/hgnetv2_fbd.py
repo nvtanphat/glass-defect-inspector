@@ -19,11 +19,15 @@ except Exception:
         from src.nn.backbone.hgnetv2 import HGNetv2
         from .afta import AFTA
     except Exception:
+
         def register():
             def deco(cls):
                 return cls
+
             return deco
+
         from .afta import AFTA
+
         HGNetv2 = nn.Module
 
 __all__ = ["HGNetv2FBD"]

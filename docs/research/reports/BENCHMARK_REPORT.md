@@ -109,5 +109,5 @@ Tất cả các file số liệu, siêu tham số tối ưu và predictions cach
 | **Distilled Student YOLO26m** | ![Distilled YOLO26m CM](../../assets/yolo26m_distilled_cm.png) | [Training Curves](../../assets/yolo26m_distilled_curves.png) | Mô hình CNN sau chưng cất tri thức: LoiChi **88%**, DiVatLoiLom **74%**, DiVat **71%**, giảm 4.2% tỷ lệ nhầm lẫn background so với baseline. |
 | **YOLO26m-ROI-VFL (Baseline)** | ![YOLO26m Baseline CM](../../assets/yolo26m_roi_vfl_cm.png) | — | Mô hình baseline thời gian thực: LoiChi **87%**, DiVatLoiLom **70%**, DiVat **67%**. |
 
-Script tái tạo toàn bộ ma trận: [`scripts/generate_all_confusion_matrices.py`](file:///D:/HOCsauvaufngdung/scale-error-yolo26/scripts/generate_all_confusion_matrices.py)
+Script tái tạo toàn bộ ma trận và báo cáo phân tích: [`scripts/run_comprehensive_ablation_and_analysis.py`](file:///D:/HOCsauvaufngdung/scale-error-yolo26/scripts/run_comprehensive_ablation_and_analysis.py)
 

@@ -215,9 +215,7 @@ def explain(image, weights, adapter, result, config, detection_id=None):
             )
             score = logits[query, category]
             gradients = torch.autograd.grad(score, features + backbone_features, allow_unused=True)
-            cam, metadata = normalize_cam(
-                features, gradients[: len(features)], tensor.shape[-2:]
-            )
+            cam, metadata = normalize_cam(features, gradients[: len(features)], tensor.shape[-2:])
             if (
                 metadata["flat_cam"]
                 and backbone_features

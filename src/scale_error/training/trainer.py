@@ -71,9 +71,7 @@ def train(
         if roi_config_path is not None and not roi_config_path.is_absolute():
             roi_config_path = config_path.parent.parent / roi_config_path
         if roi_config_path is None or not roi_config_path.exists():
-            raise FileNotFoundError(
-                "preprocessing=roi_crop requires an existing roi_config path"
-            )
+            raise FileNotFoundError("preprocessing=roi_crop requires an existing roi_config path")
     elif roi_config is not None:
         raise ValueError("roi_config is only valid with preprocessing=roi_crop")
 

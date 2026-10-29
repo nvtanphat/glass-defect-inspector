@@ -362,9 +362,7 @@ def test_selected_defects_have_separate_explanations_and_cache_files(client):
     assert len(detections) >= 2
     snapshots = []
     for detection in detections[:2]:
-        endpoint = (
-            f"/api/images/{image['id']}/gradcam?detection_id={detection['id']}"
-        )
+        endpoint = f"/api/images/{image['id']}/gradcam?detection_id={detection['id']}"
         response = client.post(endpoint)
         assert response.status_code == 200, response.text
         metadata = response.json()

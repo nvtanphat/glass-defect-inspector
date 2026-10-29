@@ -23,12 +23,16 @@ except Exception:
         from .dcfsb import DCFSB
         from .sfif import SFIF
     except Exception:
+
         def register():
             def deco(cls):
                 return cls
+
             return deco
+
         from .dcfsb import DCFSB
         from .sfif import SFIF
+
         HybridEncoder = nn.Module
 
 __all__ = ["FBDHybridEncoder"]
@@ -52,21 +56,15 @@ class FBDHybridEncoder(HybridEncoder):
 
         # 1. SFIF applied after input projection
         if use_sfif:
-            self.sfif = nn.ModuleList([
-                SFIF(self.hidden_dim) for _ in self.in_channels
-            ])
+            self.sfif = nn.ModuleList([SFIF(self.hidden_dim) for _ in self.in_channels])
         else:
             self.sfif = None
 
         # 2. DCFSB applied inside multi-scale FPN and PAN fusion stages
         if use_dcfsb:
             num_fusions = len(self.in_channels) - 1
-            self.dcfsb_fpn = nn.ModuleList([
-                DCFSB(self.hidden_dim) for _ in range(num_fusions)
-            ])
-            self.dcfsb_pan = nn.ModuleList([
-                DCFSB(self.hidden_dim) for _ in range(num_fusions)
-            ])
+            self.dcfsb_fpn = nn.ModuleList([DCFSB(self.hidden_dim) for _ in range(num_fusions)])
+            self.dcfsb_pan = nn.ModuleList([DCFSB(self.hidden_dim) for _ in range(num_fusions)])
         else:
             self.dcfsb_fpn = None
             self.dcfsb_pan = None
@@ -107,9 +105,7 @@ class FBDHybridEncoder(HybridEncoder):
             feat_heigh = self.lateral_convs[block_idx](feat_heigh)
             inner_outs[0] = feat_heigh
             upsample_feat = F.interpolate(feat_heigh, scale_factor=2.0, mode="nearest")
-            inner_out = self.fpn_blocks[block_idx](
-                torch.concat([upsample_feat, feat_low], dim=1)
-            )
+            inner_out = self.fpn_blocks[block_idx](torch.concat([upsample_feat, feat_low], dim=1))
             if self.use_dcfsb and self.dcfsb_fpn is not None:
                 inner_out = self.dcfsb_fpn[block_idx](inner_out)
             inner_outs.insert(0, inner_out)
@@ -120,9 +116,7 @@ class FBDHybridEncoder(HybridEncoder):
             feat_low = outs[-1]
             feat_height = inner_outs[idx + 1]
             downsample_feat = self.downsample_convs[idx](feat_low)
-            out = self.pan_blocks[idx](
-                torch.concat([downsample_feat, feat_height], dim=1)
-            )
+            out = self.pan_blocks[idx](torch.concat([downsample_feat, feat_height], dim=1))
             if self.use_dcfsb and self.dcfsb_pan is not None:
                 out = self.dcfsb_pan[idx](out)
             outs.append(out)

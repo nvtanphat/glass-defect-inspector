@@ -1,9 +1,10 @@
 """Chay inference D-FINE-M tren tap test ROI (890 anh) va tao:
-  1) Xac minh mAP bang pycocotools (ky vong ~44.40 / mAP50 ~76.90)
-  2) Confusion matrix tai IoU=0.5, conf=0.5  -> docs/assets/dfine_m_cm.png
-  3) Anh du doan ve tren anh goc (map toa do ROI ve anh goc) -> docs/assets/dfine_m_pred_*.jpg
-  4) Precision/Recall/F1 tung lop -> results_report/dfine_m_confusion.json
+1) Xac minh mAP bang pycocotools (ky vong ~44.40 / mAP50 ~76.90)
+2) Confusion matrix tai IoU=0.5, conf=0.5  -> docs/assets/dfine_m_cm.png
+3) Anh du doan ve tren anh goc (map toa do ROI ve anh goc) -> docs/assets/dfine_m_pred_*.jpg
+4) Precision/Recall/F1 tung lop -> results_report/dfine_m_confusion.json
 """
+
 import json
 import os
 import random
@@ -14,14 +15,17 @@ import time
 # torch.utils.tensorboard / tensorboard.compat that bai -> thay bang stub nhe
 try:
     import tensorflow as _tf_probe  # noqa: F401
+
     _tf_broken = not hasattr(_tf_probe, "__version__")
 except Exception:
     _tf_broken = True
 if _tf_broken:
     import types as _types
+
     _tf_stub = _types.ModuleType("tensorflow")
     _tf_stub.__version__ = "stub"
     from importlib.machinery import ModuleSpec as _ModuleSpec
+
     _tf_stub.__spec__ = _ModuleSpec("tensorflow", loader=None)
     _tf_stub.__path__ = []
     _tf_stub.io = _types.SimpleNamespace(
@@ -34,6 +38,7 @@ sys.path.insert(0, os.path.join(ROOT, "results", "D-FINE"))
 
 import numpy as np
 import torch
+
 torch.set_num_threads(8)
 import torchvision.transforms as T
 from PIL import Image, ImageDraw, ImageFont
@@ -93,7 +98,7 @@ def run_inference(model, images_info):
     preds = {}
     t0 = time.time()
     for i in range(0, len(images_info), BATCH):
-        batch = images_info[i:i + BATCH]
+        batch = images_info[i : i + BATCH]
         tensors, sizes = [], []
         pils = []
         for info in batch:
@@ -114,9 +119,11 @@ def run_inference(model, images_info):
         done = i + len(batch)
         if done % 40 == 0 or done == len(images_info):
             el = time.time() - t0
-            print(f"  {done}/{len(images_info)} anh  ({el:.0f}s, "
-                  f"{el / done:.2f}s/anh, con lai ~{el / done * (len(images_info) - done):.0f}s)",
-                  flush=True)
+            print(
+                f"  {done}/{len(images_info)} anh  ({el:.0f}s, "
+                f"{el / done:.2f}s/anh, con lai ~{el / done * (len(images_info) - done):.0f}s)",
+                flush=True,
+            )
     return preds
 
 
@@ -126,20 +133,27 @@ def coco_eval(preds):
     for img_id, (boxes, scores, labels) in preds.items():
         for k in range(len(scores)):
             x0, y0, x1, y1 = [float(v) for v in boxes[k]]
-            coco_dt.append({
-                "image_id": int(img_id),
-                "category_id": int(labels[k]),
-                "bbox": [x0, y0, max(0.0, x1 - x0), max(0.0, y1 - y0)],
-                "score": float(scores[k]),
-            })
+            coco_dt.append(
+                {
+                    "image_id": int(img_id),
+                    "category_id": int(labels[k]),
+                    "bbox": [x0, y0, max(0.0, x1 - x0), max(0.0, y1 - y0)],
+                    "score": float(scores[k]),
+                }
+            )
     coco_dt = coco.loadRes(coco_dt)
     ev = COCOeval(coco, coco_dt, "bbox")
     ev.evaluate()
     ev.accumulate()
     ev.summarize()
-    return {"mAP50_95": float(ev.stats[0]), "mAP50": float(ev.stats[1]),
-            "mAP75": float(ev.stats[2]), "mAP_small": float(ev.stats[3]),
-            "mAP_medium": float(ev.stats[4]), "mAP_large": float(ev.stats[5])}
+    return {
+        "mAP50_95": float(ev.stats[0]),
+        "mAP50": float(ev.stats[1]),
+        "mAP75": float(ev.stats[2]),
+        "mAP_small": float(ev.stats[3]),
+        "mAP_medium": float(ev.stats[4]),
+        "mAP_large": float(ev.stats[5]),
+    }
 
 
 def iou(a, b):
@@ -147,14 +161,16 @@ def iou(a, b):
     ix1, iy1 = min(a[2], b[2]), min(a[3], b[3])
     iw, ih = max(0.0, ix1 - ix0), max(0.0, iy1 - iy0)
     inter = iw * ih
-    ua = ((a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter)
+    ua = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter
     return inter / ua if ua > 0 else 0.0
 
 
 def confusion_matrix(preds, gt_by_image):
     """Ghep nhan GT voi du doan (greedy theo diem, IoU>=0.5)."""
     n = len(CLASSES)
-    mat = np.zeros((n + 1, n + 1), dtype=int)  # hang = GT (cot cuoi = background), cot = pred (hang cuoi = FP)
+    mat = np.zeros(
+        (n + 1, n + 1), dtype=int
+    )  # hang = GT (cot cuoi = background), cot = pred (hang cuoi = FP)
     stats = {c: {"tp": 0, "fp": 0, "fn": 0} for c in range(n)}
 
     for img_id, gts in gt_by_image.items():
@@ -194,6 +210,7 @@ def confusion_matrix(preds, gt_by_image):
 
 def plot_confusion(mat, out_path):
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
@@ -204,15 +221,25 @@ def plot_confusion(mat, out_path):
     ax.set_yticks(range(len(labels)), labels, fontsize=9)
     ax.set_xlabel("Dự đoán", fontsize=11)
     ax.set_ylabel("Ground truth", fontsize=11)
-    ax.set_title("D-FINE-M · Confusion matrix trên test set (890 ảnh)\n"
-                 "IoU ≥ 0.5 · conf ≥ 0.5 (greedy matching)", fontsize=11)
+    ax.set_title(
+        "D-FINE-M · Confusion matrix trên test set (890 ảnh)\n"
+        "IoU ≥ 0.5 · conf ≥ 0.5 (greedy matching)",
+        fontsize=11,
+    )
     mx = max(mat.max(), 1)
     for i in range(mat.shape[0]):
         for j in range(mat.shape[1]):
             v = mat[i, j]
             if v:
-                ax.text(j, i, str(v), ha="center", va="center", fontsize=8,
-                        color="white" if v > 0.55 * mx else "#12314f")
+                ax.text(
+                    j,
+                    i,
+                    str(v),
+                    ha="center",
+                    va="center",
+                    fontsize=8,
+                    color="white" if v > 0.55 * mx else "#12314f",
+                )
             else:
                 ax.text(j, i, "0", ha="center", va="center", fontsize=8, color="#9db4c8")
     fig.colorbar(im, ax=ax, shrink=0.8)
@@ -233,10 +260,12 @@ def roi_offset(raw_w, raw_h, roi_cfg):
 def draw_samples(preds, gt_by_image, roi_cfg, out_path_prefix):
     """Ve du doan tren anh GOC (map toa do ROI ve toa do anh goc)."""
     n = len(CLASSES)
+
     # chon anh: nhieu GT + phong phu lop
     def score(item):
         img_id, gts = item
         return len(gts)
+
     chosen = [i for i, _ in sorted(gt_by_image.items(), key=score, reverse=True)[:N_SAMPLES]]
 
     info_by_id = {im["id"]: im for im in json.load(open(GT_JSON, encoding="utf-8"))["images"]}
@@ -270,10 +299,10 @@ def draw_samples(preds, gt_by_image, roi_cfg, out_path_prefix):
                 break
             c = int(labels[k])
             x0, y0, x1, y1 = boxes[k]
-            draw.rectangle([x0 + ox, y0 + oy, x1 + ox, y1 + oy],
-                           outline=COLORS[c], width=5)
-            draw.text((x0 + ox, y0 + oy - 26), f"{CLASSES[c]} {scores[k]:.2f}",
-                      fill=COLORS[c], font=font)
+            draw.rectangle([x0 + ox, y0 + oy, x1 + ox, y1 + oy], outline=COLORS[c], width=5)
+            draw.text(
+                (x0 + ox, y0 + oy - 26), f"{CLASSES[c]} {scores[k]:.2f}", fill=COLORS[c], font=font
+            )
 
         # nho lai de dua vao README
         scale = min(1.0, 1500 / W)
@@ -298,8 +327,10 @@ def main():
         gt_by_image.setdefault(a["image_id"], []).append(a)
     gt_by_image = {i: gt_by_image.get(i, []) for i in (im["id"] for im in images_info)}
 
-    print(f"Tong so anh test: {len(images_info)}, tong GT box: "
-          f"{sum(len(v) for v in gt_by_image.values())}")
+    print(
+        f"Tong so anh test: {len(images_info)}, tong GT box: "
+        f"{sum(len(v) for v in gt_by_image.values())}"
+    )
     model = build_model()
     preds = run_inference(model, images_info)
 
@@ -316,13 +347,25 @@ def main():
         p = tp / (tp + fp) if tp + fp else 0.0
         r = tp / (tp + fn) if tp + fn else 0.0
         f1 = 2 * p * r / (p + r) if p + r else 0.0
-        per_class[name] = {"tp": tp, "fp": fp, "fn": fn,
-                           "precision": round(p, 4), "recall": round(r, 4), "f1": round(f1, 4)}
+        per_class[name] = {
+            "tp": tp,
+            "fp": fp,
+            "fn": fn,
+            "precision": round(p, 4),
+            "recall": round(r, 4),
+            "f1": round(f1, 4),
+        }
         print(f"  {name:14s} P={p:.3f} R={r:.3f} F1={f1:.3f} (tp={tp} fp={fp} fn={fn})")
 
-    out = {"checkpoint": CKPT, "conf_threshold": CONF_TH, "iou_threshold": IOU_TH,
-           "coco_metrics": metrics, "per_class": per_class,
-           "confusion_matrix": mat.tolist(), "class_order": CLASSES}
+    out = {
+        "checkpoint": CKPT,
+        "conf_threshold": CONF_TH,
+        "iou_threshold": IOU_TH,
+        "coco_metrics": metrics,
+        "per_class": per_class,
+        "confusion_matrix": mat.tolist(),
+        "class_order": CLASSES,
+    }
     with open(os.path.join(RES_DIR, "dfine_m_confusion.json"), "w", encoding="utf-8") as f:
         json.dump(out, f, indent=2, ensure_ascii=False)
     print("DA LUU results_report/dfine_m_confusion.json")

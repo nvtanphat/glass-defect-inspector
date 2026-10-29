@@ -59,7 +59,10 @@ def evaluate_coco_predictions(
             "AP_small": 0.0,
             "AP_medium": 0.0,
             "AP_large": 0.0,
-            "per_class": {name: {"AP50_95": 0.0, "AP50": 0.0, "AP75": 0.0, "Recall": 0.0} for name in class_names},
+            "per_class": {
+                name: {"AP50_95": 0.0, "AP50": 0.0, "AP75": 0.0, "Recall": 0.0}
+                for name in class_names
+            },
         }
         if output_json_path:
             Path(output_json_path).parent.mkdir(parents=True, exist_ok=True)

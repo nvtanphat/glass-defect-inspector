@@ -25,7 +25,6 @@ def test_saved_score_distinguishes_overlapping_queries_of_the_same_class():
     assert select_query(logits, boxes, [0, 0, 10, 10], 0, score) == (0, 0)
 
 
-
 def test_cam_preserves_spatial_signal_and_reports_flat_maps():
     features = [torch.tensor([[[[0.0, 1.0], [2.0, 3.0]]]])]
     cam, metadata = normalize_cam(features, [torch.ones_like(features[0])], (2, 2))
