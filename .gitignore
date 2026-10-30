@@ -30,6 +30,7 @@ scripts/check_kaggle_status.py
 scripts/check_all_logs.py
 scripts/download_rfdetr_checkpoints.py
 results/
+!results/rigorous_verification_summary.json
 *.ps1
 *.zip
 

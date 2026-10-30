@@ -1,0 +1,20 @@
+{
+  "dataset": "scale-error-glass-defect",
+  "split": "test",
+  "num_images": 890,
+  "num_annotations": 1573,
+  "evaluation_protocol": "COCOeval (IoU 0.50:0.95)",
+  "metrics": {
+    "mAP50_95": 46.17,
+    "mAP50": 77.64,
+    "mAP75": 46.88,
+    "mAP_small": 35.09
+  },
+  "per_class_mAP50_95": {
+    "LoiChi": 67.22,
+    "LoiNhua": 57.79,
+    "LoiTray": 43.73,
+    "DiVatLoiLom": 35.81,
+    "DiVat": 26.28
+  }
+}
