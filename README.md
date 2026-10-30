@@ -155,6 +155,16 @@ Các tính năng đi kèm:
 - **Data Quality Guard:** Kiểm tra chất lượng ảnh đầu vào (độ mờ, tương phản, lóa sáng).
 - **Active Learning Export:** Xuất các mẫu có độ tin cậy thấp phục vụ tái huấn luyện.
 
+#### Giao diện hệ thống Glass Defect Inspector
+
+| Không gian kiểm định (Workspace) | Bản đồ nhiệt kích hoạt (Grad-CAM XAI) |
+| :---: | :---: |
+| ![Inspection Workspace](docs/assets/inspector-workspace.png) | ![Grad-CAM Heatmap](docs/assets/inspector-gradcam.png) |
+| *Tải ảnh phôi kính, tự động crop ROI, suy luận đa mô hình và hiển thị bounding box.* | *Bản đồ nhiệt phản ánh vùng kích hoạt của mô hình, giúp xác thực vị trí khuyết tật.* |
+| **Quy trình rà soát & phê duyệt (QA Review)** | **Bảng điều khiển thống kê (Dashboard)** |
+| ![QA Review](docs/assets/inspector-review.png) | ![Analytics Dashboard](docs/assets/inspector-dashboard.png) |
+| *Phân luồng đánh giá chất lượng (Đạt, Không đạt, Cần xác nhận) và xuất dữ liệu báo cáo.* | *Giám sát tổng lượng kiểm tra, phân bố tỷ lệ khuyết tật và lịch sử vận hành.* |
+
 ### 5.2. Chạy scripts đánh giá thực nghiệm
 ```bash
 # Đánh giá WBF theo hình thái khuyết tật
