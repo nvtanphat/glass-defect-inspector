@@ -1,0 +1,67 @@
+{
+  "DiVat": {
+    "iou_base": 0.42,
+    "reliabilities": [
+      1.1,
+      1.034,
+      0.866
+    ],
+    "lambda_adapt": 0.35,
+    "consensus_boost": 1.25,
+    "solo_decay": 0.9,
+    "conf_floor": 0.03,
+    "val_ap": 29.1923
+  },
+  "DiVatLoiLom": {
+    "iou_base": 0.47,
+    "reliabilities": [
+      1.05,
+      1.012,
+      0.938
+    ],
+    "lambda_adapt": 0.2,
+    "consensus_boost": 1.2,
+    "solo_decay": 0.9,
+    "conf_floor": 0.03,
+    "val_ap": 34.8395
+  },
+  "LoiChi": {
+    "iou_base": 0.62,
+    "reliabilities": [
+      1.006,
+      1.004,
+      0.99
+    ],
+    "lambda_adapt": 0.2,
+    "consensus_boost": 1.1,
+    "solo_decay": 0.9,
+    "conf_floor": 0.03,
+    "val_ap": 64.5482
+  },
+  "LoiNhua": {
+    "iou_base": 0.52,
+    "reliabilities": [
+      1.004,
+      1.055,
+      0.942
+    ],
+    "lambda_adapt": 0.2,
+    "consensus_boost": 1.1,
+    "solo_decay": 0.9,
+    "conf_floor": 0.03,
+    "val_ap": 51.1182
+  },
+  "LoiTray": {
+    "iou_base": 0.42,
+    "reliabilities": [
+      1.139,
+      0.915,
+      0.946
+    ],
+    "lambda_adapt": 0.2,
+    "consensus_boost": 1.25,
+    "solo_decay": 0.9,
+    "conf_floor": 0.03,
+    "val_ap": 42.0686
+  }
+}

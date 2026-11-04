@@ -55,11 +55,12 @@ Dữ liệu được phân chia theo thuật toán Multilabel Stratified Split (
 
 | Phân nhóm | Mô hình / Phương pháp | mAP@50 (%) | mAP@75 (%) | mAP@50:95 (%) | mAP_small (%) | Độ trễ (ms) | FPS | Mô tả kỹ thuật |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Ensemble** | **Hybrid Apex (Morphology Dynamic Routing)** | **77.64** | **46.88** | **46.17** | **35.09** | 295.0 | ~3.4 | Tổ hợp 3 mô hình với trọng số động theo phân lớp |
-| | Adaptive Heterogeneous Triad | 76.35 | 45.71 | 44.60 | 34.08 | 291.5 | ~3.4 | Tổ hợp 3 mô hình với trọng số thích ứng |
-| | Heterogeneous Morphology Triad | 76.43 | 43.93 | 44.45 | 34.39 | 293.5 | ~3.4 | Tổ hợp 3 mô hình phân nhánh theo hình thái |
-| | Dual-Model WBF Ensemble | 75.68 | 43.49 | 43.71 | 32.43 | 76.3 | ~13.1 | Tổ hợp 2 mô hình FBDNet-M và YOLO26m |
-| | Uniform Triad + TTA | 75.48 | 42.53 | 43.12 | 34.96 | 288.0 | ~3.5 | WBF trọng số đồng nhất kết hợp TTA |
+| **Ensemble** | **Heterogeneous Triad WBF (Đề xuất)** | **77.64** | **46.88** | **46.17** | **35.09** | 295.0 | ~3.4 | Tổ hợp 3 mô hình định tuyến theo hình thái khuyết tật |
+| | SBF (Selective Box Fusion) | 76.69 | 43.51 | **44.30** | 34.32 | 290.0 | ~3.4 | Han et al., 2025 (Quorum $V \ge 2$, lọc solo background) |
+| | AR-WBF (Adaptive Reliability) | 76.39 | 43.05 | **44.19** | 34.63 | 292.0 | ~3.4 | Daoud & Alqasir, 2026 (Trọng số thích ứng độ tin cậy) |
+| | Baseline Vanilla WBF | 76.07 | 42.80 | **43.85** | 33.55 | 288.0 | ~3.5 | Solovyev et al., 2021 (WBF chuẩn đa mô hình) |
+| | Dual-Model WBF Ensemble | 75.68 | 43.49 | **43.71** | 32.43 | 76.3 | ~13.1 | Tổ hợp 2 mô hình FBDNet-M và YOLO26m |
+| | Uniform Triad + TTA | 75.48 | 42.53 | **43.12** | 34.96 | 288.0 | ~3.5 | WBF trọng số đồng nhất kết hợp TTA |
 | **DETR** | **FBDNet-M** | 75.43 | 41.90 | **42.42** | 28.86 | 57.3 | ~17.5 | Mô hình đơn lẻ với cơ chế trích xuất biên sắc |
 | | RF-DETR-M + AHRD | 73.59 | 40.85 | 42.40 | 31.85 | 58.5 | ~17.1 | Transformer với High-Resolution Adaptor |
 | | D-FINE-M | 72.25 | 40.59 | 41.34 | **33.84** | 58.0 | ~17.2 | Tối ưu hóa phân phối tọa độ cho lỗi nhỏ |
@@ -71,7 +72,7 @@ Dữ liệu được phân chia theo thuật toán Multilabel Stratified Split (
 | | YOLO26m Base (Raw 960) | 69.85 | 36.75 | 38.51 | 22.80 | 67.4 | ~14.8 | Huấn luyện trên ảnh gốc 960x960 |
 | | YOLO11m | 63.86 | 32.23 | 34.31 | 20.45 | 57.2 | ~17.5 | Baseline CSPDarknet tiêu chuẩn |
 
-### Chi tiết AP@50:95 theo từng phân lớp (Hybrid Apex)
+### Chi tiết AP@50:95 theo từng phân lớp (Heterogeneous Triad WBF)
 - **LoiChi:** 67.22%
 - **LoiNhua:** 57.79%
 - **LoiTray:** 43.73%

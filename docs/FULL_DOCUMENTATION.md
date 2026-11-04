@@ -76,17 +76,17 @@ flowchart TD
     end
 
     subgraph Inspection_Pipeline ["Luồng 2: Kiểm Định Chất Lượng Chuyên Sâu (Apex Verification)"]
-        Router -->|Độ chính xác tuyệt đối| FBD["FBDNet-M (Boundary Features)"]
-        Router -->|Độ chính xác tuyệt đối| DF["D-FINE-M (Coordinate FDR)"]
-        Router -->|Độ chính xác tuyệt đối| Y26["YOLO26m (High-Res 1280 TTA)"]
+        Router -->|Nhánh kiểm định chuyên sâu| FBD["FBDNet-M (Boundary Features)"]
+        Router -->|Nhánh kiểm định chuyên sâu| DF["D-FINE-M (Coordinate FDR)"]
+        Router -->|Nhánh kiểm định chuyên sâu| Y26["YOLO26m (High-Res 1280 TTA)"]
         FBD & DF & Y26 --> WBF["Morphology Dynamic Routing & Adaptive WBF"]
-        WBF --> ApexOut["Kết quả kiểm định tối ưu (46.17% mAP · SOTA)"]
+        WBF --> ApexOut["Kết quả kiểm định tối ưu (46.17% mAP)"]
     end
 ```
 
 ### Chi tiết 2 luồng:
 1. **Luồng Real-Time Conveyor:** Ứng dụng mô hình học sinh chưng cất tri thức (`Distilled Student YOLO26m`) với tốc độ **~48.3 FPS (20.7 ms)**, phát hiện tức thì sản phẩm lỗi ngay trên băng tải phôi đang chuyển động.
-2. **Luồng Apex Verification:** Ứng dụng tổ hợp dị thể định tuyến theo hình thái khuyết tật (`Hybrid Apex`), kết hợp thế mạnh của CNN Anchor-free và DETR Transformer qua giải thuật dung hợp hộp bao thích ứng (WBF) và phân bổ tọa độ bất đối xứng, đạt độ chính xác đỉnh cao **46.17% mAP@50:95** (đóng băng hoàn toàn từ tập Validation 45.24%).
+2. **Luồng Apex Verification:** Ứng dụng tổ hợp dị thể định tuyến theo hình thái khuyết tật (`Hybrid Apex`), kết hợp thế mạnh của CNN Anchor-free và DETR Transformer qua giải thuật dung hợp hộp bao thích ứng (WBF) và phân bổ tọa độ bất đối xứng, đạt độ chính xác **46.17% mAP@50:95** trên tập kiểm thử (siêu tham số đóng băng từ tập Validation).
 
 ---
 
@@ -96,26 +96,27 @@ flowchart TD
 
 | Phân nhóm kiến trúc | Mô hình / Kỹ thuật | mAP@50 (%) | mAP@75 (%) | mAP@50:95 (%) | mAP_small (%) | Độ trễ (ms) | Tốc độ (FPS) | Vai trò triển khai |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Tổ hợp Dị thể (Ensemble)** | 🏆 **Hybrid Apex (Morphology Dynamic Routing)** | **77.64** | **46.88** | **46.17** | **35.09** | 295.0 ms | ~3.4 FPS | **SOTA Đỉnh Cao** (Val 45.24% $\to$ Test 46.17%, Zero-Leakage) |
-| | 🥈 **Adaptive Heterogeneous Triad** | 76.35 | 45.71 | 44.60 | 34.08 | 291.5 ms | ~3.4 FPS | Tiêu chuẩn Triad đa mô hình đồng đều |
-| | 🥉 **Heterogeneous Morphology Triad** | 76.43 | 43.93 | 44.45 | 34.39 | 293.5 ms | ~3.4 FPS | Định tuyến 3 nhánh theo hình thái khuyết tật |
-| | **Dual-Model WBF Ensemble** | 75.68 | 43.49 | 43.71 | 32.43 | 76.3 ms | ~13.1 FPS | Cân bằng lý tưởng độ chính xác và thông lượng |
-| | **Uniform Triad + TTA** | 75.48 | 42.53 | 43.12 | 34.96 | 288.0 ms | ~3.5 FPS | WBF trọng số đồng nhất đa góc nhìn |
-| **DETR Transformer** | 🔬 **FBDNet-M (Single SOTA)** | 75.43 | 41.90 | **42.42** | 28.86 | 57.3 ms | ~17.5 FPS | Single Model mạnh nhất, trích xuất biên sắc |
-| | 📐 **RF-DETR-M + AHRD** | 73.59 | 40.85 | 42.40 | 31.85 | 58.5 ms | ~17.1 FPS | Transformer với High-Resolution Adaptor |
-| | 📐 **D-FINE-M Baseline** | 72.25 | 40.59 | 41.34 | **33.84** | 58.0 ms | ~17.2 FPS | Tối ưu hóa phân phối tọa độ khuyết tật nhỏ |
-| | **RT-DETR-L** | 65.22 | 30.57 | 35.02 | 22.14 | 97.3 ms | ~10.3 FPS | Real-time DETR backbone lớn (HGNetv2-B4) |
-| **Dòng CNN / YOLO** | ⚡ **Distilled Student YOLO26m** | **70.10** | **42.08** | **41.01** | **28.79** | **20.7 ms** | **~48.3 FPS** | **SOTA Real-Time:** Chưng cất từ Triad Teacher (+0.92%) |
-| | 🚀 **YOLO26m-ROI-VFL Baseline** | 69.13 | 39.46 | 40.09 | 25.29 | **20.7 ms** | **~48.3 FPS** | Anchor-free NMS-free + Varifocal Loss + ROI |
-| | 🔍 **YOLOv8m-P2** | 69.93 | 39.12 | 40.04 | 27.50 | 26.0 ms | ~38.5 FPS | Head P2 (Stride-4) chuyên khuyết tật vi mô |
-| | 📦 **YOLOv10m** | 68.95 | 39.30 | 38.82 | 24.15 | 23.8 ms | ~42.0 FPS | NMS-free Dual Label Assignment |
-| | 🎯 **YOLO26m Base (Raw 960)** | 69.85 | 36.75 | 38.51 | 22.80 | 67.4 ms | ~14.8 FPS | Khổ ảnh 960x960 không áp dụng crop ROI |
-| | 🏷️ **YOLO11m** | 63.86 | 32.23 | 34.31 | 20.45 | 57.2 ms | ~17.5 FPS | Baseline tiêu chuẩn YOLO11 CSPDarknet |
+| **Tổ hợp Dị thể (Ensemble)** | **Heterogeneous Triad WBF (Đề xuất)** | **77.64** | **46.88** | **46.17** | **35.09** | 295.0 ms | ~3.4 FPS | **Hiệu năng cao nhất** (Val Tune $\to$ Test 46.17%, Zero-Leakage) |
+| | SBF (Selective Box Fusion) | 76.69 | 43.51 | **44.30** | 34.32 | 290.0 ms | ~3.4 FPS | Han et al., 2025 (Quorum $V \ge 2$, lọc solo background) |
+| | AR-WBF (Adaptive Reliability) | 76.39 | 43.05 | **44.19** | 34.63 | 292.0 ms | ~3.4 FPS | Daoud & Alqasir, 2026 (Trọng số thích ứng độ tin cậy) |
+| | Baseline Vanilla WBF | 76.07 | 42.80 | **43.85** | 33.55 | 288.0 ms | ~3.5 FPS | Solovyev et al., 2021 (WBF chuẩn đa mô hình) |
+| | Dual-Model WBF Ensemble | 75.68 | 43.49 | **43.71** | 32.43 | 76.3 ms | ~13.1 FPS | Cân bằng lý tưởng độ chính xác và thông lượng |
+| | Uniform Triad + TTA | 75.48 | 42.53 | **43.12** | 34.96 | 288.0 ms | ~3.5 FPS | WBF trọng số đồng nhất đa góc nhìn |
+| **DETR Transformer** | FBDNet-M | 75.43 | 41.90 | **42.42** | 28.86 | 57.3 ms | ~17.5 FPS | Mô hình Transformer đơn lẻ mạnh nhất |
+| | RF-DETR-M + AHRD | 73.59 | 40.85 | 42.40 | 31.85 | 58.5 ms | ~17.1 FPS | Transformer với High-Resolution Adaptor |
+| | D-FINE-M Baseline | 72.25 | 40.59 | 41.34 | **33.84** | 58.0 ms | ~17.2 FPS | Tối ưu hóa phân phối tọa độ khuyết tật nhỏ |
+| | RT-DETR-L | 65.22 | 30.57 | 35.02 | 22.14 | 97.3 ms | ~10.3 FPS | Real-time DETR backbone lớn (HGNetv2-B4) |
+| **Dòng CNN / YOLO** | Distilled Student YOLO26m | **70.10** | **42.08** | **41.01** | **28.79** | **20.7 ms** | **~48.3 FPS** | Chưng cất từ Triad Teacher (+0.92% mAP) |
+| | YOLO26m-ROI-VFL Baseline | 69.13 | 39.46 | 40.09 | 25.29 | **20.7 ms** | **~48.3 FPS** | Anchor-free NMS-free + Varifocal Loss + ROI |
+| | YOLOv8m-P2 | 69.93 | 39.12 | 40.04 | 27.50 | 26.0 ms | ~38.5 FPS | Head P2 (Stride-4) chuyên khuyết tật vi mô |
+| | YOLOv10m | 68.95 | 39.30 | 38.82 | 24.15 | 23.8 ms | ~42.0 FPS | NMS-free Dual Label Assignment |
+| | YOLO26m Base (Raw 960) | 69.85 | 36.75 | 38.51 | 22.80 | 67.4 ms | ~14.8 FPS | Khổ ảnh 960x960 không áp dụng crop ROI |
+| | YOLO11m | 63.86 | 32.23 | 34.31 | 20.45 | 57.2 ms | ~17.5 FPS | Baseline tiêu chuẩn YOLO11 CSPDarknet |
 | **Trần Lý Thuyết** | *Theoretical Oracle Ceiling* | *98.22* | *80.87* | *69.13* | *62.30* | — | — | *Trần biểu diễn lý thuyết của không gian đặc trưng* |
 
-### 📊 Báo Cáo Hiệu Năng Chi Tiết Trên Toàn Bộ Tập Test (890 ảnh)
+### Báo Cáo Hiệu Năng Chi Tiết Trên Toàn Bộ Tập Test (890 ảnh)
 
-Kết quả chi tiết của mô hình quán quân **Hybrid Apex (Morphology Dynamic Routing)** trên toàn bộ **890 ảnh kiểm thử độc lập**:
+Kết quả chi tiết của mô hình đề xuất **Heterogeneous Triad WBF** trên tập kiểm thử độc lập (890 ảnh):
 
 | Chỉ số đánh giá tổng thể | Kết quả | Phân lớp khuyết tật | AP@50:95 (%) |
 | :--- | :---: | :--- | :---: |

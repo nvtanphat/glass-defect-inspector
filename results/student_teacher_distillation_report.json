@@ -1,0 +1,68 @@
+{
+  "experiment": "Student-Teacher Knowledge Distillation",
+  "student_model": "YOLO26m-ROI-VFL",
+  "teachers": [
+    "FBDNet-M",
+    "D-FINE-M Baseline",
+    "YOLO26m-ROI-VFL"
+  ],
+  "dataset": "scale-error-dc-v26-yolov8",
+  "test_images": 890,
+  "distillation_stats": {
+    "total_images": 5578,
+    "total_gt_boxes": 9166,
+    "refined_gt_boxes": 9045,
+    "discovered_teacher_boxes": 832,
+    "final_distill_boxes": 9998
+  },
+  "results": {
+    "distilled_student": {
+      "mAP50_95": 41.01,
+      "mAP50": 70.1,
+      "mAP75": 42.08,
+      "mAP_s": 28.79,
+      "latency_ms": 20.7,
+      "fps": 48.3,
+      "per_class": {
+        "DiVat": 18.13,
+        "DiVatLoiLom": 30.69,
+        "LoiChi": 63.05,
+        "LoiNhua": 52.26,
+        "LoiTray": 40.91
+      }
+    },
+    "baseline_single_yolo": {
+      "mAP50": 69.13,
+      "mAP75": 39.46,
+      "mAP50_95": 40.09,
+      "mAP_s": 25.29,
+      "fps": 48.3,
+      "per_class": {
+        "DiVat": 17.76,
+        "DiVatLoiLom": 30.3,
+        "LoiChi": 62.99,
+        "LoiNhua": 53.0,
+        "LoiTray": 36.41
+      }
+    },
+    "triad_ensemble_teacher": {
+      "mAP50": 77.65,
+      "mAP75": 46.79,
+      "mAP50_95": 46.1,
+      "mAP_s": 34.19,
+      "fps": 3.4,
+      "per_class": {
+        "DiVat": 26.28,
+        "DiVatLoiLom": 35.81,
+        "LoiChi": 66.88,
+        "LoiNhua": 57.79,
+        "LoiTray": 43.73
+      }
+    },
+    "delta_map50_95": 0.92,
+    "delta_map50": 0.97,
+    "delta_map_s": 3.5,
+    "gap_closed_pct": 15.31
+  },
+  "timestamp": "2026-10-17 11:27:29"
+}

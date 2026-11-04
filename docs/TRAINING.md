@@ -72,7 +72,7 @@ python scripts/train_fbdnet.py \
 
 ## 4. Chưng Cất Tri Thức Học Sinh - Giáo Viên (Knowledge Distillation)
 
-Quy trình chưng cất tri thức chuyển giao khả năng nhận diện vượt trội từ bộ ba Giáo viên dị thể (`Adaptive Heterogeneous Triad`) sang mô hình Học sinh siêu nhẹ `YOLO26m`:
+Quy trình chưng cất tri thức chuyển giao đặc trưng nhận diện từ bộ ba Giáo viên dị thể (`Adaptive Heterogeneous Triad`) sang mô hình Học sinh `YOLO26m`:
 
 ```mermaid
 flowchart LR

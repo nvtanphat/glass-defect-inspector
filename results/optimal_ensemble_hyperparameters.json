@@ -1,0 +1,98 @@
+{
+  "DiVat": {
+    "mode": "3M_MS_TTA",
+    "iou_thr": 0.55,
+    "weights": [
+      1.0,
+      2.5,
+      0.8
+    ],
+    "coord_ratio": [
+      0.33,
+      0.33,
+      0.34
+    ],
+    "boost_3": 1.25,
+    "boost_2": 1.05,
+    "solo_decay": 0.85,
+    "conf_floor": 0.12,
+    "validation_AP50_95": 29.03,
+    "test_AP50_95": 26.28
+  },
+  "DiVatLoiLom": {
+    "mode": "2M_FBD_YOLO_MS",
+    "iou_thr": 0.41,
+    "weights": [
+      2.0,
+      1.0
+    ],
+    "coord_ratio": [
+      0.60,
+      0.40
+    ],
+    "boost_3": 1.0,
+    "boost_2": 1.22,
+    "solo_decay": 0.85,
+    "conf_floor": 0.03,
+    "validation_AP50_95": 34.37,
+    "test_AP50_95": 35.81
+  },
+  "LoiChi": {
+    "mode": "3M_MS_TTA",
+    "iou_thr": 0.66,
+    "weights": [
+      1.0,
+      1.0,
+      1.5
+    ],
+    "coord_ratio": [
+      0.33,
+      0.33,
+      0.34
+    ],
+    "boost_3": 1.0,
+    "boost_2": 1.0,
+    "solo_decay": 0.85,
+    "conf_floor": 0.03,
+    "validation_AP50_95": 66.01,
+    "test_AP50_95": 67.22
+  },
+  "LoiNhua": {
+    "mode": "2M_FBD_YOLO",
+    "iou_thr": 0.59,
+    "weights": [
+      0.8,
+      2.0
+    ],
+    "coord_ratio": [
+      0.60,
+      0.40
+    ],
+    "boost_3": 1.0,
+    "boost_2": 1.05,
+    "solo_decay": 0.85,
+    "conf_floor": 0.05,
+    "validation_AP50_95": 47.51,
+    "test_AP50_95": 57.79
+  },
+  "LoiTray": {
+    "mode": "3M_MS_TTA",
+    "iou_thr": 0.43,
+    "weights": [
+      0.8,
+      0.8,
+      2.5
+    ],
+    "coord_ratio": [
+      0.45,
+      0.45,
+      0.10
+    ],
+    "boost_3": 1.10,
+    "boost_2": 1.05,
+    "solo_decay": 0.85,
+    "conf_floor": 0.18,
+    "validation_AP50_95": 41.11,
+    "test_AP50_95": 43.73
+  }
+}

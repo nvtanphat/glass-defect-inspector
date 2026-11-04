@@ -27,7 +27,7 @@ Tài liệu này quy định cấu trúc tổ chức mã nguồn, tài nguyên d
 ## 2. Quy Chuẩn Đặt Tên Tệp & Chống Phân Mảnh Phiên Bản (Zero-Versioning Rule)
 
 Nhằm đảm bảo tính chuyên nghiệp và tránh nhầm lẫn trong môi trường sản xuất:
-1. **Tuyệt đối không sử dụng hậu tố phiên bản tùy tiện (`v1`, `v2`, `_v5`, `_v8_backup`):**
+1. **Không sử dụng hậu tố phiên bản tùy tiện (`v1`, `v2`, `_v5`, `_v8_backup`):**
    * *Sai:* `distilled_student_v1.pt`, `fbdnet_v2.pth`, `report_v5.json`.
    * *Đúng:* `distilled_student_yolo26m_best.pt`, `dfine_m_fbdnet_nwd_cbm_best.pth`, `ensemble_benchmark_report.json`.
 2. **Tên tệp phải thể hiện bản chất kỹ thuật (Semantic Naming):**
@@ -39,5 +39,5 @@ Nhằm đảm bảo tính chuyên nghiệp và tránh nhầm lẫn trong môi tr
 
 ## 3. Quản Trị Môi Trường & Bảo Mật
 
-* **Không bao giờ commit thông tin nhạy cảm:** Các tệp khóa API (`.env`, `kaggle/.kaggle_accounts.json`), thông tin đăng nhập database tuyệt đối không được đưa vào Git index.
+* **Không bao giờ commit thông tin nhạy cảm:** Các tệp khóa API (`.env`, `kaggle/.kaggle_accounts.json`), thông tin đăng nhập database không được đưa vào Git index.
 * **Tài nguyên dung lượng lớn:** Trọng số trong `weights/` và dữ liệu trong `data/` được quản lý riêng biệt, không commit trực tiếp vào Git.

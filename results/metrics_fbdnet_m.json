@@ -1,0 +1,38 @@
+{
+  "model": "FBDNet-M",
+  "backbone": "HGNetv2FBD-B2",
+  "encoder": "FBDHybridEncoder (AFTA + SFIF + DCFSB)",
+  "decoder": "DFINETransformer",
+  "parameters_M": 22.41,
+  "input_resolution": "960x960",
+  "epochs": 100,
+  "test_images": 890,
+  "test_annotations": 1573,
+  "best_epoch": 89,
+  "mAP50_95_best": 42.42,
+  "mAP50_best": 75.43,
+  "mAP75_best": 41.90,
+  "mAP50_95_epoch99": 42.13,
+  "mAP50_epoch99": 75.24,
+  "mAP75_epoch99": 41.16,
+  "mAP_small": 28.86,
+  "mAP_medium": 40.97,
+  "mAP_large": 37.39,
+  "per_class_mAP50_95": {
+    "DiVat": 26.72,
+    "DiVatLoiLom": 33.13,
+    "LoiChi": 63.19,
+    "LoiNhua": 46.57,
+    "LoiTray": 41.04
+  },
+  "per_class_mAP50": {
+    "DiVat": 64.78,
+    "DiVatLoiLom": 69.97,
+    "LoiChi": 89.91,
+    "LoiNhua": 74.05,
+    "LoiTray": 77.50
+  },
+  "latency_forward_ms": 57.27,
+  "fps": 17.5,
+  "weights_file": "weights/dfine_m_fbdnet_best.pth"
+}

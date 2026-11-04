@@ -1,0 +1,113 @@
+{
+  "validation_num_images": 878,
+  "test_num_images": 890,
+  "protocol": "Tuned exclusively on Validation; Frozen hyperparameters evaluated on Test",
+  "validation_results": {
+    "vanilla_wbf": {
+      "mAP50_95": 43.46,
+      "AP50": 76.69,
+      "AP75": 41.75,
+      "AP_small": 27.53,
+      "per_class": {
+        "DiVat": 28.01,
+        "DiVatLoiLom": 34.58,
+        "LoiChi": 62.94,
+        "LoiNhua": 50.76,
+        "LoiTray": 41.04
+      }
+    },
+    "triad_wbf": {
+      "mAP50_95": 43.61,
+      "AP50": 75.7,
+      "AP75": 42.01,
+      "AP_small": 25.44,
+      "per_class": {
+        "DiVat": 29.03,
+        "DiVatLoiLom": 34.37,
+        "LoiChi": 66.01,
+        "LoiNhua": 47.51,
+        "LoiTray": 41.11
+      }
+    },
+    "sbf_han_2025": {
+      "mAP50_95": 44.91,
+      "AP50": 77.71,
+      "AP75": 43.37,
+      "AP_small": 32.32,
+      "per_class": {
+        "DiVat": 29.32,
+        "DiVatLoiLom": 35.08,
+        "LoiChi": 64.95,
+        "LoiNhua": 52.22,
+        "LoiTray": 42.96
+      }
+    },
+    "ar_wbf_daoud_2026": {
+      "mAP50_95": 44.35,
+      "AP50": 77.26,
+      "AP75": 42.41,
+      "AP_small": 28.83,
+      "per_class": {
+        "DiVat": 29.19,
+        "DiVatLoiLom": 34.84,
+        "LoiChi": 64.55,
+        "LoiNhua": 51.12,
+        "LoiTray": 42.07
+      }
+    }
+  },
+  "test_results": {
+    "Baseline WBF (Solovyev 2021)": {
+      "mAP50_95": 43.85,
+      "AP50": 76.07,
+      "AP75": 42.8,
+      "AP_small": 33.55,
+      "per_class": {
+        "DiVat": 24.39,
+        "DiVatLoiLom": 35.97,
+        "LoiChi": 65.53,
+        "LoiNhua": 53.17,
+        "LoiTray": 40.18
+      }
+    },
+    "Heterogeneous Triad WBF (Ours)": {
+      "mAP50_95": 46.17,
+      "AP50": 77.64,
+      "AP75": 46.88,
+      "AP_small": 35.09,
+      "per_class": {
+        "DiVat": 26.28,
+        "DiVatLoiLom": 35.81,
+        "LoiChi": 67.22,
+        "LoiNhua": 57.79,
+        "LoiTray": 43.73
+      }
+    },
+    "SBF (Han et al. 2025)": {
+      "mAP50_95": 44.3,
+      "AP50": 76.69,
+      "AP75": 43.51,
+      "AP_small": 34.32,
+      "per_class": {
+        "DiVat": 25.84,
+        "DiVatLoiLom": 35.68,
+        "LoiChi": 66.2,
+        "LoiNhua": 53.89,
+        "LoiTray": 39.87
+      }
+    },
+    "AR-WBF (Daoud & Alqasir 2026)": {
+      "mAP50_95": 44.19,
+      "AP50": 76.39,
+      "AP75": 43.05,
+      "AP_small": 34.63,
+      "per_class": {
+        "DiVat": 25.8,
+        "DiVatLoiLom": 35.8,
+        "LoiChi": 66.13,
+        "LoiNhua": 53.29,
+        "LoiTray": 39.93
+      }
+    }
+  }
+}

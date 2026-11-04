@@ -1,0 +1,67 @@
+{
+  "DiVat": {
+    "iou_thr": 0.45,
+    "weights": [
+      1.5,
+      1.0,
+      1.0
+    ],
+    "min_votes": 2,
+    "solo_conf_thr": 0.45,
+    "consensus_boost": 1.25,
+    "conf_floor": 0.03,
+    "val_ap": 29.317
+  },
+  "DiVatLoiLom": {
+    "iou_thr": 0.4,
+    "weights": [
+      1.5,
+      1.0,
+      1.0
+    ],
+    "min_votes": 2,
+    "solo_conf_thr": 0.45,
+    "consensus_boost": 1.2,
+    "conf_floor": 0.03,
+    "val_ap": 35.084
+  },
+  "LoiChi": {
+    "iou_thr": 0.65,
+    "weights": [
+      1.0,
+      1.0,
+      1.5
+    ],
+    "min_votes": 2,
+    "solo_conf_thr": 0.25,
+    "consensus_boost": 1.1,
+    "conf_floor": 0.03,
+    "val_ap": 64.9492
+  },
+  "LoiNhua": {
+    "iou_thr": 0.55,
+    "weights": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "min_votes": 2,
+    "solo_conf_thr": 0.45,
+    "consensus_boost": 1.1,
+    "conf_floor": 0.03,
+    "val_ap": 52.2216
+  },
+  "LoiTray": {
+    "iou_thr": 0.6,
+    "weights": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "min_votes": 2,
+    "solo_conf_thr": 0.15,
+    "consensus_boost": 1.25,
+    "conf_floor": 0.03,
+    "val_ap": 42.961
+  }
+}

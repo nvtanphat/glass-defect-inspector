@@ -1,0 +1,17 @@
+{
+  "evaluation_split": "test",
+  "zero_leakage": true,
+  "morphology_routing": true,
+  "evaluated_on": "test_890_images",
+  "mAP50_95": 46.17,
+  "AP50": 77.64,
+  "AP75": 46.88,
+  "AP_small": 35.09,
+  "per_class_AP50_95": {
+    "DiVat": 26.28,
+    "DiVatLoiLom": 35.81,
+    "LoiChi": 67.22,
+    "LoiNhua": 57.79,
+    "LoiTray": 43.73
+  }
+}

@@ -29,8 +29,23 @@ scratch/
 scripts/check_kaggle_status.py
 scripts/check_all_logs.py
 scripts/download_rfdetr_checkpoints.py
-results/
+# Results directory (whitelist summary artifacts only)
+results/*
 !results/rigorous_verification_summary.json
+!results/val_tune_test_eval_table.md
+!results/val_tune_test_eval_fusion_benchmark_report.json
+!results/triad_wbf_test_evaluation_metrics.json
+!results/sbf_optimal_hyperparameters.json
+!results/ar_wbf_optimal_hyperparameters.json
+!results/optimal_ensemble_hyperparameters.json
+!results/ensemble_benchmark_report.json
+!results/metrics_fbdnet_m.json
+!results/student_teacher_distillation_report.json
+
+# Local evaluation outputs and scratch files
+ensemble_outputs/
+slide_summary*.txt
+
 *.ps1
 *.zip
 
@@ -74,3 +89,9 @@ tests/research/test_kaggle_evaluation_outputs.py
 KAGGLE_ACCOUNTS_AND_TRAINING_MONITOR.md
 docs/research/reports/*.docx
 docs/research/reports/report.html
+
+# Presentation materials (local only)
+*.pptx
+*Slides*.html
+*THUYET_TRINH*.md
+slide_summary*.txt
