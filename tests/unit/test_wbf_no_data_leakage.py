@@ -14,6 +14,12 @@ SCRIPT_PATH = (
     / "kernel_apex_hypersearch"
     / "run_apex_hypersearch.py"
 )
+if not SCRIPT_PATH.is_file():
+    pytest.skip(
+        "Kaggle apex hypersearch script unavailable in this environment",
+        allow_module_level=True,
+    )
+
 SPEC = importlib.util.spec_from_file_location("wbf_val_test_script", SCRIPT_PATH)
 assert SPEC is not None and SPEC.loader is not None
 WBF_SCRIPT = importlib.util.module_from_spec(SPEC)

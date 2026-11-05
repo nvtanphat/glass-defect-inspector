@@ -10,7 +10,14 @@ import pytest
 PATH = (
     Path(__file__).resolve().parents[2] / "kaggle/kernel_wbf_routing_candidate/run_wbf_routing.py"
 )
+if not PATH.is_file():
+    pytest.skip(
+        "Kaggle WBF routing script unavailable in this environment",
+        allow_module_level=True,
+    )
+
 SPEC = importlib.util.spec_from_file_location("wbf_routing_candidate", PATH)
+assert SPEC is not None and SPEC.loader is not None
 MODULE = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = MODULE
 SPEC.loader.exec_module(MODULE)

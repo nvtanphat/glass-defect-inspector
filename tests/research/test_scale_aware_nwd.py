@@ -20,6 +20,7 @@ _tf_stub.io = _types.SimpleNamespace(
 )
 sys.modules["tensorflow"] = _tf_stub
 
+import pytest
 import torch
 import torch.nn as nn
 
@@ -31,8 +32,13 @@ if str(DFINE_ROOT) not in sys.path:
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
-from src.zoo.dfine.dfine_criterion import DFINECriterion
-from src.zoo.dfine.matcher import HungarianMatcher
+DFINE_CRITERION_AVAILABLE = (DFINE_ROOT / "src/zoo/dfine/dfine_criterion.py").is_file()
+if DFINE_CRITERION_AVAILABLE:
+    from src.zoo.dfine.dfine_criterion import DFINECriterion
+    from src.zoo.dfine.matcher import HungarianMatcher
+else:
+    DFINECriterion = None
+    HungarianMatcher = None
 
 from scale_error.training.nwd_loss import ScaleAwareNWDLoss
 
@@ -122,6 +128,8 @@ def test_nwd_gradient_backprop():
 
 def test_dfine_criterion_e0_baseline():
     """Verify DFINECriterion with use_nwd=False (E0 baseline) does not compute loss_nwd."""
+    if not DFINE_CRITERION_AVAILABLE:
+        pytest.skip("Optional D-FINE research source unavailable")
     matcher = HungarianMatcher(weight_dict={"cost_class": 2, "cost_bbox": 5, "cost_giou": 2})
     weight_dict = {"loss_vfl": 1.0, "loss_bbox": 5.0, "loss_giou": 2.0}
     criterion = DFINECriterion(
@@ -151,6 +159,8 @@ def test_dfine_criterion_e0_baseline():
 
 def test_dfine_criterion_e1_scale_aware_nwd():
     """Verify DFINECriterion with use_nwd=True (E1) incorporates loss_nwd and backpropagates."""
+    if not DFINE_CRITERION_AVAILABLE:
+        pytest.skip("Optional D-FINE research source unavailable")
     matcher = HungarianMatcher(weight_dict={"cost_class": 2, "cost_bbox": 5, "cost_giou": 2})
     weight_dict = {"loss_vfl": 1.0, "loss_bbox": 5.0, "loss_giou": 2.0, "loss_nwd": 0.2}
     criterion = DFINECriterion(
