@@ -1,8 +1,9 @@
-"""FBDHybridEncoder: HybridEncoder with Spatial-Frequency Interaction Fusion (SFIF)
-and Dense Cross-scale Feature Screening / Fusion Blocks (DCFSB).
+"""FBDHybridEncoder: Bộ mã hóa lai kết hợp hợp nhất tương tác không gian - tần số (SFIF)
+và khối lọc đặc trưng đa tỉ lệ dày đặc (DCFSB).
 
-FBDNet-inspired adaptation for D-FINE-M. Preserves all baseline architecture
-while enabling independent toggling of SFIF and DCFSB modules for rigorous ablation.
+Kiến trúc nâng cấp lấy cảm hứng từ FBDNet dành cho mô hình phát hiện biên D-FINE-M.
+Kế thừa toàn bộ cấu trúc nền tảng của HybridEncoder gốc, đồng thời cho phép bật/tắt độc lập
+mô-đun SFIF và DCFSB phục vụ nghiên cứu thực nghiệm bóc tách (ablation study).
 """
 
 from __future__ import annotations
@@ -40,7 +41,7 @@ __all__ = ["FBDHybridEncoder"]
 
 @register()
 class FBDHybridEncoder(HybridEncoder):
-    """HybridEncoder extended with FBDNet-inspired SFIF and DCFSB modules."""
+    """Bộ mã hóa đặc trưng lai FBDHybridEncoder mở rộng với SFIF và DCFSB."""
 
     def __init__(
         self,
@@ -54,13 +55,13 @@ class FBDHybridEncoder(HybridEncoder):
         self.use_sfif = use_sfif
         self.use_dcfsb = use_dcfsb
 
-        # 1. SFIF applied after input projection
+        # 1. Tích hợp mô-đun SFIF ngay sau khi chiếu đầu vào (input projection)
         if use_sfif:
             self.sfif = nn.ModuleList([SFIF(self.hidden_dim) for _ in self.in_channels])
         else:
             self.sfif = None
 
-        # 2. DCFSB applied inside multi-scale FPN and PAN fusion stages
+        # 2. Tích hợp mô-đun DCFSB bên trong các tầng hợp nhất FPN (Top-Down) và PAN (Bottom-Up)
         if use_dcfsb:
             num_fusions = len(self.in_channels) - 1
             self.dcfsb_fpn = nn.ModuleList([DCFSB(self.hidden_dim) for _ in range(num_fusions)])
@@ -72,14 +73,14 @@ class FBDHybridEncoder(HybridEncoder):
     def forward(self, feats: list[torch.Tensor]) -> list[torch.Tensor]:
         assert len(feats) == len(self.in_channels)
 
-        # 1. Input projection (C3: 384, C4: 768, C5: 1536 -> hidden_dim: 256)
+        # 1. Chiếu kênh đầu vào về không gian ẩn (C3: 384, C4: 768, C5: 1536 -> hidden_dim: 256)
         proj_feats = [self.input_proj[i](feat) for i, feat in enumerate(feats)]
 
-        # 2. SFIF: Spatial-Frequency Interaction Fusion
+        # 2. Xử lý qua SFIF: Hợp nhất tương tác miền không gian - miền tần số (2D FFT)
         if self.use_sfif and self.sfif is not None:
             proj_feats = [self.sfif[i](feat) for i, feat in enumerate(proj_feats)]
 
-        # 3. Transformer Encoder layers (as in baseline)
+        # 3. Các tầng Transformer Encoder xử lý tự chú ý toàn cục
         if self.num_encoder_layers > 0:
             for i, enc_ind in enumerate(self.use_encoder_idx):
                 h, w = proj_feats[enc_ind].shape[2:]
@@ -96,7 +97,7 @@ class FBDHybridEncoder(HybridEncoder):
                     memory.permute(0, 2, 1).reshape(-1, self.hidden_dim, h, w).contiguous()
                 )
 
-        # 4. Top-Down FPN Broadcasting & Fusion with DCFSB
+        # 4. Nhánh FPN Top-Down (từ mức sâu về mức nông) kết hợp khối lọc dày đặc DCFSB
         inner_outs = [proj_feats[-1]]
         for idx in range(len(self.in_channels) - 1, 0, -1):
             block_idx = len(self.in_channels) - 1 - idx
@@ -110,7 +111,7 @@ class FBDHybridEncoder(HybridEncoder):
                 inner_out = self.dcfsb_fpn[block_idx](inner_out)
             inner_outs.insert(0, inner_out)
 
-        # 5. Bottom-Up PAN Downsampling & Fusion with DCFSB
+        # 5. Nhánh PAN Bottom-Up (từ mức nông lên mức sâu) kết hợp khối lọc dày đặc DCFSB
         outs = [inner_outs[0]]
         for idx in range(len(self.in_channels) - 1):
             feat_low = outs[-1]

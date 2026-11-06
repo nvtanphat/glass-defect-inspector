@@ -1,4 +1,4 @@
-"""Fine-tune FBDNet-M locally: E0 baseline and E1 scale-aware NWD."""
+"""Kịch bản huấn luyện / tinh chỉnh mô hình FBDNet-M: Thử nghiệm E0 baseline và E1 Scale-Aware NWD."""
 
 from __future__ import annotations
 

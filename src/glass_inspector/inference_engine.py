@@ -1,9 +1,11 @@
-"""Inference engine for Glass Defect Inspector.
+"""Bộ máy suy luận kiểm định khuyết tật bề mặt kính (Glass Defect Inspector Inference Engine).
 
-Connects to real checkpoints in the weights/ directory and performs
-defect detection, ROI cropping, Tiling (960x960, 20% overlap),
-coordinate mapping, timing breakdown, FPS measurement, and result compilation.
-Supports YOLO26m (Ultralytics) and D-FINE-M (HGNetv2 + Transformer).
+Kết nối với các trọng số mô hình thực tế trong thư mục weights/, thực hiện:
+- Tiền xử lý cắt vùng quan tâm (ROI crop).
+- Chia mảng ô trượt SAHI Tiling (960x960, độ chồng chập 20%) để phát hiện lỗi vi mô trên ảnh độ phân giải siêu cao (5328x3000).
+- Ánh xạ tọa độ từ ô cắt về ảnh gốc, đo độ trễ chi tiết từng giai đoạn (Preprocess, Inference, Postprocess),
+  đo tốc độ khung hình (FPS) và tổng hợp kết quả phân loại 5 phân lớp khuyết tật.
+- Hỗ trợ các mô hình: YOLO26m (Ultralytics), D-FINE-M, FBDNet-M và Heterogeneous Triad WBF.
 """
 
 from __future__ import annotations
@@ -81,7 +83,7 @@ _ROI_CONFIG_CACHE: dict[str, Any] | None = None
 
 
 def load_roi_config() -> dict[str, Any]:
-    """Load cached ROI configuration from processing/roi_config.json."""
+    """Tải và lưu đệm cấu hình ROI từ file processing/roi_config.json."""
     global _ROI_CONFIG_CACHE
     if _ROI_CONFIG_CACHE is None:
         cfg_path = WORKSPACE_ROOT / "processing" / "roi_config.json"
@@ -95,7 +97,7 @@ def load_roi_config() -> dict[str, Any]:
 
 
 def load_yolo_model(weights_path: str) -> Any:
-    """Load and cache YOLO model."""
+    """Tải và lưu đệm mô hình YOLO/RT-DETR."""
     from ultralytics import RTDETR, YOLO
 
     weights_path = str(Path(weights_path).resolve())
@@ -111,7 +113,7 @@ def load_yolo_model(weights_path: str) -> Any:
 
 
 def load_dfine_model(weights_path: str) -> tuple[Any, Any]:
-    """Load and cache D-FINE model and postprocessor."""
+    """Tải và lưu đệm mô hình D-FINE cùng bộ hậu xử lý (postprocessor)."""
     import torch
 
     weights_path = str(Path(weights_path).resolve())
@@ -185,7 +187,7 @@ def base64_to_pil(data_url: str) -> Image.Image:
 
 
 def get_roi_crop(pil_img: Image.Image) -> tuple[Image.Image, tuple[int, int, int, int] | None]:
-    """Apply ROI crop for high-resolution images according to roi_config.json."""
+    """Cắt vùng quan tâm (ROI crop) cho ảnh độ phân giải cao theo cấu hình roi_config.json."""
     w, h = pil_img.size
     config = load_roi_config()
     groups = config.get("groups", {})
@@ -208,7 +210,7 @@ def get_roi_crop(pil_img: Image.Image) -> tuple[Image.Image, tuple[int, int, int
 def compute_slice_intervals(
     total_dim: int, slice_dim: int = 960, overlap_ratio: float = 0.20
 ) -> list[tuple[int, int]]:
-    """Compute 1D slice intervals covering total_dim with overlap."""
+    """Tính toán danh sách các khoảng cắt ô trượt 1 chiều phủ kín kích thước ảnh với độ chồng chập."""
     if total_dim <= 0 or slice_dim < 320 or not 0 <= overlap_ratio <= 0.5:
         raise ValueError("Invalid tile geometry")
     if total_dim <= slice_dim:
@@ -234,7 +236,7 @@ def run_nms_boxes(
     detections: list[tuple[str, float, int, int, int, int]],
     iou_threshold: float = 0.45,
 ) -> list[tuple[str, float, int, int, int, int]]:
-    """Perform per-class Non-Maximum Suppression (NMS) using OpenCV."""
+    """Thực hiện triệt tiêu phi cực đại (NMS) theo từng phân lớp độc lập bằng OpenCV."""
     if not detections:
         return []
 
@@ -266,7 +268,7 @@ def annotate_image(
     pil_img: Image.Image,
     detections: list[dict[str, Any]],
 ) -> Image.Image:
-    """Draw bounding boxes and class tags onto the image."""
+    """Vẽ bounding box và nhãn phân lớp khuyết tật lên ảnh kết quả."""
     img_copy = pil_img.copy()
     draw = ImageDraw.Draw(img_copy)
     w, h = img_copy.size

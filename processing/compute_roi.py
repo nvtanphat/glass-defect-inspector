@@ -1,27 +1,11 @@
-"""Compute fixed ROI crop boxes from the training bbox distribution, per
-source image resolution group.
+"""Tính toán vùng quan tâm (ROI crop boxes) cố định dựa trên phân bố bounding box tập huấn luyện.
 
-Rationale: the camera/bottle position is fixed *within* a given capture setup,
-so every defect's bounding box is a sample of where the bottle body can be.
-Taking the envelope of the 0.5th-99.5th percentile of box edges (not raw
-min/max, to ignore a handful of extreme outliers) and padding it out by a
-wide margin gives a crop that:
-
-  - keeps the full bottle body (defects are always on/near it, never outside)
-  - drops dead background on all four sides
-  - is small enough to make defects relatively larger after resizing to the
-    training imgsz, without risking clipping real bottle area
-
-IMPORTANT: this dataset mixes image resolutions (5328x3000: ~62% of train,
-1024x1024: ~38%, plus a handful of 1598x898), and their bbox distributions
-differ enough (box width averages ~0.027 vs ~0.074 normalized) to indicate
-different camera/capture setups rather than just a resize of the same shot.
-A single normalized ROI would misalign one group, so this script computes
-one ROI per resolution group and requires images to be routed through the
-matching ROI at crop/inference time (see `apply_roi_crop.py`).
-
-This does NOT crop images/labels itself - it only computes and reports the
-proposed ROIs per group. Run `apply_roi_crop.py` once these look right.
+Nguyên lý: Vị trí chai thủy tinh và camera cố định trong dây chuyền chụp quang học.
+Hộp bao của toàn bộ khuyết tật tập trung trên thân chai. Bằng cách tính bao lồi tại phân vị 0.5% - 99.5%
+(để loại bỏ ngoại lai) và mở rộng đệm lề, ta thu được vùng cắt tối ưu:
+  - Giữ trọn vẹn toàn bộ thân chai chứa khuyết tật.
+  - Loại bỏ hoàn toàn vùng nền viền cơ khí vô nghĩa ở 4 cạnh.
+  - Phóng đại kích thước khuyết tật nhỏ sau khi resize về kích thước mạng nơ-ron (960x960).
 """
 
 from __future__ import annotations

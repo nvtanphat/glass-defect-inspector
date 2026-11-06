@@ -1,14 +1,14 @@
-"""Weighted Boxes Fusion (WBF) Ensemble CLI for Glass Defect Inspector.
+"""Kịch bản dòng lệnh chạy tổ hợp mô hình Weighted Boxes Fusion (WBF) cho Glass Defect Inspector.
 
-Usage Examples:
+Ví dụ sử dụng:
 ---------------
-1. Run single image ensemble:
+1. Chạy tổ hợp trên 1 ảnh đơn lẻ:
    python scripts/run_wbf_ensemble.py --image data/raw/sample_1.jpg --output results/sample.json
 
-2. Fuse precomputed offline model predictions:
+2. Hợp nhất dự đoán offline đã tính toán trước từ nhiều mô hình:
    python scripts/run_wbf_ensemble.py --pred-files fbdnet.json yolo.json --gt-file gt.json
 
-3. Custom models with per-class adaptive WBF:
+3. Tùy chỉnh danh sách trọng số mô hình với WBF thích ứng theo phân lớp:
    python scripts/run_wbf_ensemble.py --models weights/fbdnet.pth weights/yolo.pt --iou-thr 0.58
 """
 

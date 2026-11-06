@@ -1,20 +1,10 @@
-"""Apply the fixed per-resolution ROI crops from roi_config.json to a split's
-images and YOLO labels, writing a cropped copy under a new root.
+"""Áp dụng cắt vùng quan tâm (ROI crop) theo cấu hình roi_config.json cho ảnh và nhãn YOLO.
 
-Companion to compute_roi.py, which only proposes the ROI boxes. This script
-performs the actual crop:
-
-  - looks up each image's ROI by its (width, height) resolution group
-  - images whose resolution has no group in roi_config.json (too few boxes to
-    estimate a stable ROI, or a size seen only outside train) are copied
-    through unchanged, so a mixed-resolution dataset never loses images
-  - crops the image to the ROI box
-  - remaps every YOLO label box into ROI-relative normalized coordinates,
-    clipping at the ROI edges; a box whose clipped area is a small fraction
-    of its original area (default 10%, i.e. mostly cropped away) is dropped
-    instead of kept as a sliver, since a near-invisible fragment is not a
-    usable training signal for defects that are already only a few pixels
-    wide (DiVat, LoiChi, LoiTray)
+Kế thừa kết quả tính toán từ compute_roi.py, kịch bản này thực hiện cắt thực tế:
+  - Tra cứu hộp ROI theo nhóm độ phân giải (rộng, cao) của từng ảnh.
+  - Cắt ảnh vật lý theo tọa độ ROI chuẩn.
+  - Tái ánh xạ toàn bộ tọa độ bounding box của nhãn YOLO về hệ tọa độ mới tương đối của ROI.
+  - Loại bỏ các mẩu khuyết tật bị cắt cụt quá 90% để tránh tạo ra nhãn nhiễu.
 """
 
 from __future__ import annotations

@@ -1,10 +1,10 @@
-"""Data Quality and Drift Guard for Glass Defect Inspection.
+"""Mô-đun Giám sát Chất lượng Dữ liệu và Trôi dạt Quang học (Data Quality & Drift Guard).
 
-Lightweight, zero-overhead input validation module using pure NumPy / OpenCV:
-- Brightness & exposure validation (under-exposed / washed out)
-- Contrast validation (flat lighting / loss of defect texture)
-- Sharpness / blurriness estimation via Laplacian variance
-- Aspect-ratio & resolution sanity checking
+Mô-đun kiểm định đầu vào siêu nhẹ, không tiêu tốn tài nguyên GPU, sử dụng NumPy và OpenCV thuần:
+- Kiểm tra độ sáng và độ phơi sáng (phát hiện ảnh thiếu sáng hoặc chói lóa).
+- Kiểm tra độ tương phản (phát hiện ánh sáng phẳng làm mất chi tiết vân nứt).
+- Đánh giá độ sắc nét và mờ nhòe thông qua phương sai toán tử Laplacian (Laplacian variance).
+- Kiểm tra tính hợp lệ về kích thước và tỷ lệ khung hình trước khi đưa vào mô hình suy luận.
 """
 
 from __future__ import annotations
@@ -15,11 +15,11 @@ import cv2
 import numpy as np
 from PIL import Image
 
-# Operational thresholds calibrated on industrial glass surface dataset
-MIN_BRIGHTNESS = 35.0  # Below this, surface defect texture is lost in shadows
-MAX_BRIGHTNESS = 225.0  # Above this, reflections wash out subtle scratch edges
-MIN_CONTRAST = 18.0  # Minimum standard deviation of grayscale pixels
-MIN_SHARPNESS = 45.0  # Laplacian variance threshold; lower indicates defocus or vibration blur
+# Các ngưỡng vận hành hiệu chuẩn trên bộ dữ liệu bề mặt kính công nghiệp
+MIN_BRIGHTNESS = 35.0  # Dưới ngưỡng này ảnh quá tối, chi tiết khuyết tật chìm vào bóng đen
+MAX_BRIGHTNESS = 225.0  # Trên ngưỡng này ảnh bị lóa sáng quang học, biên trầy xước bị mất
+MIN_CONTRAST = 18.0  # Độ lệch chuẩn tối thiểu của các điểm ảnh xám
+MIN_SHARPNESS = 45.0  # Ngưỡng phương sai Laplacian; thấp hơn biểu hiện mờ nhòe do rung máy hoặc mất nét
 
 
 def analyze_image_quality(
@@ -29,20 +29,20 @@ def analyze_image_quality(
     min_contrast: float = MIN_CONTRAST,
     min_sharpness: float = MIN_SHARPNESS,
 ) -> dict[str, Any]:
-    """Assess optical quality of glass inspection image before model inference.
+    """Đánh giá chất lượng quang học của ảnh chai/kính trước khi đưa vào mô hình AI.
 
-    Args:
-        image: PIL Image or NumPy array (RGB or BGR).
-        min_brightness: Lower bound for acceptable mean brightness (0-255).
-        max_brightness: Upper bound for acceptable mean brightness (0-255).
-        min_contrast: Minimum acceptable standard deviation of pixel intensities.
-        min_sharpness: Minimum acceptable Laplacian variance.
+    Tham số:
+        image: Ảnh đối tượng dạng PIL Image hoặc mảng NumPy (RGB hoặc BGR).
+        min_brightness: Ngưỡng dưới của độ sáng trung bình chấp nhận được (0-255).
+        max_brightness: Ngưỡng trên của độ sáng trung bình chấp nhận được (0-255).
+        min_contrast: Độ lệch chuẩn mức xám tối thiểu được chấp nhận.
+        min_sharpness: Phương sai toán tử Laplacian tối thiểu (đo độ nét).
 
-    Returns:
-        dict containing:
-            - is_acceptable: bool, True if no blocking quality issues
-            - metrics: dict of measured optical values
-            - warnings: list of human-readable alerts
+    Trả về:
+        dict chứa:
+            - is_acceptable: bool, True nếu ảnh đủ tiêu chuẩn kiểm định
+            - metrics: dict gồm các chỉ số quang học đo đạc được
+            - warnings: danh sách cảnh báo chất lượng bằng ngôn ngữ tự nhiên
             - status: 'PASS' | 'WARNING' | 'REJECT'
     """
     if isinstance(image, Image.Image):
@@ -57,7 +57,7 @@ def analyze_image_quality(
             gray = image
             h, w = gray.shape[:2]
     else:
-        raise TypeError(f"Unsupported image type: {type(image)}")
+        raise TypeError(f"Định dạng ảnh không được hỗ trợ: {type(image)}")
 
     if gray.size == 0 or w == 0 or h == 0:
         return {
@@ -70,15 +70,15 @@ def analyze_image_quality(
                 "contrast": 0.0,
                 "sharpness": 0.0,
             },
-            "warnings": ["Image has empty dimensions or zero pixel buffer."],
+            "warnings": ["Ảnh có kích thước rỗng hoặc bộ đệm pixel không hợp lệ."],
         }
 
-    # 1. Luminance & Exposure Metrics
+    # 1. Trích xuất chỉ số độ sáng và độ phơi sáng (Luminance & Exposure)
     mean_brightness = float(np.mean(gray))
     contrast_std = float(np.std(gray))
 
-    # 2. Sharpness / Defocus Metric (Laplacian variance)
-    # Downsample if image is extremely high-res (> 2500px) to keep compute strictly under 3ms
+    # 2. Đánh giá độ sắc nét / độ nhòe chuyển động (Laplacian Variance)
+    # Giảm kích thước ảnh xuống nếu ảnh quá lớn (>2500px) để đảm bảo thời gian xử lý < 3ms
     if max(w, h) > 2500:
         scale_factor = 2000.0 / max(w, h)
         new_w, new_h = int(w * scale_factor), int(h * scale_factor)
@@ -88,40 +88,40 @@ def analyze_image_quality(
         laplacian = cv2.Laplacian(gray, cv2.CV_64F)
     sharpness = float(np.var(laplacian))
 
-    # 3. Geometry & Aspect Ratio
+    # 3. Kích thước hình học và tỷ lệ khung hình (Aspect Ratio)
     aspect_ratio = round(float(w) / float(h), 3)
 
     warnings: list[str] = []
 
     if mean_brightness < min_brightness:
         warnings.append(
-            f"Image is under-exposed (brightness {mean_brightness:.1f} < {min_brightness}). "
-            "Dark scratches may be missed."
+            f"Image is under-exposed / Ảnh thiếu sáng (độ sáng {mean_brightness:.1f} < {min_brightness}). "
+            "Các vết trầy xước trong vùng tối có thể bị bỏ sót."
         )
     elif mean_brightness > max_brightness:
         warnings.append(
-            f"Image is over-exposed (brightness {mean_brightness:.1f} > {max_brightness}). "
-            "Optical glare may trigger false alarms."
+            f"Image is over-exposed / Ảnh thừa sáng chói lóa (độ sáng {mean_brightness:.1f} > {max_brightness}). "
+            "Vùng phản xạ gương có thể gây báo động giả."
         )
 
     if contrast_std < min_contrast:
         warnings.append(
-            f"Low contrast detected (contrast {contrast_std:.1f} < {min_contrast}). "
-            "Defect boundary contrast is insufficient."
+            f"Low contrast detected / Độ tương phản thấp (độ tương phản {contrast_std:.1f} < {min_contrast}). "
+            "Biên phân cách giữa khuyết tật và bề mặt thủy tinh không rõ ràng."
         )
 
     if sharpness < min_sharpness:
         warnings.append(
-            f"Image appears blurry (sharpness score {sharpness:.1f} < {min_sharpness})."
+            f"Image appears blurry / Ảnh bị mờ nhòe (chỉ số sắc nét {sharpness:.1f} < {min_sharpness})."
         )
 
-    # Determine overall gate status
+    # Xác định trạng thái cổng kiểm định chất lượng
     if not warnings:
         status = "PASS"
         is_acceptable = True
     else:
         status = "WARNING"
-        is_acceptable = True  # Warnings do not block inspection, but flag audit logs
+        is_acceptable = True  # Cảnh báo không chặn suy luận nhưng được ghi nhận vào nhật ký kiểm toán
 
     return {
         "is_acceptable": is_acceptable,

@@ -1,4 +1,8 @@
-"""On-demand detector Grad-CAM using the saved image and actual class score."""
+"""Mô-đun Grad-CAM giải thích trực quan quyết định phát hiện khuyết tật trên ảnh.
+
+Tạo bản đồ nhiệt (heatmap) phản ánh vùng ảnh mà mạng nơ-ron tập trung chú ý
+để đưa ra dự đoán phân lớp và tọa độ hộp bounding box tương ứng.
+"""
 
 from __future__ import annotations
 
@@ -20,7 +24,7 @@ VERSION = "detector-cam-v3"
 
 
 def select_query(logits, boxes, target_box=None, category=None, target_score=None):
-    """Match a saved detection spatially; without one explain the strongest raw score."""
+    """Khớp phát hiện đã lưu theo không gian; nếu không có sẽ giải thích điểm số thô cao nhất."""
     if category is None:
         index = int(logits.detach().sigmoid().argmax())
         return index // logits.shape[1], index % logits.shape[1]
@@ -78,7 +82,7 @@ def _xyxy(boxes):
 
 
 def explain(image, weights, adapter, result, config, detection_id=None):
-    """Return an overlay JPEG and metadata; never update weights or quality decisions."""
+    """Tạo ảnh overlay bản đồ nhiệt Grad-CAM dạng JPEG cùng thông số metadata phục vụ giao diện."""
     image = image.convert("RGB")
     detections = result.get("detections", [])
     if detection_id is None:
