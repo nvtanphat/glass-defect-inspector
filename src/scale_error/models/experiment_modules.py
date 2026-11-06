@@ -26,8 +26,8 @@ class P2FusionModule(nn.Module):
     """E1: Mô-đun hợp nhất nhẹ nhàng từ P2 sang P3.
 
     Giả thuyết:
-        P3 (stride 8, kích thước 120x120 tại ảnh 960) bị mất chi tiết không gian sub-pixel quan trọng
-        cho các vết trầy xước mảnh (LoiTray) và vết nứt sợi (LoiChi).
+        P3 (stride 8, kích thước 120x120 tại ảnh 960) bị mất chi tiết không gian
+        sub-pixel quan trọng cho các vết trầy xước mảnh (LoiTray) và vết nứt sợi (LoiChi).
         P2 (stride 4, 240x240, 96 kênh) giữ trọn vẹn các đường biên vi mô.
 
     Kiến trúc:
@@ -82,9 +82,10 @@ class FrequencyAwareFusionModule(nn.Module):
     """E2: Mô-đun tinh chỉnh đặc trưng nhận biết miền tần số (Frequency-Aware Feature Refinement).
 
     Giả thuyết:
-        Ảnh bề mặt chai thủy tinh chứa các tín hiệu tần số cao không phải lỗi (vết chói, phản chiếu, vân gá).
-        Vết trầy và sợi chỉ cũng là tín hiệu tần số cao. Cổng nhận biết tần số sẽ chọn lọc triệt tiêu
-        nhiễu nền thủy tinh trong khi khuếch đại đường biên khuyết tật.
+        Ảnh bề mặt chai thủy tinh chứa các tín hiệu tần số cao không phải lỗi
+        (vết chói, phản chiếu, vân gá). Vết trầy và sợi chỉ cũng là tín hiệu tần số cao.
+        Cổng nhận biết tần số sẽ chọn lọc triệt tiêu nhiễu nền thủy tinh trong khi
+        khuếch đại đường biên khuyết tật.
     """
 
     def __init__(self, channels: int = 384, kernel_size: int = 3):
@@ -127,7 +128,8 @@ class LongTailBalancedSampler(Sampler[int]):
     """E4: Bộ lấy mẫu cân bằng phân bố đuôi dài (Long-Tail Balanced Sampler).
 
     Giả thuyết:
-        Sự mất cân bằng lớp trầm trọng (LoiChi >> LoiTray/LoiNhua) khiến gradient bị chi phối bởi các lớp đa số.
+        Sự mất cân bằng lớp trầm trọng (LoiChi >> LoiTray/LoiNhua) khiến gradient
+        bị chi phối bởi các lớp đa số.
         Lấy mẫu ảnh với xác suất tỷ lệ thuận với nghịch đảo tần suất của vật thể hiếm nhất trong ảnh
         giúp tăng cường độ thu hồi cho lớp thiểu số mà không cần nhân bản file ảnh trên đĩa.
     """

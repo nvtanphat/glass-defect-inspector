@@ -2,9 +2,11 @@
 
 Kết nối với các trọng số mô hình thực tế trong thư mục weights/, thực hiện:
 - Tiền xử lý cắt vùng quan tâm (ROI crop).
-- Chia mảng ô trượt SAHI Tiling (960x960, độ chồng chập 20%) để phát hiện lỗi vi mô trên ảnh độ phân giải siêu cao (5328x3000).
-- Ánh xạ tọa độ từ ô cắt về ảnh gốc, đo độ trễ chi tiết từng giai đoạn (Preprocess, Inference, Postprocess),
-  đo tốc độ khung hình (FPS) và tổng hợp kết quả phân loại 5 phân lớp khuyết tật.
+- Chia mảng ô trượt SAHI Tiling (960x960, độ chồng chập 20%) để phát hiện lỗi vi mô
+  trên ảnh độ phân giải siêu cao (5328x3000).
+- Ánh xạ tọa độ từ ô cắt về ảnh gốc, đo độ trễ chi tiết từng giai đoạn
+  (Preprocess, Inference, Postprocess), đo tốc độ khung hình (FPS) và tổng hợp
+  kết quả phân loại 5 phân lớp khuyết tật.
 - Hỗ trợ các mô hình: YOLO26m (Ultralytics), D-FINE-M, FBDNet-M và Heterogeneous Triad WBF.
 """
 
@@ -210,7 +212,9 @@ def get_roi_crop(pil_img: Image.Image) -> tuple[Image.Image, tuple[int, int, int
 def compute_slice_intervals(
     total_dim: int, slice_dim: int = 960, overlap_ratio: float = 0.20
 ) -> list[tuple[int, int]]:
-    """Tính toán danh sách các khoảng cắt ô trượt 1 chiều phủ kín kích thước ảnh với độ chồng chập."""
+    """Tính toán danh sách các khoảng cắt ô trượt 1 chiều phủ kín
+    kích thước ảnh với độ chồng chập.
+    """
     if total_dim <= 0 or slice_dim < 320 or not 0 <= overlap_ratio <= 0.5:
         raise ValueError("Invalid tile geometry")
     if total_dim <= slice_dim:

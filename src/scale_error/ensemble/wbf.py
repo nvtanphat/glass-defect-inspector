@@ -1,4 +1,5 @@
-"""Hợp nhất Hộp có Trọng số (Weighted Boxes Fusion - WBF) và Hiệu chuẩn Điểm tin cậy cho Kiểm tra Khuyết tật Kính.
+"""Hợp nhất Hộp có Trọng số (Weighted Boxes Fusion - WBF)
+và Hiệu chuẩn Điểm tin cậy cho Kiểm tra Khuyết tật Kính.
 
 Cài đặt thuật toán Weighted Boxes Fusion (WBF) thuần NumPy/Python tối ưu cho:
 - Khuyết tật kích thước cực nhỏ (DiVat < 16x16 px).
@@ -106,7 +107,9 @@ DEFAULT_APEX_HYPERPARAMS = DEFAULT_OPTIMAL_HYPERPARAMS
 
 
 def compute_iou_matrix(boxes_a: np.ndarray, boxes_b: np.ndarray) -> np.ndarray:
-    """Tính ma trận chỉ số tương đồng IoU giữa hai tập hợp bounding box định dạng [x1, y1, x2, y2]."""
+    """Tính ma trận chỉ số tương đồng IoU giữa hai tập hợp bounding box
+    định dạng [x1, y1, x2, y2].
+    """
     if len(boxes_a) == 0 or len(boxes_b) == 0:
         return np.zeros((len(boxes_a), len(boxes_b)), dtype=np.float32)
 

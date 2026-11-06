@@ -1,8 +1,10 @@
-"""Khối Lọc và Hợp nhất Đặc trưng Đa tầng Dày đặc (Dense Cross-scale Feature Screening / Fusion Block - DCFSB).
+"""Khối Lọc và Hợp nhất Đặc trưng Đa tầng Dày đặc
+(Dense Cross-scale Feature Screening / Fusion Block - DCFSB).
 
 Thiết kế lấy cảm hứng từ FBDNet, đặt tại các tầng hợp nhất đa tỉ lệ FPN/PAN.
 Mục tiêu cốt lõi:
-- Ngăn ngừa tín hiệu khuyết tật cực nhỏ (DiVat, DiVatLoiLom) bị lấn át hoặc dập tắt bởi các đặc trưng nền có độ tương phản cao trong quá trình kết hợp đặc trưng đa tầng.
+- Ngăn ngừa tín hiệu khuyết tật cực nhỏ (DiVat, DiVatLoiLom) bị lấn át hoặc dập tắt bởi các
+  đặc trưng nền có độ tương phản cao trong quá trình kết hợp đặc trưng đa tầng.
 - Trích xuất độ tương phản cục bộ qua unsharp masking.
 - Khám phá trường tiếp nhận đa kích thước qua tích chập giãn (dilated depthwise convolutions).
 """

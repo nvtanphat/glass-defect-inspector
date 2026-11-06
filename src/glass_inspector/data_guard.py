@@ -19,7 +19,8 @@ from PIL import Image
 MIN_BRIGHTNESS = 35.0  # Dưới ngưỡng này ảnh quá tối, chi tiết khuyết tật chìm vào bóng đen
 MAX_BRIGHTNESS = 225.0  # Trên ngưỡng này ảnh bị lóa sáng quang học, biên trầy xước bị mất
 MIN_CONTRAST = 18.0  # Độ lệch chuẩn tối thiểu của các điểm ảnh xám
-MIN_SHARPNESS = 45.0  # Ngưỡng phương sai Laplacian; thấp hơn biểu hiện mờ nhòe do rung máy hoặc mất nét
+# Ngưỡng phương sai Laplacian; thấp hơn biểu hiện mờ nhòe do rung máy hoặc mất nét
+MIN_SHARPNESS = 45.0
 
 
 def analyze_image_quality(
@@ -95,24 +96,28 @@ def analyze_image_quality(
 
     if mean_brightness < min_brightness:
         warnings.append(
-            f"Image is under-exposed / Ảnh thiếu sáng (độ sáng {mean_brightness:.1f} < {min_brightness}). "
+            f"Image is under-exposed / Ảnh thiếu sáng "
+            f"(độ sáng {mean_brightness:.1f} < {min_brightness}). "
             "Các vết trầy xước trong vùng tối có thể bị bỏ sót."
         )
     elif mean_brightness > max_brightness:
         warnings.append(
-            f"Image is over-exposed / Ảnh thừa sáng chói lóa (độ sáng {mean_brightness:.1f} > {max_brightness}). "
+            f"Image is over-exposed / Ảnh thừa sáng chói lóa "
+            f"(độ sáng {mean_brightness:.1f} > {max_brightness}). "
             "Vùng phản xạ gương có thể gây báo động giả."
         )
 
     if contrast_std < min_contrast:
         warnings.append(
-            f"Low contrast detected / Độ tương phản thấp (độ tương phản {contrast_std:.1f} < {min_contrast}). "
+            f"Low contrast detected / Độ tương phản thấp "
+            f"(độ tương phản {contrast_std:.1f} < {min_contrast}). "
             "Biên phân cách giữa khuyết tật và bề mặt thủy tinh không rõ ràng."
         )
 
     if sharpness < min_sharpness:
         warnings.append(
-            f"Image appears blurry / Ảnh bị mờ nhòe (chỉ số sắc nét {sharpness:.1f} < {min_sharpness})."
+            f"Image appears blurry / Ảnh bị mờ nhòe "
+            f"(chỉ số sắc nét {sharpness:.1f} < {min_sharpness})."
         )
 
     # Xác định trạng thái cổng kiểm định chất lượng
@@ -121,7 +126,8 @@ def analyze_image_quality(
         is_acceptable = True
     else:
         status = "WARNING"
-        is_acceptable = True  # Cảnh báo không chặn suy luận nhưng được ghi nhận vào nhật ký kiểm toán
+        # Cảnh báo không chặn suy luận nhưng được ghi nhận vào nhật ký kiểm toán
+        is_acceptable = True
 
     return {
         "is_acceptable": is_acceptable,

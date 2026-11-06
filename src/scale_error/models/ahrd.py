@@ -9,7 +9,8 @@ Giả thuyết thiết kế:
         G = sigmoid(Conv([D, Up(S)]))
         D_gated = G * D
     để lọc chọn lọc nhiễu nền thủy tinh trong khi giữ lại các cạnh khuyết tật mức sub-pixel,
-    sau đó hợp nhất D_gated vào đặc trưng P3 độ phân giải cao thông qua kết nối phần dư với hệ số alpha học được.
+    sau đó hợp nhất D_gated vào đặc trưng P3 độ phân giải cao thông qua kết nối phần dư
+    với hệ số alpha học được.
 """
 
 from __future__ import annotations

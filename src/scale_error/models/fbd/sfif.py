@@ -3,7 +3,8 @@
 Thiết kế lấy cảm hứng từ FBDNet, tích hợp ngay sau tầng chiếu đầu vào (hidden_dim=256).
 Mô-đun kết hợp:
 - Nhánh không gian (Spatial branch): Tích chập cục bộ nắm bắt hình thái biên cạnh.
-- Nhánh tần số (Frequency branch): Biến đổi Fourier 2D (2D-FFT) phân tích phổ tần số để phân tách tín hiệu khuyết tật cực nhỏ khỏi nhiễu nền tần số cao.
+- Nhánh tần số (Frequency branch): Biến đổi Fourier 2D (2D-FFT) phân tích phổ tần số
+  để phân tách tín hiệu khuyết tật cực nhỏ khỏi nhiễu nền tần số cao.
 - Cổng tương tác chéo (Interactive cross-gating): Điều chế hai chiều giữa không gian và tần số.
 """
 
@@ -34,7 +35,8 @@ class SFIF(nn.Module):
             nn.BatchNorm2d(channels),
         )
 
-        # 2. Nhánh tần số: Tích chập 1x1 trên biểu diễn phổ phức (Phần thực + Phần ảo nối kênh thành 2*channels)
+        # 2. Nhánh tần số: Tích chập 1x1 trên biểu diễn phổ phức
+        # (Phần thực + Phần ảo nối kênh thành 2*channels)
         self.freq_conv = nn.Sequential(
             nn.Conv2d(channels * 2, channels * 2, kernel_size=1, bias=False),
             nn.BatchNorm2d(channels * 2),
@@ -79,7 +81,8 @@ class SFIF(nn.Module):
         x_s = self.spatial_branch(x)
 
         # --- Nhánh tần số qua biến đổi 2D Real FFT ---
-        # cuFFT yêu cầu float32 đối với các kích thước không phải lũy thừa của 2 (ví dụ: 120, 60, 30)
+        # cuFFT yêu cầu float32 đối với các kích thước không phải lũy thừa của 2
+        # (ví dụ: 120, 60, 30)
         with torch.amp.autocast(device_type=x.device.type if x.is_cuda else "cpu", enabled=False):
             x_fp32 = x.float()
             x_fft = torch.fft.rfft2(x_fp32, norm="ortho")

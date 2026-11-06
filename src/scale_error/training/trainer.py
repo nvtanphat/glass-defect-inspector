@@ -18,7 +18,9 @@ from scale_error.training.losses import VFLDetectionLoss, compute_class_weights
 
 
 def _attach_vfl_criterion(class_weights):
-    """Xây dựng callback on_train_start để thay thế hàm mất mát mặc định bằng Varifocal Loss + trọng số lớp."""
+    """Xây dựng callback on_train_start để thay thế hàm mất mát mặc định
+    bằng Varifocal Loss + trọng số lớp.
+    """
 
     def _callback(trainer) -> None:
         det_model = trainer.model
@@ -82,7 +84,9 @@ def train(
         if roi_config_path is not None and not roi_config_path.is_absolute():
             roi_config_path = config_path.parent.parent / roi_config_path
         if roi_config_path is None or not roi_config_path.exists():
-            raise FileNotFoundError("Chế độ preprocessing=roi_crop yêu cầu file cấu hình roi_config tồn tại.")
+            raise FileNotFoundError(
+                "Chế độ preprocessing=roi_crop yêu cầu file cấu hình roi_config tồn tại."
+            )
     elif roi_config is not None:
         raise ValueError("roi_config chỉ hợp lệ khi bật preprocessing=roi_crop.")
 

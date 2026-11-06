@@ -3,7 +3,8 @@
 Bao gồm:
 - compute_smooth_class_weights: Tính trọng số phân lớp làm mịn (căn bậc hai nghịch đảo tần số)
   nhằm chống mất cân bằng lớp mà không gây nổ gradient.
-- make_vfl_loss_elements: Cài đặt tổn thất Varifocal Loss (VFL) với trọng số lớp theo từng pixel/anchor.
+- make_vfl_loss_elements: Cài đặt tổn thất Varifocal Loss (VFL) với trọng số lớp
+  theo từng pixel/anchor.
 - ConfidenceWeightedVFLLoss: Lớp bọc tích hợp trực tiếp vào Ultralytics YOLO26/v8 criterion.
 """
 
@@ -36,7 +37,8 @@ def compute_smooth_class_weights(
         max_weight: Ngưỡng chặn trên của trọng số (mặc định: 2.5).
 
     Trả về:
-        torch.Tensor kích thước (num_classes,) chứa trọng số phân lớp đã chuẩn hóa về trung bình 1.0.
+        torch.Tensor kích thước (num_classes,) chứa trọng số phân lớp đã chuẩn hóa về
+        trung bình 1.0.
     """
     counts = [0] * num_classes
     if isinstance(class_counts, dict):
@@ -72,8 +74,8 @@ def make_vfl_loss_elements(
 
     Định nghĩa toán học của Varifocal Loss:
         VFL(p, q) =
-            - q * log(p)                           nếu q > 0 (vùng tiền cảnh, q là điểm IoU mục tiêu)
-            - alpha * p^gamma * log(1 - p)         nếu q == 0 (vùng hậu cảnh, phạt âm tính giả)
+            - q * log(p)                   nếu q > 0 (vùng tiền cảnh, q là điểm IoU mục tiêu)
+            - alpha * p^gamma * log(1 - p) nếu q == 0 (vùng hậu cảnh, phạt âm tính giả)
     """
     dtype = pred_scores.dtype
     target_scores_typed = target_scores.to(dtype)
@@ -121,7 +123,9 @@ class ConfidenceWeightedVFLLoss:
         self.gamma = gamma
 
     def create_criterion_callback(self) -> Any:
-        """Tạo callback cho Ultralytics Trainer để thay thế hàm mất mát phân loại mặc định bằng VFL."""
+        """Tạo callback cho Ultralytics Trainer để thay thế hàm mất mát phân loại
+        mặc định bằng VFL.
+        """
         cw = self.class_weights
         alpha = self.alpha
         gamma = self.gamma

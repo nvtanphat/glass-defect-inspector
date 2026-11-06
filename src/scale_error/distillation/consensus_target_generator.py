@@ -1,9 +1,11 @@
-"""Tổng hợp nhãn đồng thuận (Consensus Target) và tinh chỉnh biên sub-pixel cho chưng cất tri thức (Knowledge Distillation).
+"""Tổng hợp nhãn đồng thuận (Consensus Target) và tinh chỉnh biên sub-pixel
+cho chưng cất tri thức (Knowledge Distillation).
 
 Bộ sinh nhãn mềm kết hợp dự đoán từ Teacher Ensemble (Triad WBF) với nhãn cứng Ground Truth:
 - Bổ sung các khuyết tật vi mô tiềm ẩn bị người gán nhãn bỏ sót (Discovery Targets).
 - Tinh chỉnh biên độ tọa độ chính xác cao mức sub-pixel: 0.5 * GT + 0.5 * Teacher.
-- Huấn luyện mô hình học sinh (Student YOLO26m) đạt hiệu năng cao vượt trội (+0.92% mAP) với độ trễ chỉ 20.7ms (48.3 FPS).
+- Huấn luyện mô hình học sinh (Student YOLO26m) đạt hiệu năng cao vượt trội (+0.92% mAP)
+  với độ trễ chỉ 20.7ms (48.3 FPS).
 """
 
 from __future__ import annotations

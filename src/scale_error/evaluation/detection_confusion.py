@@ -1,4 +1,5 @@
-"""Ma trận nhầm lẫn phát hiện đối tượng: Hàng là nhãn thực tế (Ground Truth), cột là dự đoán (Predictions).
+"""Ma trận nhầm lẫn phát hiện đối tượng: Hàng là nhãn thực tế (Ground Truth),
+cột là dự đoán (Predictions).
 
 Xử lý triệt để:
 - True Positive (TP): Dự đoán đúng phân lớp và IoU >= ngưỡng.
@@ -27,10 +28,11 @@ def box_iou_xywh(boxes_a, boxes_b):
 
 
 def detection_confusion(images, annotations, predictions, nc=5, confidence=0.5, iou=0.5):
-    """Ghép cặp IoU cao nhất một lần duy nhất, bất kể phân lớp, để lỗi phân lớp luôn hiển thị rõ ràng.
+    """Ghép cặp IoU cao nhất một lần duy nhất, bất kể phân lớp, để lỗi phân lớp
+    luôn hiển thị rõ ràng.
 
-    Hộp nhãn thực không khớp chiếm cột background (cột nc); hộp dự đoán không khớp chiếm hàng background (hàng nc).
-    Ô background/background luôn bằng 0.
+    Hộp nhãn thực không khớp chiếm cột background (cột nc); hộp dự đoán không khớp
+    chiếm hàng background (hàng nc). Ô background/background luôn bằng 0.
     """
     if not 0 <= confidence <= 1 or not 0 <= iou <= 1:
         raise ValueError("Các ngưỡng phải nằm trong khoảng [0, 1]")

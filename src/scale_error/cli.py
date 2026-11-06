@@ -36,13 +36,17 @@ def build_parser() -> argparse.ArgumentParser:
     prepare.add_argument("--workspace", default="datacpn", help="Workspace trên Roboflow")
     prepare.add_argument("--project", default="scale_error_dc-orqpx", help="Tên project Roboflow")
     prepare.add_argument("--version", type=int, default=26, help="Phiên bản dataset trên Roboflow")
-    prepare.add_argument("--split-output", default="data/processed", help="Thư mục lưu dữ liệu sau phân chia")
+    prepare.add_argument(
+        "--split-output", default="data/processed", help="Thư mục lưu dữ liệu sau phân chia"
+    )
 
     # 2. Lệnh huấn luyện mô hình Ultralytics (train)
     tr = sub.add_parser("train", help="Huấn luyện YOLO26m / YOLO11m / RT-DETR-L (Ultralytics)")
     tr.add_argument("--data", required=True, help="Đường dẫn file data.yaml")
     tr.add_argument("--config", required=True, help="Đường dẫn file cấu hình huấn luyện (.yaml)")
-    tr.add_argument("--project-dir", default="artifacts/runs", help="Thư mục lưu kết quả huấn luyện")
+    tr.add_argument(
+        "--project-dir", default="artifacts/runs", help="Thư mục lưu kết quả huấn luyện"
+    )
     tr.add_argument(
         "--dataset-report",
         default=None,
@@ -58,25 +62,35 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Đường dẫn trọng số tiền huấn luyện (ví dụ: dfine_m_coco.pth)",
     )
-    tr_dfine.add_argument("--output-dir", default="artifacts/runs/dfine_m", help="Thư mục lưu checkpoint")
+    tr_dfine.add_argument(
+        "--output-dir", default="artifacts/runs/dfine_m", help="Thư mục lưu checkpoint"
+    )
     tr_dfine.add_argument("--epochs", type=int, default=100, help="Số epoch huấn luyện")
     tr_dfine.add_argument("--eval-size", type=int, default=960, help="Kích thước ảnh đánh giá")
     tr_dfine.add_argument("--batch-size", type=int, default=4, help="Kích thước batch size")
-    tr_dfine.add_argument("--resume", default=None, help="Đường dẫn checkpoint để tiếp tục huấn luyện")
+    tr_dfine.add_argument(
+        "--resume", default=None, help="Đường dẫn checkpoint để tiếp tục huấn luyện"
+    )
 
     # 4. Lệnh đánh giá mô hình Ultralytics (evaluate)
     ev = sub.add_parser("evaluate", help="Đánh giá mô hình YOLO26m / YOLO11m / RT-DETR-L")
     ev.add_argument("--weights", required=True, help="Đường dẫn file trọng số (.pt)")
     ev.add_argument("--data", required=True, help="Đường dẫn file data.yaml")
-    ev.add_argument("--output", default="artifacts/evaluation/metrics.json", help="File JSON xuất kết quả")
-    ev.add_argument("--nms-free", action="store_true", help="Bỏ qua NMS đối với các mô hình NMS-free")
+    ev.add_argument(
+        "--output", default="artifacts/evaluation/metrics.json", help="File JSON xuất kết quả"
+    )
+    ev.add_argument(
+        "--nms-free", action="store_true", help="Bỏ qua NMS đối với các mô hình NMS-free"
+    )
 
     # 5. Lệnh đánh giá mô hình D-FINE-M (evaluate-dfine)
     ev_dfine = sub.add_parser("evaluate-dfine", help="Đánh giá mô hình D-FINE-M / FBDNet-M")
     ev_dfine.add_argument("--weights", required=True, help="Đường dẫn file trọng số best.pth")
     ev_dfine.add_argument("--dfine-repo", required=True, help="Đường dẫn mã nguồn D-FINE")
     ev_dfine.add_argument("--data", required=True, help="Đường dẫn file runtime_data.yaml")
-    ev_dfine.add_argument("--output", default="artifacts/evaluation/metrics_dfine.json", help="File xuất kết quả")
+    ev_dfine.add_argument(
+        "--output", default="artifacts/evaluation/metrics_dfine.json", help="File xuất kết quả"
+    )
     ev_dfine.add_argument("--eval-size", type=int, default=960, help="Kích thước ảnh đánh giá")
     ev_dfine.add_argument("--device", default="0", help="Chỉ số thiết bị GPU (0, 1, ... hoặc cpu)")
 
@@ -84,7 +98,9 @@ def build_parser() -> argparse.ArgumentParser:
     pr = sub.add_parser("predict", help="Suy luận phát hiện khuyết tật trên ảnh mới")
     pr.add_argument("--weights", required=True, help="Đường dẫn file trọng số mô hình")
     pr.add_argument("--source", required=True, help="Đường dẫn ảnh nguồn hoặc thư mục ảnh")
-    pr.add_argument("--output", default="artifacts/predictions", help="Thư mục lưu ảnh đã vẽ bounding box")
+    pr.add_argument(
+        "--output", default="artifacts/predictions", help="Thư mục lưu ảnh đã vẽ bounding box"
+    )
     pr.add_argument("--nms-free", action="store_true", help="Bỏ qua NMS đối với mô hình NMS-free")
 
     return p
