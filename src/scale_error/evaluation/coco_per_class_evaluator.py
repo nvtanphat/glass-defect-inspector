@@ -1,11 +1,9 @@
-"""Per-Class COCO Evaluator for Object Detection.
+"""Bộ đánh giá độ chính xác COCO chi tiết theo từng phân lớp khuyết tật (Per-Class COCO Evaluator).
 
-Computes:
-- Overall: mAP50:95, mAP50, mAP75, AP_small, AP_medium, AP_large
-- Per-class: AP50:95, AP50, AP75, Recall
-- Confusion / detection statistics
-
-Works seamlessly with pycocotools / faster_coco_eval.
+Tính toán các chỉ số:
+- Tổng thể: mAP@50:95, mAP@50, mAP@75, AP_small, AP_medium, AP_large, AR_small
+- Từng phân lớp: AP@50:95, AP@50, AP@75, AP_small, Recall
+- Tương thích hoàn toàn với pycocotools và faster_coco_eval.
 """
 
 from __future__ import annotations
@@ -16,7 +14,6 @@ from typing import Any
 
 import numpy as np
 
-
 CLASS_NAMES_DEFAULT = ["DiVat", "DiVatLoiLom", "LoiChi", "LoiNhua", "LoiTray"]
 
 
@@ -26,17 +23,17 @@ def evaluate_coco_predictions(
     class_names: list[str] = CLASS_NAMES_DEFAULT,
     output_json_path: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Evaluate bounding box predictions against a COCO ground-truth JSON file.
+    """Đánh giá các dự đoán bounding box đối chiếu với file JSON nhãn Ground Truth chuẩn COCO.
 
-    Args:
-        gt_json_path: Path to COCO ground truth JSON file.
-        predictions: List of dicts, each with keys:
+    Tham số:
+        gt_json_path: Đường dẫn tới file JSON ground truth chuẩn COCO.
+        predictions: Danh sách các từ điển dự đoán gồm các khóa:
             ['image_id', 'category_id', 'bbox' (x, y, w, h), 'score']
-        class_names: List of class names ordered by category id.
-        output_json_path: Optional path to save evaluation metrics JSON.
+        class_names: Danh sách tên lớp sắp xếp theo thứ tự ID (0 đến 4).
+        output_json_path: Đường dẫn tùy chọn để lưu file kết quả JSON.
 
-    Returns:
-        Structured dictionary containing overall and per-class metrics.
+    Trả về:
+        dict: Chứa đầy đủ các chỉ số mAP tổng quan và chi tiết từng lớp khuyết tật.
     """
     try:
         from faster_coco_eval import COCO, COCOeval
@@ -45,13 +42,13 @@ def evaluate_coco_predictions(
             from pycocotools.coco import COCO
             from pycocotools.cocoeval import COCOeval
         except ImportError:
-            raise ImportError("Neither faster_coco_eval nor pycocotools is installed.")
+            raise ImportError("Yêu cầu cài đặt faster_coco_eval hoặc pycocotools.")
 
     gt_json_path = str(Path(gt_json_path).resolve())
     coco_gt = COCO(gt_json_path)
 
     if not predictions:
-        print("[Evaluator] Warning: predictions list is empty.")
+        print("[Evaluator] Cảnh báo: Danh sách dự đoán rỗng.")
         empty_metrics = {
             "mAP50_95": 0.0,
             "mAP50": 0.0,
@@ -69,25 +66,22 @@ def evaluate_coco_predictions(
             Path(output_json_path).write_text(json.dumps(empty_metrics, indent=2), encoding="utf-8")
         return empty_metrics
 
+    # Nạp kết quả dự đoán và khởi tạo đối tượng đánh giá COCOeval
     coco_dt = coco_gt.loadRes(predictions)
     coco_eval = COCOeval(coco_gt, coco_dt, "bbox")
     coco_eval.evaluate()
     coco_eval.accumulate()
     coco_eval.summarize()
 
-    # coco_eval.stats:
-    # 0: AP @ IoU=0.50:0.95, area=all, maxDets=100
-    # 1: AP @ IoU=0.50, area=all, maxDets=100
-    # 2: AP @ IoU=0.75, area=all, maxDets=100
-    # 3: AP @ IoU=0.50:0.95, area=small, maxDets=100
-    # 4: AP @ IoU=0.50:0.95, area=medium, maxDets=100
-    # 5: AP @ IoU=0.50:0.95, area=large, maxDets=100
-    # 6: AR @ IoU=0.50:0.95, area=all, maxDets=1
-    # 7: AR @ IoU=0.50:0.95, area=all, maxDets=10
-    # 8: AR @ IoU=0.50:0.95, area=all, maxDets=100
-    # 9: AR @ IoU=0.50:0.95, area=small, maxDets=100
-    # 10: AR @ IoU=0.50:0.95, area=medium, maxDets=100
-    # 11: AR @ IoU=0.50:0.95, area=large, maxDets=100
+    # Thống kê tổng hợp coco_eval.stats:
+    # 0: AP @ IoU=0.50:0.95 (tất cả quy mô)
+    # 1: AP @ IoU=0.50 (tất cả quy mô)
+    # 2: AP @ IoU=0.75 (tất cả quy mô)
+    # 3: AP @ IoU=0.50:0.95 (vật thể nhỏ: diện tích < 32^2 px)
+    # 4: AP @ IoU=0.50:0.95 (vật thể vừa: 32^2 <= diện tích < 96^2 px)
+    # 5: AP @ IoU=0.50:0.95 (vật thể lớn: diện tích >= 96^2 px)
+    # 8: AR @ IoU=0.50:0.95 (Recall trung bình)
+    # 9: AR @ IoU=0.50:0.95 (Recall vật thể nhỏ)
     stats = coco_eval.stats
 
     overall_metrics = {
@@ -103,42 +97,36 @@ def evaluate_coco_predictions(
         "AR_large": round(float(stats[11]) * 100, 2) if stats[11] >= 0 else 0.0,
     }
 
-    # Extract per-class AP from precision array:
-    # precision shape: [T, R, K, A, M]
-    # T: 10 IoU thresholds [0.50, 0.55, ..., 0.95]
-    # R: 101 recall thresholds [0.0, 0.01, ..., 1.0]
-    # K: categories
-    # A: 4 area ranges [all, small, medium, large]
-    # M: 3 maxDets [1, 10, 100]
-    prec = coco_eval.eval["precision"]  # numpy ndarray
-    rec = coco_eval.eval["recall"]  # numpy ndarray [T, K, A, M]
+    # Trích xuất AP từng phân lớp từ mảng precision [T, R, K, A, M]
+    prec = coco_eval.eval["precision"]
+    rec = coco_eval.eval["recall"]
     cat_ids = coco_eval.params.catIds
 
     per_class_metrics = {}
     for k_idx, cat_id in enumerate(cat_ids):
         cat_name = class_names[cat_id] if cat_id < len(class_names) else f"class_{cat_id}"
 
-        # AP 50:95 (all areas, maxDets=100)
+        # AP 50:95 (toàn bộ diện tích)
         p_all_thresh = prec[:, :, k_idx, 0, -1]
         valid_p = p_all_thresh[p_all_thresh >= 0]
         ap_50_95 = float(np.mean(valid_p)) * 100 if len(valid_p) > 0 else 0.0
 
-        # AP 50 (IoU index 0)
+        # AP 50 (ngưỡng IoU = 0.50)
         p_50 = prec[0, :, k_idx, 0, -1]
         valid_p50 = p_50[p_50 >= 0]
         ap_50 = float(np.mean(valid_p50)) * 100 if len(valid_p50) > 0 else 0.0
 
-        # AP 75 (IoU index 5)
+        # AP 75 (ngưỡng IoU = 0.75)
         p_75 = prec[5, :, k_idx, 0, -1]
         valid_p75 = p_75[p_75 >= 0]
         ap_75 = float(np.mean(valid_p75)) * 100 if len(valid_p75) > 0 else 0.0
 
-        # Recall (max recall across IoUs for maxDets=100)
+        # Độ thu hồi (Recall)
         r_all = rec[:, k_idx, 0, -1]
         valid_r = r_all[r_all >= 0]
         recall = float(np.mean(valid_r)) * 100 if len(valid_r) > 0 else 0.0
 
-        # AP small (area index 1)
+        # AP cho khuyết tật nhỏ (diện tích mức small)
         p_small = prec[:, :, k_idx, 1, -1]
         valid_psmall = p_small[p_small >= 0]
         ap_small = float(np.mean(valid_psmall)) * 100 if len(valid_psmall) > 0 else 0.0
@@ -161,6 +149,6 @@ def evaluate_coco_predictions(
         out_p = Path(output_json_path)
         out_p.parent.mkdir(parents=True, exist_ok=True)
         out_p.write_text(json.dumps(full_results, indent=2), encoding="utf-8")
-        print(f"[Evaluator] Saved comprehensive COCO metrics to: {out_p}")
+        print(f"[Evaluator] Đã lưu báo cáo COCO mAP chi tiết tại: {out_p}")
 
     return full_results

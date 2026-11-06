@@ -1,13 +1,13 @@
-"""Scientific Experiment Modules for D-FINE Glass Defect Detection.
+"""Các mô-đun thử nghiệm khoa học cho phát hiện khuyết tật kính D-FINE / FBDNet.
 
-Modules:
-- E1: P2FusionModule (High-resolution shallow spatial feature fusion)
-- E2: FrequencyAwareFusionModule (Local high-frequency decomposition & gating)
-- E3: P2FrequencyFusionModule (Unified P2 + Frequency-aware feature encoder)
-- E4: LongTailBalancedSampler (Annotation-driven instance & image balanced sampling)
+Bao gồm:
+- E1: P2FusionModule (Hợp nhất đặc trưng không gian nông độ phân giải cao P2 sang P3)
+- E2: FrequencyAwareFusionModule (Phân tách tần số cao cục bộ và điều chế qua cổng)
+- E3: P2FrequencyFusionModule (Bộ mã hóa tích hợp P2 và đặc trưng nhận biết tần số)
+- E4: LongTailBalancedSampler (Bộ lấy mẫu cân bằng theo phân bố nhãn thiểu số long-tail)
 
-Designed to be lightweight, mathematically sound, with identity initialization
-(alpha=0) to prevent early training disruption of pretrained weights.
+Thiết kế gọn nhẹ, vững chắc về mặt toán học, khởi tạo dạng đồng nhất (alpha=0.0)
+để không gây xáo trộn trọng số tiền huấn luyện trong các epoch đầu.
 """
 
 from __future__ import annotations
@@ -23,18 +23,17 @@ from torch.utils.data import Sampler
 
 
 class P2FusionModule(nn.Module):
-    """E1: Lightweight P2-to-P3 Fusion Module.
+    """E1: Mô-đun hợp nhất nhẹ nhàng từ P2 sang P3.
 
-    Hypothesis:
-        P3 (stride 8, 120x120 @960) loses sub-pixel spatial detail critical
-        for tiny glass scratches (LoiTray) and cracks (LoiChi).
-        P2 (stride 4, 240x240, 96 ch) retains fine boundaries.
+    Giả thuyết:
+        P3 (stride 8, kích thước 120x120 tại ảnh 960) bị mất chi tiết không gian sub-pixel quan trọng
+        cho các vết trầy xước mảnh (LoiTray) và vết nứt sợi (LoiChi).
+        P2 (stride 4, 240x240, 96 kênh) giữ trọn vẹn các đường biên vi mô.
 
-    Architecture:
-        - Downsamples P2 to stride 8 using Depthwise-Separable Conv (k=3, s=2).
-        - Projects P2 channels (96 -> 384) to match P3.
-        - Gated fusion with learnable alpha (init=0.0).
-        - Preserves exact 384-channel output for downstream HybridEncoder compatibility.
+    Kiến trúc:
+        - Giảm mẫu P2 về stride 8 bằng tích chập Depthwise-Separable (k=3, s=2).
+        - Chiếu số kênh P2 từ 96 lên 384 để khớp với P3.
+        - Hợp nhất có cổng gating với hệ số alpha học được (khởi tạo 0.0).
     """
 
     def __init__(self, in_p2: int = 96, in_p3: int = 384, out_channels: int = 384):
@@ -43,7 +42,7 @@ class P2FusionModule(nn.Module):
         self.in_p3 = in_p3
         self.out_channels = out_channels
 
-        # Lightweight stride-2 depthwise separable convolution
+        # Tích chập Depthwise-Separable stride-2 giảm mẫu nhẹ
         self.downsample = nn.Sequential(
             nn.Conv2d(in_p2, in_p2, kernel_size=3, stride=2, padding=1, groups=in_p2, bias=False),
             nn.BatchNorm2d(in_p2),
@@ -52,7 +51,7 @@ class P2FusionModule(nn.Module):
             nn.BatchNorm2d(in_p3),
         )
 
-        # Gated fusion to learn which spatial details from P2 should be preserved
+        # Cổng điều khiển hợp nhất để học chi tiết không gian nào từ P2 cần được giữ lại
         self.gate = nn.Sequential(
             nn.Conv2d(in_p3 * 2, in_p3, kernel_size=1, bias=False),
             nn.BatchNorm2d(in_p3),
@@ -65,43 +64,27 @@ class P2FusionModule(nn.Module):
             nn.SiLU(inplace=True),
         )
 
-        # Learnable residual weight initialized to 0.0 (identity at start)
+        # Hệ số phần dư khởi tạo 0.0 (tương đương ánh xạ đồng nhất ở đầu quá trình huấn luyện)
         self.alpha = nn.Parameter(torch.zeros(1))
 
     def forward(self, p2: torch.Tensor, p3: torch.Tensor) -> torch.Tensor:
-        """Forward pass.
-
-        Args:
-            p2: Tensor of shape [B, 96, H/4, W/4]
-            p3: Tensor of shape [B, 384, H/8, W/8]
-
-        Returns:
-            fused_p3: Tensor of shape [B, 384, H/8, W/8]
-        """
-        # Downsample P2 to match P3 resolution: [B, 96, H/4, W/4] -> [B, 384, H/8, W/8]
+        """Lan truyền tiến: Hợp nhất P2 vào P3."""
+        # Giảm mẫu P2 để khớp kích thước phân giải của P3: [B, 96, H/4, W/4] -> [B, 384, H/8, W/8]
         p2_ds = self.downsample(p2)
 
-        # Gated fusion
+        # Hợp nhất qua cổng gating
         g = self.gate(torch.cat([p3, p2_ds], dim=1))
         fused = p3 + self.alpha * (g * p2_ds)
         return self.proj_out(fused)
 
 
 class FrequencyAwareFusionModule(nn.Module):
-    """E2: Lightweight Frequency-Aware Feature Refinement.
+    """E2: Mô-đun tinh chỉnh đặc trưng nhận biết miền tần số (Frequency-Aware Feature Refinement).
 
-    Hypothesis:
-        Glass bottle images contain pronounced high-frequency non-defect signals
-        (reflections, illumination glares, molded ring edges). Both scratches
-        and cracks are also high-frequency.
-        A frequency-aware gate selectively attenuates background glass high frequencies
-        while enhancing defect edges.
-
-    Mechanism:
-        low = LocalLowPass(x) (via 3x3 average pooling)
-        high = x - low
-        gate = Sigmoid(Conv1x1(concat([x, high])))
-        out = x + alpha * (gate * high)
+    Giả thuyết:
+        Ảnh bề mặt chai thủy tinh chứa các tín hiệu tần số cao không phải lỗi (vết chói, phản chiếu, vân gá).
+        Vết trầy và sợi chỉ cũng là tín hiệu tần số cao. Cổng nhận biết tần số sẽ chọn lọc triệt tiêu
+        nhiễu nền thủy tinh trong khi khuếch đại đường biên khuyết tật.
     """
 
     def __init__(self, channels: int = 384, kernel_size: int = 3):
@@ -116,11 +99,11 @@ class FrequencyAwareFusionModule(nn.Module):
             nn.Sigmoid(),
         )
 
-        # Learnable alpha initialized to 0.0
+        # Hệ số alpha học được khởi tạo 0.0
         self.alpha = nn.Parameter(torch.zeros(1))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Decompose x into low/high frequency and apply gated residual."""
+        """Phân rã x thành thành phần tần số thấp / cao và áp dụng cổng phần dư."""
         low = F.avg_pool2d(x, kernel_size=self.kernel_size, stride=1, padding=self.pad)
         high = x - low
         gate = self.gate_conv(torch.cat([x, high], dim=1))
@@ -128,12 +111,7 @@ class FrequencyAwareFusionModule(nn.Module):
 
 
 class P2FrequencyFusionModule(nn.Module):
-    """E3: Combined P2 High-Resolution and Frequency-Aware Refinement.
-
-    Hypothesis:
-        P2 injects fine boundary details, and Frequency-Aware gating separates
-        the injected defect details from glass background artifacts.
-    """
+    """E3: Kết hợp hợp nhất P2 độ phân giải cao và tinh chỉnh nhận biết tần số."""
 
     def __init__(self, in_p2: int = 96, in_p3: int = 384, out_channels: int = 384):
         super().__init__()
@@ -146,20 +124,12 @@ class P2FrequencyFusionModule(nn.Module):
 
 
 class LongTailBalancedSampler(Sampler[int]):
-    """E4: Long-Tail Balanced Sampler for Object Detection.
+    """E4: Bộ lấy mẫu cân bằng phân bố đuôi dài (Long-Tail Balanced Sampler).
 
-    Hypothesis:
-        Severe class imbalance (e.g. LoiChi >> LoiTray/LoiNhua) causes gradients
-        to be dominated by majority classes.
-        Sampling images with probability proportional to the inverse class
-        frequency of the rarest instance in the image improves minority class recall
-        without duplicating images on disk or increasing steps_per_epoch.
-
-    Formula:
-        Instance frequency: N_c = sum_{i} count(c in image_i)
-        Class weight: w_c = (max_k N_k / (N_c + 1)) ** gamma  (gamma in [0.2, 0.4])
-        Image weight: W_i = max_{c in image_i} w_c (smoothed)
-        P(image_i) = W_i / sum(W)
+    Giả thuyết:
+        Sự mất cân bằng lớp trầm trọng (LoiChi >> LoiTray/LoiNhua) khiến gradient bị chi phối bởi các lớp đa số.
+        Lấy mẫu ảnh với xác suất tỷ lệ thuận với nghịch đảo tần suất của vật thể hiếm nhất trong ảnh
+        giúp tăng cường độ thu hồi cho lớp thiểu số mà không cần nhân bản file ảnh trên đĩa.
     """
 
     def __init__(
@@ -170,21 +140,20 @@ class LongTailBalancedSampler(Sampler[int]):
         replacement: bool = True,
         seed: int = 42,
     ):
-        """Initialize the balanced sampler.
+        """Khởi tạo bộ lấy mẫu cân bằng.
 
-        Args:
-            image_annotations: List of list of category IDs for each image index.
-                E.g. [[2, 2], [0], [4], ...]
-            num_classes: Number of distinct classes.
-            gamma: Exponent smoothing parameter (0.0 = uniform, 1.0 = full inverse freq).
-            replacement: Whether to sample with replacement.
-            seed: Random seed.
+        Tham số:
+            image_annotations: Danh sách danh sách ID phân lớp cho từng ảnh index.
+            num_classes: Số lượng phân lớp (5).
+            gamma: Tham số làm mịn số mũ (0.0: phân bố đều, 1.0: nghịch đảo hoàn toàn).
+            replacement: Có hoàn lại sau khi lấy mẫu hay không.
+            seed: Hạt giống ngẫu nhiên.
         """
         self.num_samples = len(image_annotations)
         self.replacement = replacement
         self.seed = seed
 
-        # 1. Compute instance frequency per class
+        # 1. Tính tần suất xuất hiện instance của từng phân lớp
         class_counts = np.zeros(num_classes, dtype=np.int64)
         for labels in image_annotations:
             for l in labels:
@@ -194,7 +163,7 @@ class LongTailBalancedSampler(Sampler[int]):
         max_count = max(class_counts.max(), 1)
         class_weights = np.power(max_count / (class_counts + 1.0), gamma)
 
-        # 2. Assign weight to each image based on its rarest object
+        # 2. Gán trọng số cho từng ảnh dựa trên lớp hiếm nhất hiện diện trong ảnh
         image_weights = np.zeros(self.num_samples, dtype=np.float64)
         for i, labels in enumerate(image_annotations):
             if len(labels) == 0:
@@ -202,7 +171,7 @@ class LongTailBalancedSampler(Sampler[int]):
             else:
                 image_weights[i] = max(class_weights[l] for l in labels if 0 <= l < num_classes)
 
-        # Normalize to probability distribution
+        # Chuẩn hóa thành phân phối xác suất
         self.probabilities = image_weights / image_weights.sum()
         self.class_counts = class_counts.tolist()
         self.class_weights = class_weights.tolist()

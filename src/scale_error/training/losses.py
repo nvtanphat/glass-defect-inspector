@@ -1,21 +1,10 @@
-"""Varifocal Loss classification head + inverse-frequency class weights.
+"""Hàm mất mát phân lớp Varifocal Loss (VFL) kết hợp trọng số lớp nghịch đảo tần suất.
 
-Ultralytics' stock `v8DetectionLoss` scores classification with plain
-`BCEWithLogitsLoss`, treating every anchor/class pair symmetrically. This
-project's classes are heavily imbalanced (train split: LoiChi=5282 boxes vs
-LoiTray=249, DiVat=1300) and 59% of boxes cover under 0.25% of the image
-area, so the rare/small classes are underrepresented in the gradient signal.
-
-`VFLDetectionLoss` swaps that BCE term for `VarifocalLoss`
-(Zhang et al., https://arxiv.org/abs/2008.13367) using the same
-`(pred_scores, gt_scores, one_hot)` call signature Ultralytics' own
-RT-DETR criterion uses (ultralytics/models/utils/loss.py). `target_scores`
-from `TaskAlignedAssigner` is already the IoU-aware soft target VFL expects
-as `gt_score`; the positive/negative `label` mask is recovered as
-`target_scores > 0`.
-
-`compute_class_weights` derives per-class weights from real box counts in a
-dataset_report.json (see docs/FULL_DOCUMENTATION.md), not invented numbers.
+Hàm mất mát mặc định `v8DetectionLoss` của Ultralytics dùng `BCEWithLogitsLoss` đối xứng.
+Trong tập dữ liệu này, phân bố lớp cực kỳ mất cân bằng (LoiChi: 5282 hộp vs LoiTray: 249 hộp)
+và 59% số hộp có diện tích dưới 0.25% diện tích ảnh.
+`VFLDetectionLoss` thay thế nhánh phân loại bằng Varifocal Loss (Zhang et al.),
+sử dụng target_scores từ TaskAlignedAssigner làm nhãn mềm IoU.
 """
 
 from __future__ import annotations
@@ -28,7 +17,7 @@ from ultralytics.utils.loss import v8DetectionLoss
 
 
 class VFLDetectionLoss(v8DetectionLoss):
-    """v8DetectionLoss with per-class weighted VarifocalLoss classification."""
+    """Hàm mất mát v8DetectionLoss nâng cấp với Varifocal Loss và trọng số phân lớp."""
 
     def __init__(
         self,
@@ -46,6 +35,7 @@ class VFLDetectionLoss(v8DetectionLoss):
             self.class_weights = cw
 
     def get_assigned_targets_and_loss(self, preds, batch):
+        """Phân bổ mục tiêu (Task-Aligned Assigner) và tính toán tổng tổn thất (Box + VFL + DFL)."""
         loss = torch.zeros(3, device=self.device)
         pred_distri, pred_scores = (
             preds["boxes"].permute(0, 2, 1).contiguous(),
@@ -76,6 +66,7 @@ class VFLDetectionLoss(v8DetectionLoss):
 
         pred_bboxes = self.bbox_decode(anchor_points, pred_distri)
 
+        # Gán nhãn mục tiêu Task-Aligned Assigner (TAL)
         _, target_bboxes, target_scores, fg_mask, target_gt_idx = self.assigner(
             pred_scores.detach().sigmoid(),
             (pred_bboxes.detach() * stride_tensor).type(gt_bboxes.dtype),
@@ -87,13 +78,11 @@ class VFLDetectionLoss(v8DetectionLoss):
 
         target_scores_sum = max(target_scores.sum(), 1)
 
-        # Varifocal classification loss: target_scores is already the IoU-aware
-        # soft score (gt_score); the binary positive mask (one_hot label) is
-        # wherever that score is nonzero, matching ultralytics/models/utils/loss.py.
+        # Varifocal classification loss: target_scores là điểm IoU mềm
         target_scores_typed = target_scores.to(dtype)
         one_hot = (target_scores_typed > 0).to(dtype)
 
-        # Compute elementwise Varifocal Loss across [batch, num_anchors, num_classes]
+        # Tính toán Varifocal Loss theo từng phần tử
         vfl_weight = (
             self.alpha * pred_scores.sigmoid().pow(self.gamma) * (1 - one_hot)
             + target_scores_typed * one_hot
@@ -103,7 +92,7 @@ class VFLDetectionLoss(v8DetectionLoss):
         )
         cls_loss_elements = (bce * vfl_weight).to(dtype)
 
-        # Apply per-class inverse-frequency weights element-wise before summing
+        # Áp dụng trọng số phân lớp nếu có
         if getattr(self, "class_weights", None) is not None:
             cw = self.class_weights.to(device=cls_loss_elements.device, dtype=dtype)
             if cw.ndim == 1:
@@ -113,6 +102,7 @@ class VFLDetectionLoss(v8DetectionLoss):
         cls_loss = cls_loss_elements.sum()
         loss[1] = cls_loss / target_scores_sum
 
+        # Tổn thất tọa độ bounding box (CIoU Loss và Distribution Focal Loss)
         if fg_mask.sum():
             loss[0], loss[2] = self.bbox_loss(
                 pred_distri,
@@ -139,14 +129,12 @@ class VFLDetectionLoss(v8DetectionLoss):
 
 
 def compute_class_weights(dataset_report_path: str | Path, split: str = "train") -> torch.Tensor:
-    """Inverse-frequency per-class weights from a real dataset_report.json split.
+    """Tính trọng số nghịch đảo tần suất cho từng phân lớp từ file dataset_report.json thực tế.
 
-    weight_c = mean(count) / count_c, so the mean weight across classes is 1.0
-    and rarer classes get a larger multiplier on the classification loss.
+    weight_c = mean(count) / count_c, giúp trọng số trung bình toàn cục bằng 1.0
+    và phân lớp thiểu số (LoiTray, LoiNhua) nhận trọng số mất mát cao hơn.
     """
     report = json.loads(Path(dataset_report_path).read_text(encoding="utf-8"))
-    # validate_dataset (src/scale_error/data/validate.py) writes "names": {index: name};
-    # older reports used "classes": [name, ...] in class-index order. Support both.
     if "names" in report:
         classes = [report["names"][str(i)] for i in range(len(report["names"]))]
     else:

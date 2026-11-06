@@ -1,3 +1,11 @@
+"""Mô-đun điều phối huấn luyện cho các mô hình Ultralytics YOLO26m / YOLO11m / RT-DETR-L.
+
+Hỗ trợ:
+- Gắn hàm mất mát Varifocal Loss (VFL) tùy biến vào hook on_train_start của Ultralytics.
+- Tự động áp dụng trọng số lớp (class weights) từ file dataset_report.json để trị mất cân bằng.
+- Kiểm tra hợp lệ các chế độ tiền xử lý (raw vs roi_crop).
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -10,14 +18,7 @@ from scale_error.training.losses import VFLDetectionLoss, compute_class_weights
 
 
 def _attach_vfl_criterion(class_weights):
-    """Build an on_train_start callback that swaps in Varifocal Loss + class weights.
-
-    `model.train(...)` rebuilds `model.model` from scratch inside the trainer
-    (ultralytics/engine/model.py Model.train -> Trainer.get_model), so setting
-    a criterion before calling `.train()` is silently discarded. `on_train_start`
-    fires after `Trainer._setup_train()` has built and device-placed the real
-    model (ultralytics/engine/trainer.py), so the attached criterion survives.
-    """
+    """Xây dựng callback on_train_start để thay thế hàm mất mát mặc định bằng Varifocal Loss + trọng số lớp."""
 
     def _callback(trainer) -> None:
         det_model = trainer.model
@@ -31,8 +32,8 @@ def _attach_vfl_criterion(class_weights):
             det_model.criterion = VFLDetectionLoss(det_model)
         else:
             raise TypeError(
-                f"Unsupported criterion {type(existing_criterion).__name__}; "
-                "VFLDetectionLoss only wraps v8DetectionLoss/E2ELoss."
+                f"Hàm mất mát không được hỗ trợ {type(existing_criterion).__name__}; "
+                "VFLDetectionLoss chỉ bọc được v8DetectionLoss hoặc E2ELoss."
             )
 
     return _callback
@@ -46,6 +47,16 @@ def train(
     dataset_report: str | Path | None = None,
     resume_checkpoint: str | Path | None = None,
 ):
+    """Thực thi huấn luyện mô hình phát hiện khuyết tật.
+
+    Tham số:
+        data_yaml: Đường dẫn file cấu hình runtime_data.yaml.
+        config_path: Đường dẫn file cấu hình huấn luyện (.yaml).
+        project_dir: Thư mục lưu kết quả runs/.
+        run_name: Tên thư mục con lưu checkpoint (tùy chọn).
+        dataset_report: Đường dẫn file dataset_report.json để tính class weights.
+        resume_checkpoint: Đường dẫn checkpoint để tiếp tục huấn luyện dang dở.
+    """
     config_path = Path(config_path).resolve()
     cfg = load_yaml(config_path)
     model_name = str(cfg.pop("model"))
@@ -61,26 +72,26 @@ def train(
     model = model_cls(model_source)
 
     if use_vfl and model_cls is not YOLO:
-        raise ValueError("VFLDetectionLoss is only supported for YOLO models")
+        raise ValueError("VFLDetectionLoss hiện chỉ hỗ trợ cho các mô hình YOLO.")
     if use_class_weights and not use_vfl:
-        raise ValueError("Class weights require use_vfl=true")
+        raise ValueError("Áp dụng trọng số lớp yêu cầu use_vfl=true.")
     if preprocessing not in {"raw", "roi_crop"}:
-        raise ValueError(f"Unsupported preprocessing mode: {preprocessing}")
+        raise ValueError(f"Chế độ tiền xử lý không được hỗ trợ: {preprocessing}")
     if preprocessing == "roi_crop":
         roi_config_path = Path(roi_config) if roi_config is not None else None
         if roi_config_path is not None and not roi_config_path.is_absolute():
             roi_config_path = config_path.parent.parent / roi_config_path
         if roi_config_path is None or not roi_config_path.exists():
-            raise FileNotFoundError("preprocessing=roi_crop requires an existing roi_config path")
+            raise FileNotFoundError("Chế độ preprocessing=roi_crop yêu cầu file cấu hình roi_config tồn tại.")
     elif roi_config is not None:
-        raise ValueError("roi_config is only valid with preprocessing=roi_crop")
+        raise ValueError("roi_config chỉ hợp lệ khi bật preprocessing=roi_crop.")
 
     if use_vfl:
         report_path = None
         if dataset_report is not None and Path(dataset_report).exists():
             report_path = Path(dataset_report)
         else:
-            # Auto-detect dataset_report.json from standard locations
+            # Tự động tìm kiếm file dataset_report.json tại các vị trí tiêu chuẩn
             data_yaml_p = Path(data_yaml).resolve()
             candidates = [
                 data_yaml_p.parent / "dataset_report.json",
@@ -96,8 +107,8 @@ def train(
 
         if use_class_weights and report_path is None:
             raise FileNotFoundError(
-                "use_class_weights=true but dataset_report.json was not found; "
-                "pass --dataset-report explicitly"
+                "use_class_weights=true nhưng không tìm thấy dataset_report.json; "
+                "vui lòng truyền tham số --dataset-report một cách tường minh."
             )
 
         class_weights = compute_class_weights(report_path) if report_path else None

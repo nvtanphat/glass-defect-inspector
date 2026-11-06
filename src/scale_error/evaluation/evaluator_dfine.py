@@ -1,18 +1,14 @@
-"""D-FINE-M evaluation wrapper.
+"""Lớp bọc đánh giá kiểm định mô hình D-FINE-M / FBDNet-M (D-FINE evaluation wrapper).
 
-Evaluates a trained D-FINE model using COCO-format metrics, providing
-a consistent interface with the Ultralytics-based evaluator.
+Đánh giá checkpoint D-FINE theo định dạng chuẩn COCO, cung cấp giao diện nhất quán
+với bộ đánh giá dựa trên Ultralytics.
 
-Usage (local):
+Cách sử dụng dòng lệnh:
     python -m scale_error.evaluation.evaluator_dfine \
         --weights results/best.pth \
         --dfine-repo results/D-FINE \
         --data data/processed_roi/runtime_data.yaml \
         --output artifacts/evaluation/metrics_dfine.json
-
-Usage (in pipeline):
-    from scale_error.evaluation.evaluator_dfine import evaluate_dfine
-    evaluate_dfine(weights, dfine_repo, data_yaml, output_json)
 """
 
 from __future__ import annotations
@@ -33,24 +29,21 @@ def evaluate_dfine(
     eval_size: int = 960,
     device: str = "0",
 ) -> dict:
-    """Evaluate a D-FINE model on the test split.
+    """Đánh giá mô hình D-FINE trên tập dữ liệu kiểm thử test split.
 
-    Args:
-        weights: Path to trained D-FINE checkpoint (best.pth).
-        dfine_repo: Path to D-FINE repository root.
-        data_yaml: Path to runtime_data.yaml (YOLO format).
-        output_json: Path to write evaluation metrics JSON.
-        eval_size: Evaluation image size.
-        device: CUDA device.
-
-    Returns:
-        Dictionary of evaluation metrics.
+    Tham số:
+        weights: Đường dẫn file trọng số đã huấn luyện (best.pth).
+        dfine_repo: Đường dẫn thư mục mã nguồn D-FINE.
+        data_yaml: Đường dẫn file cấu hình runtime_data.yaml.
+        output_json: Đường dẫn file JSON ghi kết quả đánh giá.
+        eval_size: Kích thước cạnh ảnh đánh giá (mặc định: 960).
+        device: Chỉ số GPU CUDA.
     """
     dfine_repo = Path(dfine_repo).resolve()
     weights = Path(weights).resolve()
     output_json = Path(output_json)
 
-    # 1. Prepare COCO test data
+    # 1. Chuẩn bị dữ liệu kiểm thử dạng COCO JSON
     data_cfg = yaml.safe_load(Path(data_yaml).read_text(encoding="utf-8"))
     names = data_cfg["names"]
     if isinstance(names, dict):
@@ -64,13 +57,13 @@ def evaluate_dfine(
         test_images.parent.parent / "labels",
         test_images.with_name("labels"),
     ]
-    test_labels = test_images  # fallback
+    test_labels = test_images  # dự phòng
     for candidate in test_labels_candidates:
         if candidate.exists():
             test_labels = candidate
             break
 
-    # Convert test labels to COCO JSON
+    # Chuyển đổi nhãn YOLO sang định dạng COCO JSON
     from scale_error.training.trainer_dfine import (
         _generate_dataset_config,
         _generate_experiment_config,
@@ -82,9 +75,7 @@ def evaluate_dfine(
     test_json = eval_dir / "test.json"
     _yolo_to_coco_json(test_images, test_labels, test_json, class_names)
 
-    # 2. Generate an evaluation config that points at this exact test split.
-    # Using the historical glass_test.yml here would silently evaluate the
-    # hard-coded data_roi/test directory instead.
+    # 2. Sinh cấu hình đánh giá trỏ chính xác vào tập test này
     dataset_config_name = "scale_error_eval_generated.yml"
     dataset_config = dfine_repo / "configs" / "dataset" / dataset_config_name
     _generate_dataset_config(
@@ -105,8 +96,8 @@ def evaluate_dfine(
         config_name="dfine_hgnetv2_m_scale_error_eval_generated.yml",
     )
 
-    # 3. Run evaluation via D-FINE's train.py --test-only
-    print(f"[D-FINE] Evaluating checkpoint: {weights}")
+    # 3. Chạy lệnh đánh giá thông qua train.py --test-only của D-FINE
+    print(f"[D-FINE] Bắt đầu đánh giá checkpoint: {weights}")
     cmd = [
         sys.executable,
         str(dfine_repo / "train.py"),
@@ -119,38 +110,34 @@ def evaluate_dfine(
         f"cuda:{device}",
     ]
 
-    print(f"[D-FINE] Command: {' '.join(cmd)}")
+    print(f"[D-FINE] Lệnh thực thi: {' '.join(cmd)}")
     result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(dfine_repo))
     if result.returncode != 0:
         raise RuntimeError(
-            f"D-FINE evaluation failed with exit code {result.returncode}:\n{result.stderr[-4000:]}"
+            f"Đánh giá D-FINE thất bại với mã lỗi {result.returncode}:\n{result.stderr[-4000:]}"
         )
 
-    # 4. Parse COCO evaluation output
+    # 4. Phân tích kết quả đầu ra COCO evaluation
     metrics = _parse_coco_eval_output(result.stdout)
     if "mAP50_95" not in metrics:
         raise RuntimeError(
-            "D-FINE evaluation completed but COCO metrics could not be parsed. "
-            f"Output tail:\n{result.stdout[-4000:]}"
+            "Đánh giá D-FINE hoàn tất nhưng không trích xuất được metrics COCO. "
+            f"Đoạn cuối log:\n{result.stdout[-4000:]}"
         )
     metrics["model"] = "D-FINE-M"
     metrics["weights"] = str(weights)
     metrics["eval_size"] = eval_size
 
-    # 5. Save metrics
+    # 5. Lưu kết quả ra file JSON
     output_json.parent.mkdir(parents=True, exist_ok=True)
     output_json.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
-    print(f"[D-FINE] Metrics saved -> {output_json}")
+    print(f"[D-FINE] Đã lưu kết quả metrics tại -> {output_json}")
 
     return metrics
 
 
 def _parse_coco_eval_output(stdout: str) -> dict:
-    """Parse COCO evaluation metrics from D-FINE stdout.
-
-    Looks for the standard pycocotools output format:
-     Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.444
-    """
+    """Phân tích các dòng log kết quả COCO evaluation từ stdout của D-FINE."""
     metrics = {}
 
     for line in stdout.splitlines():
@@ -192,10 +179,10 @@ def _parse_coco_eval_output(stdout: str) -> dict:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Evaluate D-FINE-M model")
-    parser.add_argument("--weights", required=True, help="Path to best.pth")
-    parser.add_argument("--dfine-repo", required=True, help="Path to D-FINE repository")
-    parser.add_argument("--data", required=True, help="Path to runtime_data.yaml")
+    parser = argparse.ArgumentParser(description="Đánh giá mô hình D-FINE-M")
+    parser.add_argument("--weights", required=True, help="Đường dẫn file best.pth")
+    parser.add_argument("--dfine-repo", required=True, help="Đường dẫn mã nguồn D-FINE")
+    parser.add_argument("--data", required=True, help="Đường dẫn file runtime_data.yaml")
     parser.add_argument("--output", default="artifacts/evaluation/metrics_dfine.json")
     parser.add_argument("--eval-size", type=int, default=960)
     parser.add_argument("--device", default="0")

@@ -1,16 +1,15 @@
-"""Adaptive High-Resolution Detail Branch (AHRD) Module.
+"""Mô-đun Nhánh Chi tiết Độ phân giải cao Thích ứng (Adaptive High-Resolution Detail Branch - AHRD).
 
-Integrated into RF-DETR-M / D-FINE-M for tiny glass defect detection.
-Hypothesis:
-    Tiny defect classes ('DiVat' and 'DiVatLoiLom') lose critical spatial information
-    at stride-8 and deeper feature maps. However, shallow stride-4 features of glass
-    contain strong non-defect background noise (reflections, mold seams, optical glare).
-    AHRD introduces a semantic-guided gate:
+Tích hợp vào RF-DETR-M / D-FINE-M nhằm cải thiện phát hiện khuyết tật cực nhỏ trên kính.
+Giả thuyết thiết kế:
+    Các phân lớp khuyết tật vi mô ('DiVat' và 'DiVatLoiLom') bị mất thông tin không gian quan trọng
+    ở tầng đặc trưng stride-8 hoặc sâu hơn. Tuy nhiên, các đặc trưng nông stride-4 của thủy tinh
+    lại chứa nhiều nhiễu nền phi khuyết tật (vết phản quang, viền khuôn gá, vết chói).
+    AHRD đưa vào cơ chế cổng định hướng ngữ nghĩa (semantic-guided gate):
         G = sigmoid(Conv([D, Up(S)]))
         D_gated = G * D
-    to selectively filter glass background noise while retaining sub-pixel defect edges,
-    and fusions D_gated into the high-resolution feature P3 via residual connection
-    with learnable alpha (initialized to 0.0 for strict identity preservation).
+    để lọc chọn lọc nhiễu nền thủy tinh trong khi giữ lại các cạnh khuyết tật mức sub-pixel,
+    sau đó hợp nhất D_gated vào đặc trưng P3 độ phân giải cao thông qua kết nối phần dư với hệ số alpha học được.
 """
 
 from __future__ import annotations
@@ -23,16 +22,16 @@ __all__ = ["AHRDModule"]
 
 
 class AHRDModule(nn.Module):
-    """Adaptive High-Resolution Detail Branch (AHRD).
+    """Mô-đun Nhánh Chi tiết Độ phân giải cao Thích ứng (AHRD).
 
-    Formulation:
-        D: Stride-4 shallow feature [B, C_d, H/4, W/4] from backbone stage 1.
-        S: Stride-8 deep semantic feature [B, C_s, H/8, W/8] from backbone stage 2.
-        Up(S): Bilinear upsampling of S to match D's spatial resolution [B, C_s, H/4, W/4].
-        G = sigmoid(Conv([D, Up(S)])): Semantic-guided gating mask [B, C_d, H/4, W/4].
-        D_gated = G * D: Filtered detail feature.
-        D_proj = Downsample(D_gated): Lightweight stride-2 projection [B, C_s, H/8, W/8].
-        P3_fused = S + alpha * D_proj: Residual fusion with learnable alpha (init=0.0).
+    Công thức:
+        D: Đặc trưng nông Stride-4 [B, C_d, H/4, W/4] từ backbone stage 1.
+        S: Đặc trưng ngữ nghĩa sâu Stride-8 [B, C_s, H/8, W/8] từ backbone stage 2.
+        Up(S): Nội suy song tuyến tính đưa S về cùng kích thước không gian với D.
+        G = sigmoid(Conv([D, Up(S)])): Mặt nạ cổng lọc định hướng ngữ nghĩa.
+        D_gated = G * D: Đặc trưng chi tiết đã lọc bỏ nhiễu nền.
+        D_proj = Downsample(D_gated): Tầng chiếu giảm mẫu nhẹ nhàng stride-2.
+        P3_fused = S + alpha * D_proj: Hợp nhất phần dư với hệ số alpha (khởi tạo 0.0).
     """
 
     def __init__(
@@ -46,7 +45,7 @@ class AHRDModule(nn.Module):
         self.in_channels_s = in_channels_s
         self.out_channels = out_channels
 
-        # G = sigmoid(Conv([D, Up(S)]))
+        # Cổng lọc định hướng ngữ nghĩa: G = sigmoid(Conv([D, Up(S)]))
         self.gate_conv = nn.Sequential(
             nn.Conv2d(
                 in_channels_d + in_channels_s,
@@ -59,7 +58,7 @@ class AHRDModule(nn.Module):
             nn.Sigmoid(),
         )
 
-        # Lightweight stride-2 depthwise-separable downsampling projection
+        # Tích chập tách biệt theo chiều sâu (Depthwise-separable) stride-2 giảm mẫu nhẹ
         self.downsample = nn.Sequential(
             nn.Conv2d(
                 in_channels_d,
@@ -76,18 +75,18 @@ class AHRDModule(nn.Module):
             nn.BatchNorm2d(out_channels),
         )
 
-        # Learnable residual scale initialized to 0.0
+        # Hệ số phần dư học được (Khởi tạo 0.0 để bảo toàn trọng số pretrained ban đầu)
         self.alpha = nn.Parameter(torch.zeros(1))
 
     def forward(self, d: torch.Tensor, s: torch.Tensor) -> torch.Tensor:
-        """Forward pass of AHRD module.
+        """Lan truyền tiến của mô-đun AHRD.
 
-        Args:
-            d: Stride-4 shallow feature [B, C_d, H/4, W/4]
-            s: Stride-8 semantic feature [B, C_s, H/8, W/8]
+        Tham số:
+            d: Đặc trưng nông Stride-4 [B, C_d, H/4, W/4]
+            s: Đặc trưng ngữ nghĩa Stride-8 [B, C_s, H/8, W/8]
 
-        Returns:
-            fused_s: Fused feature matching s shape [B, C_s, H/8, W/8]
+        Trả về:
+            Tensor đặc trưng hợp nhất có cùng kích thước với s [B, C_s, H/8, W/8]
         """
         up_s = F.interpolate(s, size=d.shape[2:], mode="bilinear", align_corners=False)
         cat_feat = torch.cat([d, up_s], dim=1)

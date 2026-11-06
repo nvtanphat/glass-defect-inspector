@@ -1,3 +1,13 @@
+"""Phân tích lỗi phát hiện chi tiết theo từng ảnh và xuất báo cáo CSV.
+
+Đối chiếu từng ảnh kiểm thử để thống kê:
+- Số lượng nhãn thực tế (GT) vs số lượng dự đoán.
+- Số lượng khớp đúng phân lớp (matched correct class).
+- Số lượng nhầm lẫn phân lớp (wrong class matches).
+- Số lượng bỏ sót khuyết tật (False Negatives).
+- Số lượng báo động giả (False Positives).
+"""
+
 from __future__ import annotations
 
 import csv
@@ -10,12 +20,14 @@ from scale_error.data.validate import label_path_for_image, list_images, parse_y
 
 
 def _xywhn_to_xyxy(box: list[float], width: int, height: int) -> np.ndarray:
+    """Quy đổi tọa độ chuẩn hóa YOLO [cls, cx, cy, w, h] sang pixel [x1, y1, x2, y2]."""
     _cls, x, y, w, h = box
     cx, cy, bw, bh = x * width, y * height, w * width, h * height
     return np.array([cx - bw / 2, cy - bh / 2, cx + bw / 2, cy + bh / 2], dtype=float)
 
 
 def _iou(a: np.ndarray, b: np.ndarray) -> float:
+    """Tính chỉ số chồng chập IoU giữa hai bounding box."""
     x1, y1 = max(a[0], b[0]), max(a[1], b[1])
     x2, y2 = min(a[2], b[2]), min(a[3], b[3])
     inter = max(0.0, x2 - x1) * max(0.0, y2 - y1)
@@ -34,6 +46,18 @@ def analyze(
     conf: float = 0.25,
     match_iou: float = 0.5,
 ) -> Path:
+    """Thực thi phân tích lỗi chi tiết trên tập ảnh và ghi ra file CSV.
+
+    Tham số:
+        weights: Đường dẫn file trọng số mô hình.
+        test_images_dir: Thư mục chứa ảnh kiểm thử.
+        test_labels_dir: Thư mục chứa nhãn kiểm thử.
+        output_csv: Đường dẫn file CSV xuất kết quả.
+        nc: Tổng số phân lớp.
+        imgsz: Kích thước ảnh suy luận.
+        conf: Ngưỡng lọc điểm tin cậy.
+        match_iou: Ngưỡng IoU để coi là khớp hộp.
+    """
     model = YOLO(str(weights))
     images_root = Path(test_images_dir)
     labels_root = Path(test_labels_dir)

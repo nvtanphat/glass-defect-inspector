@@ -1,8 +1,8 @@
-"""Ensemble Pipeline for Glass Defect Inspector.
+"""Quy trình tổ hợp mô hình (Ensemble Pipeline) cho Glass Defect Inspector.
 
-Loads multiple heterogeneous models (e.g. FBDNet-M + YOLO26m-ROI-VFL),
-executes synchronized inference with ROI tiling, and merges outputs
-via Weighted Boxes Fusion (WBF).
+Nạp đồng thời nhiều mô hình đa cấu trúc (ví dụ: FBDNet-M + YOLO26m-ROI-VFL + D-FINE-M),
+thực thi suy luận đồng bộ với cơ chế cắt ROI và phân vùng SAHI Tiling,
+sau đó hợp nhất các bounding box dự đoán bằng thuật toán Weighted Boxes Fusion (WBF).
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from scale_error.ensemble.wbf import (
 
 
 class GlassDefectEnsemble:
-    """Multi-model ensemble pipeline using Weighted Boxes Fusion (WBF)."""
+    """Đường ống tổ hợp đa mô hình sử dụng thuật toán Weighted Boxes Fusion (WBF)."""
 
     def __init__(
         self,
@@ -35,13 +35,24 @@ class GlassDefectEnsemble:
         skip_box_threshold: float = 0.05,
         root_dir: Path = WORKSPACE_ROOT,
     ) -> None:
+        """Khởi tạo pipeline tổ hợp.
+
+        Tham số:
+            model_paths: Danh sách đường dẫn tới các file trọng số mô hình thành viên.
+            model_types: Danh sách loại mô hình tương ứng ('fbdnet', 'dfine', 'yolo').
+            weights: Trọng số tổng thể của từng mô hình.
+            per_class_weights: Ma trận trọng số thích ứng theo từng phân lớp khuyết tật.
+            iou_threshold: Ngưỡng IoU để gom cụm các hộp trùng nhau trong WBF.
+            skip_box_threshold: Ngưỡng điểm tin cậy tối thiểu để đưa hộp vào tổ hợp.
+            root_dir: Thư mục gốc của không gian làm việc.
+        """
         self.root_dir = Path(root_dir)
         self.iou_threshold = iou_threshold
         self.skip_box_threshold = skip_box_threshold
         self.weights = weights
         self.per_class_weights = per_class_weights or DEFAULT_PER_CLASS_WEIGHTS
 
-        # Default setup: Top-1 SOTA Transformer (FBDNet-M) + Top-1 CNN (YOLO26m-ROI-VFL)
+        # Cấu hình mặc định: Transformer hàng đầu (FBDNet-M) + CNN hàng đầu (YOLO26m-ROI-VFL)
         if model_paths is None:
             self.model_paths = [
                 self.root_dir / "weights" / "dfine_m_fbdnet_best.pth",
@@ -59,7 +70,7 @@ class GlassDefectEnsemble:
         self._is_initialized = False
 
     def load_models(self) -> None:
-        """Load all constituent models into memory (call only when running inference)."""
+        """Nạp các mô hình thành viên vào bộ nhớ RAM/VRAM (chỉ gọi khi bắt đầu suy luận)."""
         if self._is_initialized:
             return
 
@@ -68,7 +79,7 @@ class GlassDefectEnsemble:
         self.loaded_models = []
         for path, mtype in zip(self.model_paths, self.model_types, strict=False):
             if not path.is_file():
-                raise FileNotFoundError(f"Weight checkpoint not found at: {path}")
+                raise FileNotFoundError(f"Không tìm thấy file trọng số checkpoint tại: {path}")
 
             if mtype in {"dfine", "fbdnet"}:
                 model, postprocessor = load_dfine_model(str(path))
@@ -88,14 +99,14 @@ class GlassDefectEnsemble:
         use_per_class_weights: bool = True,
         enable_tiling: bool = True,
     ) -> dict[str, Any]:
-        """Perform ensemble inference on a single glass surface image.
+        """Thực hiện suy luận tổ hợp trên một ảnh bề mặt kính đơn lẻ.
 
-        Returns:
-            dict containing:
-                - detections: list of (class_name, confidence, x1, y1, x2, y2)
-                - num_detections: int
-                - individual_predictions: raw predictions per model
-                - timing_ms: breakdown of inference and fusion time
+        Trả về:
+            dict chứa:
+                - detections: danh sách hộp hợp nhất (class_name, confidence, x1, y1, x2, y2)
+                - num_detections: số lượng phát hiện
+                - individual_predictions: kết quả phát hiện thô của từng mô hình
+                - timing_ms: thời gian chi tiết từng mô hình và thời gian chạy thuật toán WBF
         """
         self.load_models()
         from glass_inspector.inference_engine import run_inspection
@@ -110,10 +121,9 @@ class GlassDefectEnsemble:
 
         t_start_total = time.perf_counter()
 
-        # Run each model through inspection engine
+        # Chạy từng mô hình qua engine kiểm định (bao gồm ROI và SAHI Tiling)
         for path, mtype in zip(self.model_paths, self.model_types, strict=False):
             t_m_start = time.perf_counter()
-            # We call run_inspection for consistent ROI and tiling handling
             result = run_inspection(
                 image_source=pil_img,
                 weights_path=path,
@@ -126,7 +136,6 @@ class GlassDefectEnsemble:
             )
             model_timings.append((time.perf_counter() - t_m_start) * 1000)
 
-            # Extract raw tuples (cls_name, conf, x1, y1, x2, y2)
             cur_dets = [
                 (
                     d["class_name"],
@@ -140,8 +149,8 @@ class GlassDefectEnsemble:
             ]
             individual_dets.append(cur_dets)
 
+        # Hợp nhất các hộp dự đoán bằng Weighted Boxes Fusion
         t_fuse_start = time.perf_counter()
-        # Fuse with Weighted Boxes Fusion
         fused_dets = fuse_detection_lists(
             detection_lists=individual_dets,
             weights=self.weights,
@@ -180,24 +189,24 @@ class GlassDefectEnsemble:
         output_report_file: str | Path = "results/ensemble_evaluation_report.json",
         use_per_class_weights: bool = True,
     ) -> dict[str, Any]:
-        """Fuse precomputed offline prediction JSONs from multiple models and compute COCO mAP.
+        """Hợp nhất các file JSON dự đoán offline từ nhiều mô hình và xuất báo cáo COCO mAP.
 
-        Does not require running heavy GPU models; pure offline evaluation.
+        Cho phép đánh giá tốc độ cao mà không cần nạp lại các mô hình GPU nặng.
         """
         out_report = Path(output_report_file)
         out_report.parent.mkdir(parents=True, exist_ok=True)
 
-        print(f"Loading ground truth: {ground_truth_json}")
+        print(f"Đang tải nhãn Ground Truth từ: {ground_truth_json}")
         with open(ground_truth_json, encoding="utf-8") as f:
             _ = json.load(f)
 
         pred_datasets = []
         for p_file in prediction_json_files:
-            print(f"Loading predictions from: {p_file}")
+            print(f"Đang đọc dự đoán từ: {p_file}")
             with open(p_file, encoding="utf-8") as f:
                 pred_datasets.append(json.load(f))
 
-        # Group predictions by image_id
+        # Nhóm các dự đoán theo image_id
         all_img_ids = set()
         for p_data in pred_datasets:
             for item in p_data:
@@ -216,12 +225,11 @@ class GlassDefectEnsemble:
                         CLASS_NAMES[cls_id] if 0 <= cls_id < len(CLASS_NAMES) else f"Class_{cls_id}"
                     )
                     conf = float(m["score"])
-                    # COCO bbox: [x, y, w, h] -> [x1, y1, x2, y2]
                     bx, by, bw, bh = m["bbox"]
                     cur_det.append((cls_name, conf, int(bx), int(by), int(bx + bw), int(by + bh)))
                 img_preds.append(cur_det)
 
-            # Fuse with WBF
+            # Thực hiện WBF cho từng ảnh
             fused = fuse_detection_lists(
                 detection_lists=img_preds,
                 weights=self.weights,
@@ -247,8 +255,8 @@ class GlassDefectEnsemble:
             json.dump(fused_predictions, f, indent=2)
 
         print(
-            f"Fused predictions saved to {fused_out_file} "
-            f"(Total: {len(fused_predictions)} detections)"
+            f"Đã lưu các dự đoán hợp nhất tại {fused_out_file} "
+            f"(Tổng số: {len(fused_predictions)} bounding box)"
         )
         report_data = {
             "num_models": len(prediction_json_files),

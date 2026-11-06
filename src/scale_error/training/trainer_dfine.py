@@ -1,20 +1,12 @@
-"""D-FINE-M training wrapper.
+"""Lớp bọc điều phối huấn luyện mô hình D-FINE-M / FBDNet-M (D-FINE Training Wrapper).
 
-Wraps the D-FINE framework (https://github.com/Peterande/D-FINE) to provide
-a consistent interface with the rest of the scale_error training pipeline.
+Bọc framework D-FINE (https://github.com/Peterande/D-FINE) nhằm cung cấp giao diện nhất quán
+với pipeline của dự án:
+- Tự động chuyển đổi nhãn YOLO sang định dạng COCO JSON.
+- Tự động sinh file cấu hình YAML tương thích kiến trúc D-FINE HGNetv2.
+- Thực thi tiến trình con huấn luyện PyTorch/Torchrun.
 
-D-FINE uses its own training framework (not Ultralytics), so this module
-handles the necessary setup: YOLO-to-COCO conversion, config generation,
-and subprocess-based training invocation.
-
-Usage (local):
-    python -m scale_error.training.trainer_dfine \
-        --data data/processed_roi/runtime_data.yaml \
-        --dfine-repo results/D-FINE \
-        --weights results/weights/dfine_m_coco.pth \
-        --output-dir artifacts/runs/dfine_m
-
-Usage (in pipeline):
+Cách sử dụng:
     from scale_error.training.trainer_dfine import train_dfine
     train_dfine(data_yaml, dfine_repo, pretrained_weights, output_dir)
 """
@@ -36,16 +28,13 @@ def _yolo_to_coco_json(
     output_json: Path,
     class_names: list[str],
 ) -> Path:
-    """Convert YOLO-format labels to COCO JSON format required by D-FINE.
+    """Chuyển đổi nhãn định dạng YOLO txt sang định dạng COCO JSON theo yêu cầu của D-FINE.
 
-    Args:
-        images_dir: Directory containing images.
-        labels_dir: Directory containing YOLO .txt label files.
-        output_json: Path to write the COCO JSON file.
-        class_names: List of class names in order.
-
-    Returns:
-        Path to the generated COCO JSON file.
+    Tham số:
+        images_dir: Thư mục chứa ảnh.
+        labels_dir: Thư mục chứa các file nhãn .txt YOLO.
+        output_json: Đường dẫn file COCO JSON cần tạo.
+        class_names: Danh sách tên phân lớp.
     """
     from PIL import Image
 
@@ -404,22 +393,18 @@ def train_dfine(
     resume_checkpoint: str | Path | None = None,
     nproc_per_node: int | None = None,
 ) -> Path:
-    """Train D-FINE-M model.
+    """Huấn luyện mô hình D-FINE-M / FBDNet-M trên tập dữ liệu.
 
-    Args:
-        data_yaml: Path to runtime_data.yaml (YOLO format).
-        dfine_repo: Path to D-FINE repository root.
-        pretrained_weights: Path to pretrained weights (e.g., dfine_m_coco.pth).
-        output_dir: Directory for training outputs.
-        epochs: Number of training epochs.
-        eval_size: Evaluation image size.
-        batch_size: Training global batch size (default: 8).
-        stop_augment_epoch: Epoch to stop multi-scale & photometric augmentations (default: 88).
-        resume_checkpoint: Optional checkpoint path to resume from.
-        nproc_per_node: Optional number of GPUs for torchrun DDP (auto-detected if >=2).
-
-    Returns:
-        Path to the output directory containing best_stg1.pth / best_stg2.pth.
+    Tham số:
+        data_yaml: Đường dẫn file runtime_data.yaml.
+        dfine_repo: Đường dẫn thư mục gốc D-FINE.
+        pretrained_weights: Đường dẫn trọng số pretrained (ví dụ: dfine_m_coco.pth).
+        output_dir: Thư mục lưu kết quả và checkpoint huấn luyện.
+        epochs: Tổng số epoch huấn luyện (mặc định: 100).
+        eval_size: Kích thước ảnh đánh giá (mặc định: 960).
+        batch_size: Kích thước batch toàn cục (mặc định: 8).
+        stop_augment_epoch: Epoch ngắt các biến đổi dữ liệu quang học và đa tỉ lệ (mặc định: 88).
+        resume_checkpoint: Checkpoint để tiếp tục huấn luyện nếu có.
     """
     dfine_repo = Path(dfine_repo).resolve()
     output_dir = Path(output_dir).resolve()

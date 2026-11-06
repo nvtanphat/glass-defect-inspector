@@ -1,4 +1,10 @@
-"""Detection confusion matrices: rows are ground truth, columns are predictions."""
+"""Ma trận nhầm lẫn phát hiện đối tượng: Hàng là nhãn thực tế (Ground Truth), cột là dự đoán (Predictions).
+
+Xử lý triệt để:
+- True Positive (TP): Dự đoán đúng phân lớp và IoU >= ngưỡng.
+- False Positive (FP): Báo động giả từ nền (Background) hoặc phân loại nhầm lớp khác.
+- False Negative (FN): Bỏ sót khuyết tật vào cột Background.
+"""
 
 from collections import defaultdict
 
@@ -6,12 +12,13 @@ import numpy as np
 
 
 def box_iou_xywh(boxes_a, boxes_b):
+    """Tính ma trận IoU giữa hai tập hợp bounding box định dạng [x, y, w, h]."""
     a = np.asarray(boxes_a, dtype=float).reshape(-1, 4)
     b = np.asarray(boxes_b, dtype=float).reshape(-1, 4)
     if not np.isfinite(a).all() or not np.isfinite(b).all():
-        raise ValueError("Boxes must be finite")
+        raise ValueError("Tọa độ bounding box phải là số hữu hạn.")
     if (a[:, 2:] < 0).any() or (b[:, 2:] < 0).any():
-        raise ValueError("Box dimensions cannot be negative")
+        raise ValueError("Kích thước chiều rộng/cao của hộp không được âm.")
     intersection_start = np.maximum(a[:, None, :2], b[None, :, :2])
     intersection_end = np.minimum(a[:, None, :2] + a[:, None, 2:], b[None, :, :2] + b[None, :, 2:])
     intersection = np.maximum(intersection_end - intersection_start, 0).prod(axis=2)
@@ -20,26 +27,26 @@ def box_iou_xywh(boxes_a, boxes_b):
 
 
 def detection_confusion(images, annotations, predictions, nc=5, confidence=0.5, iou=0.5):
-    """Match highest-IoU pairs once, regardless of class, so class errors remain visible.
+    """Ghép cặp IoU cao nhất một lần duy nhất, bất kể phân lớp, để lỗi phân lớp luôn hiển thị rõ ràng.
 
-    Unmatched GT occupies the background column; unmatched predictions occupy
-    the background row. Background/background stays zero: detection has no TN count.
+    Hộp nhãn thực không khớp chiếm cột background (cột nc); hộp dự đoán không khớp chiếm hàng background (hàng nc).
+    Ô background/background luôn bằng 0.
     """
     if not 0 <= confidence <= 1 or not 0 <= iou <= 1:
-        raise ValueError("Thresholds must be in [0, 1]")
+        raise ValueError("Các ngưỡng phải nằm trong khoảng [0, 1]")
     ids = {image["id"] for image in images}
     if len(ids) != len(images):
-        raise ValueError("Duplicate image IDs")
+        raise ValueError("Phát hiện ID ảnh bị trùng lặp.")
     gt_by_image, pred_by_image = defaultdict(list), defaultdict(list)
     for annotation in annotations:
         if annotation["image_id"] not in ids or not 0 <= annotation["category_id"] < nc:
-            raise ValueError("Invalid annotation identity or class")
+            raise ValueError("ID hoặc phân lớp của annotation không hợp lệ.")
         gt_by_image[annotation["image_id"]].append(annotation)
     for prediction in predictions:
         if prediction["image_id"] not in ids or not 0 <= prediction["category_id"] < nc:
-            raise ValueError("Invalid prediction identity or class")
+            raise ValueError("ID hoặc phân lớp của prediction không hợp lệ.")
         if not np.isfinite(prediction["score"]) or not 0 <= prediction["score"] <= 1:
-            raise ValueError("Invalid prediction confidence")
+            raise ValueError("Điểm tin cậy confidence không hợp lệ.")
         if prediction["score"] >= confidence:
             pred_by_image[prediction["image_id"]].append(prediction)
     matrix = np.zeros((nc + 1, nc + 1), dtype=np.int64)
@@ -49,7 +56,7 @@ def detection_confusion(images, annotations, predictions, nc=5, confidence=0.5, 
         truth, predicted = gt_by_image[image_id], pred_by_image[image_id]
         overlaps = box_iou_xywh([g["bbox"] for g in truth], [p["bbox"] for p in predicted])
         candidates = np.argwhere(overlaps >= iou)
-        # Highest IoU first; stable indices break ties deterministically.
+        # Sắp xếp ưu tiên cặp có IoU cao nhất trước
         pairs = sorted(candidates.tolist(), key=lambda pair: (-overlaps[tuple(pair)], *pair))
         used_gt, used_pred = set(), set()
         wrong_class = 0
@@ -62,9 +69,11 @@ def detection_confusion(images, annotations, predictions, nc=5, confidence=0.5, 
             pred_class = predicted[pred_index]["category_id"]
             matrix[gt_class, pred_class] += 1
             wrong_class += int(gt_class != pred_class)
+        # Nhãn thực bị bỏ sót (False Negative)
         for index, gt in enumerate(truth):
             if index not in used_gt:
                 matrix[gt["category_id"], nc] += 1
+        # Dự đoán sai báo động giả (False Alarm)
         for index, prediction in enumerate(predicted):
             if index not in used_pred:
                 matrix[nc, prediction["category_id"]] += 1
@@ -82,10 +91,11 @@ def detection_confusion(images, annotations, predictions, nc=5, confidence=0.5, 
 
 
 def confusion_statistics(matrix, class_names):
+    """Tính toán bảng thống kê chi tiết từ ma trận nhầm lẫn: Precision, Recall, F1, FN, FP."""
     nc = len(class_names)
     matrix = np.asarray(matrix)
     if matrix.shape != (nc + 1, nc + 1) or (matrix < 0).any():
-        raise ValueError("Invalid confusion matrix")
+        raise ValueError("Ma trận nhầm lẫn không hợp lệ về kích thước hoặc chứa giá trị âm.")
     stats = []
     for index, name in enumerate(class_names):
         tp = int(matrix[index, index])

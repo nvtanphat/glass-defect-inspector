@@ -1,3 +1,12 @@
+"""Mô-đun kiểm định tính hợp lệ của dữ liệu nhãn YOLO và phát hiện rò rỉ (leakage).
+
+Các chức năng chính:
+- Kiểm tra cú pháp và phạm vi chuẩn hóa [0, 1] của từng dòng nhãn trong các file .txt.
+- Thống kê phân bố số lượng bounding box theo từng phân lớp khuyết tật.
+- Đánh giá tỷ lệ vật thể vi mô (diện tích < 1% và < 0.25% diện tích ảnh).
+- Băm SHA-1 kiểm tra ảnh trùng lặp giữa các tập train, val, test để ngăn chặn data leakage.
+"""
+
 from __future__ import annotations
 
 import hashlib
@@ -8,34 +17,48 @@ from typing import Iterable
 
 import yaml
 
+# Các phần mở rộng tệp ảnh hợp lệ
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 
 
 def list_images(folder: str | Path) -> list[Path]:
+    """Liệt kê và sắp xếp toàn bộ đường dẫn ảnh hợp lệ trong thư mục."""
     folder = Path(folder)
     return sorted(p for p in folder.rglob("*") if p.suffix.lower() in IMAGE_EXTS)
 
 
 def label_path_for_image(image_path: Path, images_root: Path, labels_root: Path) -> Path:
+    """Xác định đường dẫn file nhãn .txt tương ứng với file ảnh."""
     rel = image_path.relative_to(images_root)
     return (labels_root / rel).with_suffix(".txt")
 
 
 def _normalize_names(names: object) -> dict[int, str]:
+    """Chuẩn hóa cấu trúc danh sách hoặc từ điển tên lớp về dạng dict[int, str]."""
     if isinstance(names, list):
         return {i: str(v) for i, v in enumerate(names)}
     if isinstance(names, dict):
         return {int(k): str(v) for k, v in names.items()}
-    raise ValueError("data.yaml 'names' must be a list or dict.")
+    raise ValueError("Thuộc tính 'names' trong data.yaml phải là dạng list hoặc dict.")
 
 
 def read_names(data_yaml: str | Path) -> dict[int, str]:
+    """Đọc và trích xuất danh sách tên phân lớp từ file data.yaml."""
     with Path(data_yaml).open("r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
     return _normalize_names(data["names"])
 
 
 def parse_yolo_label_file(path: str | Path, nc: int) -> tuple[list[list[float]], list[str]]:
+    """Phân tích và kiểm tra tính hợp lệ của từng dòng nhãn trong file txt định dạng YOLO.
+
+    Tham số:
+        path: Đường dẫn file txt nhãn.
+        nc: Tổng số phân lớp hợp lệ (5 lớp).
+
+    Trả về:
+        tuple[list[list[float]], list[str]]: (danh sách hộp [cls, x, y, w, h], danh sách lỗi nếu có).
+    """
     path = Path(path)
     boxes: list[list[float]] = []
     errors: list[str] = []
@@ -48,20 +71,20 @@ def parse_yolo_label_file(path: str | Path, nc: int) -> tuple[list[list[float]],
             continue
         parts = raw.split()
         if len(parts) != 5:
-            errors.append(f"{path}:{line_no}: expected 5 fields, got {len(parts)}")
+            errors.append(f"{path}:{line_no}: kỳ vọng 5 trường thông tin, nhận được {len(parts)}")
             continue
         try:
             cls_f, x, y, w, h = map(float, parts)
         except ValueError:
-            errors.append(f"{path}:{line_no}: non-numeric value")
+            errors.append(f"{path}:{line_no}: chứa giá trị không phải số")
             continue
         cls = int(cls_f)
         if cls_f != cls:
-            errors.append(f"{path}:{line_no}: class id must be integer-like")
+            errors.append(f"{path}:{line_no}: class id phải là số nguyên")
         if not (0 <= cls < nc):
-            errors.append(f"{path}:{line_no}: class id {cls} outside [0,{nc - 1}]")
+            errors.append(f"{path}:{line_no}: class id {cls} nằm ngoài khoảng [0, {nc - 1}]")
         if not (0 <= x <= 1 and 0 <= y <= 1 and 0 < w <= 1 and 0 < h <= 1):
-            errors.append(f"{path}:{line_no}: invalid normalized bbox {x} {y} {w} {h}")
+            errors.append(f"{path}:{line_no}: tọa độ chuẩn hóa không hợp lệ {x} {y} {w} {h}")
         boxes.append([float(cls), x, y, w, h])
     return boxes, errors
 
@@ -70,6 +93,12 @@ def validate_split(
     split_dir: str | Path,
     names: dict[int, str],
 ) -> dict:
+    """Kiểm tra và thống kê một tập phân chia dữ liệu (train/val/test).
+
+    Tham số:
+        split_dir: Thư mục chứa images/ và labels/ của tập cần kiểm tra.
+        names: Từ điển ánh xạ id sang tên phân lớp.
+    """
     split_dir = Path(split_dir)
     images_root = split_dir / "images"
     labels_root = split_dir / "labels"
@@ -116,10 +145,16 @@ def validate_split(
 
 
 def validate_dataset(dataset_root: str | Path, report_path: str | Path | None = None) -> dict:
+    """Kiểm tra toàn diện bộ dữ liệu tại dataset_root và xuất báo cáo kiểm định JSON.
+
+    Tham số:
+        dataset_root: Thư mục gốc chứa data.yaml và các tập train/val/test.
+        report_path: Đường dẫn file json lưu kết quả báo cáo.
+    """
     dataset_root = Path(dataset_root).resolve()
     data_yaml = dataset_root / "data.yaml"
     if not data_yaml.exists():
-        raise FileNotFoundError(f"Missing data.yaml: {data_yaml}")
+        raise FileNotFoundError(f"Không tìm thấy file cấu hình: {data_yaml}")
 
     names = read_names(data_yaml)
     expected = {"DiVat", "DiVatLoiLom", "LoiChi", "LoiNhua", "LoiTray"}
@@ -147,11 +182,12 @@ def validate_dataset(dataset_root: str | Path, report_path: str | Path | None = 
 
     if fatal_errors:
         preview = "\n".join(fatal_errors[:20])
-        raise ValueError(f"Dataset has {len(fatal_errors)} invalid YOLO label rows.\n{preview}")
+        raise ValueError(f"Bộ dữ liệu chứa {len(fatal_errors)} dòng nhãn YOLO không hợp lệ.\n{preview}")
     return report
 
 
 def _sha1(path: Path, chunk_size: int = 1024 * 1024) -> str:
+    """Tính mã băm SHA-1 cho tệp nhị phân."""
     h = hashlib.sha1()
     with path.open("rb") as f:
         while chunk := f.read(chunk_size):
@@ -160,6 +196,7 @@ def _sha1(path: Path, chunk_size: int = 1024 * 1024) -> str:
 
 
 def hash_leakage_report(split_image_dirs: dict[str, str | Path]) -> dict:
+    """Phát hiện rò rỉ dữ liệu bằng cách đối chiếu mã băm SHA-1 giữa các tập phân chia."""
     hashes: dict[str, dict[str, list[str]]] = {}
     for split, folder in split_image_dirs.items():
         per_hash: dict[str, list[str]] = {}

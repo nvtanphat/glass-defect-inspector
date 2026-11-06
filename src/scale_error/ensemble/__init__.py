@@ -1,7 +1,7 @@
-"""Ensemble modules for Glass Defect Inspector (scale-error-yolo26).
+"""Mô-đun tổ hợp mô hình (Ensemble) cho Glass Defect Inspector.
 
-Provides Weighted Boxes Fusion (WBF), per-class adaptive weighting,
-score calibration, and multi-model ensemble pipelines.
+Cung cấp thuật toán Weighted Boxes Fusion (WBF), gán trọng số thích ứng theo từng phân lớp,
+hiệu chuẩn điểm tin cậy và pipeline tổ hợp Heterogeneous Triad WBF (FBDNet-M + D-FINE-M + YOLO26m TTA).
 """
 
 from scale_error.ensemble.ensemble_pipeline import GlassDefectEnsemble
