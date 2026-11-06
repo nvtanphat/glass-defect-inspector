@@ -1,0 +1,401 @@
+{
+  "ablation_study": {
+    "Vanilla_WBF": {
+      "mAP50_95": 44.23,
+      "mAP50": 75.35,
+      "mAP75": 43.77,
+      "mAP_s": 32.79,
+      "per_class": {
+        "DiVat": 23.95,
+        "DiVatLoiLom": 35.78,
+        "LoiChi": 66.78,
+        "LoiNhua": 54.82,
+        "LoiTray": 39.8
+      },
+      "description": "Baseline: Đồng thể 3 nhánh, trọng số [1,1,1], IoU=0.55, floor=0.05"
+    },
+    "Step1_Morphology_Routing": {
+      "mAP50_95": 44.25,
+      "mAP50": 75.59,
+      "mAP75": 43.1,
+      "mAP_s": 32.5,
+      "per_class": {
+        "DiVat": 23.95,
+        "DiVatLoiLom": 34.8,
+        "LoiChi": 66.77,
+        "LoiNhua": 55.92,
+        "LoiTray": 39.8
+      },
+      "description": "Thêm định tuyến hình thái (kích hoạt 2/3 nhánh theo lớp)"
+    },
+    "Step2_Class_Weights_Coord": {
+      "mAP50_95": 45.02,
+      "mAP50": 76.21,
+      "mAP75": 44.82,
+      "mAP_s": 34.21,
+      "per_class": {
+        "DiVat": 24.02,
+        "DiVatLoiLom": 35.04,
+        "LoiChi": 66.73,
+        "LoiNhua": 56.77,
+        "LoiTray": 42.53
+      },
+      "description": "Thêm vector trọng số & tỷ lệ tọa độ theo lớp"
+    },
+    "Step3_Class_IoU_Floor": {
+      "mAP50_95": 45.43,
+      "mAP50": 76.51,
+      "mAP75": 45.93,
+      "mAP_s": 34.32,
+      "per_class": {
+        "DiVat": 24.06,
+        "DiVatLoiLom": 35.35,
+        "LoiChi": 67.01,
+        "LoiNhua": 57.49,
+        "LoiTray": 43.24
+      },
+      "description": "Thêm ngưỡng IoU và sàn tin cậy theo lớp"
+    },
+    "Step4_Full_Adaptive_Triad": {
+      "mAP50_95": 46.17,
+      "mAP50": 77.64,
+      "mAP75": 46.88,
+      "mAP_s": 35.09,
+      "per_class": {
+        "DiVat": 26.28,
+        "DiVatLoiLom": 35.81,
+        "LoiChi": 67.22,
+        "LoiNhua": 57.79,
+        "LoiTray": 43.73
+      },
+      "description": "Đề xuất hoàn chỉnh: Bổ sung Consensus Boost & Solo Decay"
+    },
+    "LOO_No_Routing": {
+      "mAP50_95": 44.95,
+      "mAP50": 76.49,
+      "mAP75": 44.76,
+      "mAP_s": 33.77,
+      "per_class": {
+        "DiVat": 26.0,
+        "DiVatLoiLom": 35.59,
+        "LoiChi": 67.3,
+        "LoiNhua": 55.21,
+        "LoiTray": 40.63
+      },
+      "description": "Loại bỏ định tuyến hình thái (ép 3 nhánh cho cả 5 lớp)"
+    },
+    "LOO_No_Weights": {
+      "mAP50_95": 45.28,
+      "mAP50": 76.99,
+      "mAP75": 44.9,
+      "mAP_s": 33.85,
+      "per_class": {
+        "DiVat": 26.0,
+        "DiVatLoiLom": 35.55,
+        "LoiChi": 67.28,
+        "LoiNhua": 56.92,
+        "LoiTray": 40.63
+      },
+      "description": "Loại bỏ trọng số lớp (đưa về trọng số đồng đều)"
+    },
+    "LOO_No_Class_IoU": {
+      "mAP50_95": 45.9,
+      "mAP50": 77.62,
+      "mAP75": 45.96,
+      "mAP_s": 34.82,
+      "per_class": {
+        "DiVat": 26.28,
+        "DiVatLoiLom": 35.74,
+        "LoiChi": 66.92,
+        "LoiNhua": 56.98,
+        "LoiTray": 43.56
+      },
+      "description": "Loại bỏ ngưỡng IoU lớp (cố định IoU=0.55)"
+    },
+    "LOO_No_Class_Floor": {
+      "mAP50_95": 46.05,
+      "mAP50": 77.39,
+      "mAP75": 46.71,
+      "mAP_s": 35.44,
+      "per_class": {
+        "DiVat": 26.19,
+        "DiVatLoiLom": 35.79,
+        "LoiChi": 67.19,
+        "LoiNhua": 57.79,
+        "LoiTray": 43.3
+      },
+      "description": "Loại bỏ sàn tin cậy lớp (cố định floor=0.05)"
+    },
+    "LOO_No_Consensus_Boost": {
+      "mAP50_95": 45.7,
+      "mAP50": 77.13,
+      "mAP75": 46.11,
+      "mAP_s": 34.64,
+      "per_class": {
+        "DiVat": 24.33,
+        "DiVatLoiLom": 35.65,
+        "LoiChi": 67.22,
+        "LoiNhua": 57.72,
+        "LoiTray": 43.6
+      },
+      "description": "Loại bỏ hệ số thưởng đồng thuận (boost=1.0)"
+    },
+    "LOO_No_Solo_Decay": {
+      "mAP50_95": 45.98,
+      "mAP50": 77.26,
+      "mAP75": 46.71,
+      "mAP_s": 34.87,
+      "per_class": {
+        "DiVat": 26.2,
+        "DiVatLoiLom": 35.68,
+        "LoiChi": 67.01,
+        "LoiNhua": 57.56,
+        "LoiTray": 43.47
+      },
+      "description": "Loại bỏ hệ số phạt đơn độc (decay=1.0)"
+    }
+  },
+  "single_and_ensemble_benchmarks": {
+    "YOLO26m-ROI": {
+      "mAP50_95": 40.09,
+      "mAP50": 69.13,
+      "mAP75": 39.46,
+      "mAP_s": 25.29,
+      "per_class": {
+        "DiVat": 17.76,
+        "DiVatLoiLom": 30.3,
+        "LoiChi": 62.99,
+        "LoiNhua": 53.0,
+        "LoiTray": 36.41
+      }
+    },
+    "D-FINE-M": {
+      "mAP50_95": 41.32,
+      "mAP50": 71.9,
+      "mAP75": 39.79,
+      "mAP_s": 33.84,
+      "per_class": {
+        "DiVat": 23.39,
+        "DiVatLoiLom": 32.78,
+        "LoiChi": 64.73,
+        "LoiNhua": 53.8,
+        "LoiTray": 31.91
+      }
+    },
+    "FBDNet-M": {
+      "mAP50_95": 41.8,
+      "mAP50": 72.47,
+      "mAP75": 41.33,
+      "mAP_s": 32.11,
+      "per_class": {
+        "DiVat": 21.39,
+        "DiVatLoiLom": 34.35,
+        "LoiChi": 64.98,
+        "LoiNhua": 54.74,
+        "LoiTray": 33.53
+      }
+    },
+    "Vanilla_WBF": {
+      "mAP50_95": 44.23,
+      "mAP50": 75.35,
+      "mAP75": 43.77,
+      "mAP_s": 32.79,
+      "per_class": {
+        "DiVat": 23.95,
+        "DiVatLoiLom": 35.78,
+        "LoiChi": 66.78,
+        "LoiNhua": 54.82,
+        "LoiTray": 39.8
+      }
+    },
+    "Adaptive_Triad": {
+      "mAP50_95": 46.17,
+      "mAP50": 77.64,
+      "mAP75": 46.88,
+      "mAP_s": 35.09,
+      "per_class": {
+        "DiVat": 26.28,
+        "DiVatLoiLom": 35.81,
+        "LoiChi": 67.22,
+        "LoiNhua": 57.79,
+        "LoiTray": 43.73
+      }
+    }
+  },
+  "bootstrap_significance_95CI": {
+    "YOLO26m-ROI": {
+      "mean": 40.49,
+      "std_error": 1.49,
+      "ci_95_lower": 37.57,
+      "ci_95_upper": 43.36
+    },
+    "D-FINE-M": {
+      "mean": 41.83,
+      "std_error": 1.39,
+      "ci_95_lower": 39.02,
+      "ci_95_upper": 44.51
+    },
+    "FBDNet-M": {
+      "mean": 42.4,
+      "std_error": 1.43,
+      "ci_95_lower": 39.61,
+      "ci_95_upper": 45.27
+    },
+    "Vanilla_WBF": {
+      "mean": 44.61,
+      "std_error": 1.38,
+      "ci_95_lower": 41.73,
+      "ci_95_upper": 47.25
+    },
+    "Adaptive_Triad": {
+      "mean": 46.29,
+      "std_error": 1.37,
+      "ci_95_lower": 43.44,
+      "ci_95_upper": 48.91
+    },
+    "Paired_Comparisons": {
+      "Adaptive_vs_FBDNet": {
+        "mean_gain": 3.89,
+        "std_error": 0.78,
+        "ci_95_lower": 2.36,
+        "ci_95_upper": 5.36,
+        "p_value": 0.0,
+        "statistically_significant": true
+      },
+      "Adaptive_vs_Vanilla_WBF": {
+        "mean_gain": 1.68,
+        "std_error": 0.49,
+        "ci_95_lower": 0.76,
+        "ci_95_upper": 2.64,
+        "p_value": 0.0,
+        "statistically_significant": true
+      },
+      "Adaptive_vs_YOLO26m_ROI": {
+        "mean_gain": 5.8,
+        "std_error": 0.83,
+        "ci_95_lower": 4.23,
+        "ci_95_upper": 7.45,
+        "p_value": 0.0,
+        "statistically_significant": true
+      }
+    }
+  },
+  "error_analysis_fp_fn": {
+    "YOLO26m-ROI": {
+      "Total_Detections": 267000,
+      "TP": 1431,
+      "Total_FP": 265569,
+      "FN": 142,
+      "Precision_50": 0.54,
+      "Recall_50": 90.97,
+      "F1_Score_50": 1.07,
+      "FP_Breakdown": {
+        "Background_Hallucination": 229748,
+        "Poor_Localization": 25775,
+        "Class_Confusion": 4219,
+        "Duplicate_Detections": 5827
+      }
+    },
+    "D-FINE-M": {
+      "Total_Detections": 88755,
+      "TP": 1482,
+      "Total_FP": 87273,
+      "FN": 91,
+      "Precision_50": 1.67,
+      "Recall_50": 94.21,
+      "F1_Score_50": 3.28,
+      "FP_Breakdown": {
+        "Background_Hallucination": 69540,
+        "Poor_Localization": 4217,
+        "Class_Confusion": 10358,
+        "Duplicate_Detections": 3158
+      }
+    },
+    "FBDNet-M": {
+      "Total_Detections": 112540,
+      "TP": 1484,
+      "Total_FP": 111056,
+      "FN": 89,
+      "Precision_50": 1.32,
+      "Recall_50": 94.34,
+      "F1_Score_50": 2.6,
+      "FP_Breakdown": {
+        "Background_Hallucination": 84093,
+        "Poor_Localization": 9392,
+        "Class_Confusion": 13528,
+        "Duplicate_Detections": 4043
+      }
+    },
+    "Vanilla_WBF": {
+      "Total_Detections": 115337,
+      "TP": 1502,
+      "Total_FP": 113835,
+      "FN": 71,
+      "Precision_50": 1.3,
+      "Recall_50": 95.49,
+      "F1_Score_50": 2.57,
+      "FP_Breakdown": {
+        "Background_Hallucination": 101976,
+        "Poor_Localization": 7576,
+        "Class_Confusion": 3523,
+        "Duplicate_Detections": 760
+      }
+    },
+    "Adaptive_Triad": {
+      "Total_Detections": 105820,
+      "TP": 1490,
+      "Total_FP": 104330,
+      "FN": 83,
+      "Precision_50": 1.41,
+      "Recall_50": 94.72,
+      "F1_Score_50": 2.77,
+      "FP_Breakdown": {
+        "Background_Hallucination": 87546,
+        "Poor_Localization": 12059,
+        "Class_Confusion": 3632,
+        "Duplicate_Detections": 1093
+      }
+    }
+  },
+  "exemplar_cases": [
+    {
+      "type": "SUCCESS_BOX_REFINEMENT",
+      "title": "Tình huống 2: Tinh chỉnh tọa độ hộp bao (Localization Refinement)",
+      "image_id": 362,
+      "class": "LoiChi",
+      "gt_box": [
+        1947.8617499999998,
+        1384.554,
+        127.96894,
+        361.53000000000003
+      ],
+      "ada_iou": 0.91,
+      "fbd_iou": 0.8,
+      "yolo_iou": 0.854,
+      "analysis": "Trên khuyết tật sợi nứt mảnh có tỷ lệ khung hình cực lớn, FBDNet thiên lệch chiều dọc còn YOLO thiên lệch chiều ngang. Trung bình trọng số phân bổ coord_ratio [0.33, 0.33, 0.34] dung hợp tọa độ giúp IoU của Adaptive Triad đạt mốc cao hơn cả hai mô hình thành phần đơn lẻ."
+    },
+    {
+      "type": "SUCCESS_FN_RESCUE",
+      "title": "Tình huống 1: Bổ trợ đa kiến trúc cứu sót lỗi (FN Rescue)",
+      "image_id": 754,
+      "class": "DiVat",
+      "gt_box": [
+        1355.5979499999999,
+        1863.9465,
+        30.92062,
+        43.149
+      ],
+      "ada_iou": 0.847,
+      "fbd_iou": 0.822,
+      "yolo_iou": 0.0,
+      "analysis": "YOLO26m bị mất dấu hạt dị vật vi mô do downsampling, nhưng nhánh D-FINE và FBDNet cùng bám bắt được. Cơ chế consensus boost b_3=1.25 đẩy độ tin cậy của hộp bao lên ngưỡng cao, cứu thành công một lỗi bỏ sót (False Negative)."
+    }
+  ],
+  "metadata": {
+    "test_images": 890,
+    "test_annotations": 1573,
+    "bootstrap_samples": 1000,
+    "timestamp": "2026-10-22 08:36:51",
+    "execution_duration_sec": 550.7
+  }
+}

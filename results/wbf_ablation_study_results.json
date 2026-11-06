@@ -1,0 +1,156 @@
+{
+  "Vanilla_WBF": {
+    "mAP50_95": 44.23,
+    "mAP50": 75.35,
+    "mAP75": 43.77,
+    "mAP_s": 32.79,
+    "per_class": {
+      "DiVat": 23.95,
+      "DiVatLoiLom": 35.78,
+      "LoiChi": 66.78,
+      "LoiNhua": 54.82,
+      "LoiTray": 39.8
+    },
+    "description": "Baseline: Đồng thể 3 nhánh, trọng số [1,1,1], IoU=0.55, floor=0.05"
+  },
+  "Step1_Morphology_Routing": {
+    "mAP50_95": 44.25,
+    "mAP50": 75.59,
+    "mAP75": 43.1,
+    "mAP_s": 32.5,
+    "per_class": {
+      "DiVat": 23.95,
+      "DiVatLoiLom": 34.8,
+      "LoiChi": 66.77,
+      "LoiNhua": 55.92,
+      "LoiTray": 39.8
+    },
+    "description": "Thêm định tuyến hình thái (kích hoạt 2/3 nhánh theo lớp)"
+  },
+  "Step2_Class_Weights_Coord": {
+    "mAP50_95": 45.02,
+    "mAP50": 76.21,
+    "mAP75": 44.82,
+    "mAP_s": 34.21,
+    "per_class": {
+      "DiVat": 24.02,
+      "DiVatLoiLom": 35.04,
+      "LoiChi": 66.73,
+      "LoiNhua": 56.77,
+      "LoiTray": 42.53
+    },
+    "description": "Thêm vector trọng số & tỷ lệ tọa độ theo lớp"
+  },
+  "Step3_Class_IoU_Floor": {
+    "mAP50_95": 45.43,
+    "mAP50": 76.51,
+    "mAP75": 45.93,
+    "mAP_s": 34.32,
+    "per_class": {
+      "DiVat": 24.06,
+      "DiVatLoiLom": 35.35,
+      "LoiChi": 67.01,
+      "LoiNhua": 57.49,
+      "LoiTray": 43.24
+    },
+    "description": "Thêm ngưỡng IoU và sàn tin cậy theo lớp"
+  },
+  "Step4_Full_Adaptive_Triad": {
+    "mAP50_95": 46.17,
+    "mAP50": 77.64,
+    "mAP75": 46.88,
+    "mAP_s": 35.09,
+    "per_class": {
+      "DiVat": 26.28,
+      "DiVatLoiLom": 35.81,
+      "LoiChi": 67.22,
+      "LoiNhua": 57.79,
+      "LoiTray": 43.73
+    },
+    "description": "Đề xuất hoàn chỉnh: Bổ sung Consensus Boost & Solo Decay"
+  },
+  "LOO_No_Routing": {
+    "mAP50_95": 44.95,
+    "mAP50": 76.49,
+    "mAP75": 44.76,
+    "mAP_s": 33.77,
+    "per_class": {
+      "DiVat": 26.0,
+      "DiVatLoiLom": 35.59,
+      "LoiChi": 67.3,
+      "LoiNhua": 55.21,
+      "LoiTray": 40.63
+    },
+    "description": "Loại bỏ định tuyến hình thái (ép 3 nhánh cho cả 5 lớp)"
+  },
+  "LOO_No_Weights": {
+    "mAP50_95": 45.28,
+    "mAP50": 76.99,
+    "mAP75": 44.9,
+    "mAP_s": 33.85,
+    "per_class": {
+      "DiVat": 26.0,
+      "DiVatLoiLom": 35.55,
+      "LoiChi": 67.28,
+      "LoiNhua": 56.92,
+      "LoiTray": 40.63
+    },
+    "description": "Loại bỏ trọng số lớp (đưa về trọng số đồng đều)"
+  },
+  "LOO_No_Class_IoU": {
+    "mAP50_95": 45.9,
+    "mAP50": 77.62,
+    "mAP75": 45.96,
+    "mAP_s": 34.82,
+    "per_class": {
+      "DiVat": 26.28,
+      "DiVatLoiLom": 35.74,
+      "LoiChi": 66.92,
+      "LoiNhua": 56.98,
+      "LoiTray": 43.56
+    },
+    "description": "Loại bỏ ngưỡng IoU lớp (cố định IoU=0.55)"
+  },
+  "LOO_No_Class_Floor": {
+    "mAP50_95": 46.05,
+    "mAP50": 77.39,
+    "mAP75": 46.71,
+    "mAP_s": 35.44,
+    "per_class": {
+      "DiVat": 26.19,
+      "DiVatLoiLom": 35.79,
+      "LoiChi": 67.19,
+      "LoiNhua": 57.79,
+      "LoiTray": 43.3
+    },
+    "description": "Loại bỏ sàn tin cậy lớp (cố định floor=0.05)"
+  },
+  "LOO_No_Consensus_Boost": {
+    "mAP50_95": 45.7,
+    "mAP50": 77.13,
+    "mAP75": 46.11,
+    "mAP_s": 34.64,
+    "per_class": {
+      "DiVat": 24.33,
+      "DiVatLoiLom": 35.65,
+      "LoiChi": 67.22,
+      "LoiNhua": 57.72,
+      "LoiTray": 43.6
+    },
+    "description": "Loại bỏ hệ số thưởng đồng thuận (boost=1.0)"
+  },
+  "LOO_No_Solo_Decay": {
+    "mAP50_95": 45.98,
+    "mAP50": 77.26,
+    "mAP75": 46.71,
+    "mAP_s": 34.87,
+    "per_class": {
+      "DiVat": 26.2,
+      "DiVatLoiLom": 35.68,
+      "LoiChi": 67.01,
+      "LoiNhua": 57.56,
+      "LoiTray": 43.47
+    },
+    "description": "Loại bỏ hệ số phạt đơn độc (decay=1.0)"
+  }
+}

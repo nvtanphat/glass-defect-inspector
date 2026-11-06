@@ -1,0 +1,13 @@
+{
+  "model": "YOLOv10m",
+  "mAP50": 68.95,
+  "mAP50_95": 38.82,
+  "mAP75": 39.3,
+  "per_class_mAP50_95": {
+    "DiVat": 14.26,
+    "DiVatLoiLom": 29.88,
+    "LoiChi": 62.18,
+    "LoiNhua": 53.87,
+    "LoiTray": 33.93
+  }
+}

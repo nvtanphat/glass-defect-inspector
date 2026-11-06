@@ -1,0 +1,199 @@
+{
+  "split": "validation",
+  "num_images": 878,
+  "detectors": [
+    "FBDNet-M (f_tta)",
+    "D-FINE-M (d_tta)",
+    "YOLO26m-ROI (y_ms_tta)"
+  ],
+  "models_summary": {
+    "vanilla_wbf": {
+      "mAP50_95": 43.46,
+      "AP50": 76.69,
+      "AP75": 41.75,
+      "AP_small": 27.53,
+      "per_class": {
+        "DiVat": 28.01,
+        "DiVatLoiLom": 34.58,
+        "LoiChi": 62.94,
+        "LoiNhua": 50.76,
+        "LoiTray": 41.04
+      }
+    },
+    "triad_wbf": {
+      "mAP50_95": 43.61,
+      "AP50": 75.7,
+      "AP75": 42.01,
+      "AP_small": 25.44,
+      "per_class": {
+        "DiVat": 29.03,
+        "DiVatLoiLom": 34.37,
+        "LoiChi": 66.01,
+        "LoiNhua": 47.51,
+        "LoiTray": 41.11
+      }
+    },
+    "sbf_han_2025": {
+      "mAP50_95": 44.91,
+      "AP50": 77.71,
+      "AP75": 43.37,
+      "AP_small": 32.32,
+      "per_class": {
+        "DiVat": 29.32,
+        "DiVatLoiLom": 35.08,
+        "LoiChi": 64.95,
+        "LoiNhua": 52.22,
+        "LoiTray": 42.96
+      }
+    },
+    "ar_wbf_daoud_2026": {
+      "mAP50_95": 44.35,
+      "AP50": 77.26,
+      "AP75": 42.41,
+      "AP_small": 28.83,
+      "per_class": {
+        "DiVat": 29.19,
+        "DiVatLoiLom": 34.84,
+        "LoiChi": 64.55,
+        "LoiNhua": 51.12,
+        "LoiTray": 42.07
+      }
+    }
+  },
+  "optimal_hyperparameters": {
+    "sbf": {
+      "DiVat": {
+        "iou_thr": 0.45,
+        "weights": [
+          1.5,
+          1.0,
+          1.0
+        ],
+        "min_votes": 2,
+        "solo_conf_thr": 0.45,
+        "consensus_boost": 1.25,
+        "conf_floor": 0.03,
+        "val_ap": 29.317
+      },
+      "DiVatLoiLom": {
+        "iou_thr": 0.4,
+        "weights": [
+          1.5,
+          1.0,
+          1.0
+        ],
+        "min_votes": 2,
+        "solo_conf_thr": 0.45,
+        "consensus_boost": 1.2,
+        "conf_floor": 0.03,
+        "val_ap": 35.084
+      },
+      "LoiChi": {
+        "iou_thr": 0.65,
+        "weights": [
+          1.0,
+          1.0,
+          1.5
+        ],
+        "min_votes": 2,
+        "solo_conf_thr": 0.25,
+        "consensus_boost": 1.1,
+        "conf_floor": 0.03,
+        "val_ap": 64.9492
+      },
+      "LoiNhua": {
+        "iou_thr": 0.55,
+        "weights": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "min_votes": 2,
+        "solo_conf_thr": 0.45,
+        "consensus_boost": 1.1,
+        "conf_floor": 0.03,
+        "val_ap": 52.2216
+      },
+      "LoiTray": {
+        "iou_thr": 0.6,
+        "weights": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "min_votes": 2,
+        "solo_conf_thr": 0.15,
+        "consensus_boost": 1.25,
+        "conf_floor": 0.03,
+        "val_ap": 42.961
+      }
+    },
+    "ar_wbf": {
+      "DiVat": {
+        "iou_base": 0.42,
+        "reliabilities": [
+          1.1,
+          1.034,
+          0.866
+        ],
+        "lambda_adapt": 0.35,
+        "consensus_boost": 1.25,
+        "solo_decay": 0.9,
+        "conf_floor": 0.03,
+        "val_ap": 29.1923
+      },
+      "DiVatLoiLom": {
+        "iou_base": 0.47,
+        "reliabilities": [
+          1.05,
+          1.012,
+          0.938
+        ],
+        "lambda_adapt": 0.2,
+        "consensus_boost": 1.2,
+        "solo_decay": 0.9,
+        "conf_floor": 0.03,
+        "val_ap": 34.8395
+      },
+      "LoiChi": {
+        "iou_base": 0.62,
+        "reliabilities": [
+          1.006,
+          1.004,
+          0.99
+        ],
+        "lambda_adapt": 0.2,
+        "consensus_boost": 1.1,
+        "solo_decay": 0.9,
+        "conf_floor": 0.03,
+        "val_ap": 64.5482
+      },
+      "LoiNhua": {
+        "iou_base": 0.52,
+        "reliabilities": [
+          1.004,
+          1.055,
+          0.942
+        ],
+        "lambda_adapt": 0.2,
+        "consensus_boost": 1.1,
+        "solo_decay": 0.9,
+        "conf_floor": 0.03,
+        "val_ap": 51.1182
+      },
+      "LoiTray": {
+        "iou_base": 0.42,
+        "reliabilities": [
+          1.139,
+          0.915,
+          0.946
+        ],
+        "lambda_adapt": 0.2,
+        "consensus_boost": 1.25,
+        "solo_decay": 0.9,
+        "conf_floor": 0.03,
+        "val_ap": 42.0686
+      }
+    }
+  }
+}

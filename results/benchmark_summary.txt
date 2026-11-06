@@ -1,0 +1,19 @@
+================================================================================================================
+GLASS DEFECT INSPECTOR: HELD-OUT TEST BENCHMARK COMPARISON (890 images, 1,573 ground-truth labels)
+================================================================================================================
+Model                           | Backbone / Technique            | mAP@50 | mAP@75 | mAP@50:95 | mAP_s  | Latency (T4) | FPS
+----------------------------------------------------------------------------------------------------------------
+FBDNet-M (SOTA Proposed) 🏆     | HGNetv2FBD + FBDHybridEncoder   | 75.43% | 41.90% | 42.42%    | 28.86% | 57.27 ms     | 17.5
+D-FINE-M Baseline (Best)        | HGNetv2-B2 + HybridEncoder      | 72.25% | 40.59% | 41.33%    | 28.64% | 57.27 ms     | 17.5
+D-FINE-M Baseline (Rerun Ep99)  | HGNetv2-B2 + HybridEncoder      | 72.20% | 38.43% | 40.49%    | 24.59% | 57.27 ms     | 17.5
+YOLO26m + ROI + VFL             | YOLO26 + ROI Crop + VFL         | 70.96% | 39.69% | 40.34%    | -      | 58.40 ms     | 17.1
+YOLO26m Base                    | YOLO26 (Raw 960x960)            | 69.85% | 36.75% | 38.51%    | -      | 67.40 ms     | 14.8
+RT-DETR-L                       | HGNetv2-B4 + Transformer        | 65.22% | 30.57% | 35.02%    | -      | 97.29 ms     | 10.3
+YOLO11m                         | CSPDarknet (Standard Baseline)  | 63.86% | 32.23% | 34.31%    | -      | 57.20 ms     | 17.5
+================================================================================================================
+Test Protocol:
+- Split: Multilabel Stratified Split (Seed 42), Held-out Test: 890 images, 1,573 labels, 0% leakage.
+- Input Resolution: 960x960.
+- Hardware: NVIDIA Tesla T4 GPU.
+- Defect Classes: 0: DiVat, 1: DiVatLoiLom, 2: LoiChi, 3: LoiNhua, 4: LoiTray.
+================================================================================================================

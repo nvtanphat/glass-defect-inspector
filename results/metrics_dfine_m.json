@@ -1,0 +1,40 @@
+{
+  "model": "D-FINE-M Baseline",
+  "backbone": "HGNetv2-B2",
+  "encoder": "HybridEncoder",
+  "decoder": "DFINETransformer",
+  "parameters_M": 19.19,
+  "input_resolution": "960x960",
+  "epochs": 100,
+  "test_images": 890,
+  "test_annotations": 1573,
+  "best_epoch": 82,
+  "mAP50_95_best": 41.33,
+  "mAP50_best": 72.25,
+  "mAP75_best": 40.59,
+  "mAP50_95_rerun": 40.73,
+  "mAP50_rerun": 72.53,
+  "mAP50_95_epoch99": 40.49,
+  "mAP50_epoch99": 72.20,
+  "mAP75_epoch99": 38.43,
+  "mAP_small": 28.64,
+  "mAP_medium": 40.55,
+  "mAP_large": 40.74,
+  "per_class_mAP50_95": {
+    "DiVat": 25.31,
+    "DiVatLoiLom": 31.90,
+    "LoiChi": 63.82,
+    "LoiNhua": 51.78,
+    "LoiTray": 29.65
+  },
+  "per_class_mAP50": {
+    "DiVat": 62.17,
+    "DiVatLoiLom": 70.01,
+    "LoiChi": 90.27,
+    "LoiNhua": 78.93,
+    "LoiTray": 59.61
+  },
+  "latency_forward_ms": 57.27,
+  "fps": 17.5,
+  "weights_file": "weights/dfine_m_baseline_reproduced_best.pth"
+}

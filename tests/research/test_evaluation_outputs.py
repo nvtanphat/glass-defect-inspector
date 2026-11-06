@@ -62,7 +62,7 @@ def test_evaluation_handles_deployed_batches_and_rectangular_images():
             and node.target.id == "i"
         )
     )
-    image_path = ROOT / "src/glass_inspector/sample_images/sample_replica.jpg"
+    image_path = ROOT / "src/glass_inspector/sample_images/sample_bottle_1.jpg"
     with Image.open(image_path) as original:
         width, height = original.size
     assert width != height, "Regression requires a real rectangular source image"

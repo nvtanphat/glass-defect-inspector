@@ -1,0 +1,78 @@
+{
+  "timestamp": "2026-10-21 07:47:44",
+  "probe_time_ms": 28593.0,
+  "models": {
+    "apex-triad-ensemble": {
+      "name": "Adaptive Heterogeneous Triad Ensemble (SOTA 46.10%)",
+      "status": "READY",
+      "filename": "optimal_ensemble_hyperparameters.json",
+      "size_mb": 0.0,
+      "sha256": "74c25dbda1967e60f36910d8b9059cd203dfe6dd7126f12145b06949947be149",
+      "latency_ms": null,
+      "reason": "OK"
+    },
+    "yolo11m": {
+      "name": "YOLO11m",
+      "status": "UNAVAILABLE",
+      "filename": "yolo11m_best.pt",
+      "size_mb": null,
+      "sha256": null,
+      "latency_ms": null,
+      "reason": "Trained checkpoint missing"
+    },
+    "yolo26m-base": {
+      "name": "YOLO26m Base",
+      "status": "READY",
+      "filename": "yolo26m_960_best.pt",
+      "size_mb": 42.1,
+      "sha256": "7cb1707f5e50738faa154ec3bcf1b04e2882c4710237b96a10513f453e3774cd",
+      "latency_ms": null,
+      "reason": "OK"
+    },
+    "yolo26m-roi-vfl": {
+      "name": "YOLO26m + ROI + VFL",
+      "status": "READY",
+      "filename": "yolo26m_roi_vfl_best.pt",
+      "size_mb": 125.2,
+      "sha256": "75c8c55b5a07aad7c22f4c646b8e129b83bda7691a385193b2c388a94a78e200",
+      "latency_ms": null,
+      "reason": "OK"
+    },
+    "rtdetr-l": {
+      "name": "RT-DETR-L",
+      "status": "UNAVAILABLE",
+      "filename": "rtdetr_l_best.pt",
+      "size_mb": null,
+      "sha256": null,
+      "latency_ms": null,
+      "reason": "Trained checkpoint missing"
+    },
+    "dfine-m": {
+      "name": "D-FINE-M",
+      "status": "READY",
+      "filename": "dfine_m_baseline_reproduced_best.pth",
+      "size_mb": 299.5,
+      "sha256": "e22a00c6fc7377f18d49bd4a0a8b6081fd6a06029825faaf46a905406ef93779",
+      "latency_ms": null,
+      "reason": "OK"
+    },
+    "fbdnet-m": {
+      "name": "FBDNet-M",
+      "status": "READY",
+      "filename": "dfine_m_fbdnet_best.pth",
+      "size_mb": 347.9,
+      "sha256": "6f86c006f48406036e6619967cc1437161b0c94453a39076ca43ae3b09a6b635",
+      "latency_ms": null,
+      "reason": "OK"
+    },
+    "yolo26m-distilled": {
+      "name": "YOLO26m Distilled Student (Triad KD)",
+      "status": "READY",
+      "filename": "distilled_student_yolo26m_best.pt",
+      "size_mb": 42.1,
+      "sha256": "710cfe38263105c5d9189251916913ab8a67355d7f4fbb8fd3e08d8cf4e03ddb",
+      "latency_ms": null,
+      "reason": "OK"
+    }
+  }
+}
