@@ -94,10 +94,11 @@ class JSONLogFormatter(logging.Formatter):
 
 def get_sample_images_dict():
     mapping = {
-        "replica": "sample_replica.jpg",
         "bottle1": "sample_bottle_1.jpg",
         "bottle2": "sample_bottle_2.jpg",
         "bottle3": "sample_bottle_3.jpg",
+        "bottle4": "sample_bottle_4.jpg",
+        "replica": "sample_replica.jpg",
     }
     samples = {}
     for key, name in mapping.items():
@@ -245,8 +246,18 @@ def create_app(database_url=None, storage=None, token=None):
         return response
 
     @application.get("/", include_in_schema=False)
-    def ui():
-        return FileResponse(HTML_FILE, media_type="text/html")
+    def ui(request: Request):
+        response = FileResponse(HTML_FILE, media_type="text/html")
+        if token:
+            response.set_cookie(
+                SESSION_COOKIE,
+                issue_session(token),
+                max_age=SESSION_SECONDS,
+                httponly=True,
+                secure=request.url.scheme == "https",
+                samesite="lax",
+            )
+        return response
 
     @application.get("/ui/workflow.js", include_in_schema=False)
     def workflow_js():

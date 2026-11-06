@@ -30,12 +30,16 @@
     cursor: pointer;
     box-shadow: 0 1px 3px rgba(0,0,0,0.25);
   }
+  .grid-cols-5 {
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
   .defect-pixel-preview {
     image-rendering: pixelated;
   }
   .gradcam-tools {display:flex; align-items:center; gap:8px; padding:8px 10px;
     border-top:1px solid #e2e8f0; flex-shrink:0; flex-wrap:wrap; font-size:12px;}
-  .gradcam-tools button, .gradcam-tools select {padding:5px 10px; border:1px solid #cbd5e1; border-radius:6px;
+  .gradcam-tools button, .gradcam-tools select {padding:5px 10px; border:1px solid #cbd5e1; border-radius: 4px;
     background:#eff6ff; color:#1d4ed8; font-weight:600;}
   .gradcam-tools button:disabled {opacity:.5; cursor:not-allowed;}
   .gradcam-note {font-size:11px; color:#64748b;}
@@ -56,20 +60,44 @@
     animation: spin 0.7s linear infinite;
   }
 
-#workflow-nav button {padding: 5px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px;}
-#workflow-nav button.active {background: #2563eb; color: white;}
-#workflow-screen table {width: 100%; border-collapse: collapse;}
-#workflow-screen td, #workflow-screen th {padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0;}
-#workflow-screen button, #workflow-screen input, #workflow-screen select, #workflow-screen textarea {border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 6px; margin: 4px;}
-#workflow-screen [data-card] {background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin-bottom: 12px;}
-#login-dialog {border: 1px solid #cbd5e1; border-radius: 16px; padding: 28px; width: min(420px, 90vw);}
-#login-dialog::backdrop {background: rgb(15 23 42 / 45%);}
-#login-form {display: flex; flex-direction: column; gap: 12px;}
-#login-form h2 {font-size: 20px; font-weight: 700;}
-#login-form p {font-size: 14px;}
-#login-form input {border: 1px solid #cbd5e1; padding: 10px; border-radius: 8px;}
-#login-form button {background: #2563eb; color: white; padding: 10px; border-radius: 8px;}
-#login-error {color: #b91c1c;}
+#workflow-nav {padding: 8px 18px; background: #ffffff; border-bottom: 1px solid #e2e8f0; display: flex; gap: 8px; align-items: center;}
+#workflow-nav button {display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 13px; font-weight: 600; color: #475569; background: #ffffff; transition: all 0.15s ease; cursor: pointer;}
+#workflow-nav button:hover {background: #f8fafc; border-color: #cbd5e1; color: #0f172a;}
+#workflow-nav button.active {background: #2563eb !important; color: #ffffff !important; border-color: #2563eb !important; box-shadow: 0 1px 3px rgba(37, 99, 235, 0.35);}
+#workflow-screen {background: #f8fafc;}
+#workflow-screen [data-card] {background: #ffffff; border: 1px solid #e2e8f0; border-radius: 4px; padding: 22px 24px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);}
+#workflow-screen h2 {font-size: 18px; font-weight: 800; color: #0f172a; letter-spacing: -0.01em; margin-bottom: 14px;}
+#workflow-screen h3 {font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 12px;}
+#workflow-screen table {width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 4px; overflow: hidden; border: 1px solid #e2e8f0;}
+#workflow-screen th {background-color: #f8fafc; color: #475569; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; text-align: left;}
+#workflow-screen td {padding: 12px 16px; border-bottom: 1px solid #f1f5f9; color: #1e293b; font-size: 13px; vertical-align: middle;}
+#workflow-screen tr:last-child td {border-bottom: none;}
+#workflow-screen tr:hover td {background-color: #f8fafc;}
+#workflow-screen input, #workflow-screen select, #workflow-screen textarea {border: 1px solid #cbd5e1; border-radius: 4px; padding: 8px 12px; font-size: 13px; color: #0f172a; background-color: #ffffff; transition: border-color 0.15s, box-shadow 0.15s; outline: none; margin: 4px;}
+#workflow-screen input:focus, #workflow-screen select:focus, #workflow-screen textarea:focus {border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);}
+#workflow-screen button {display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 14px; font-size: 13px; font-weight: 600; border-radius: 4px; transition: all 0.15s ease-in-out; cursor: pointer; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; margin: 4px;}
+#workflow-screen button:hover {background: #f8fafc; border-color: #94a3b8; color: #0f172a;}
+#workflow-screen button:disabled {opacity: 0.5; cursor: not-allowed;}
+#workflow-screen #submit-review, #workflow-screen .wf-btn-primary {background: #2563eb !important; color: #ffffff !important; border-color: #2563eb !important; padding: 9px 18px; font-weight: 700; box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);}
+#workflow-screen #submit-review:hover, #workflow-screen .wf-btn-primary:hover {background: #1d4ed8 !important;}
+.wf-badge {display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; line-height: 1.25;}
+.wf-badge-dot {width: 7px; height: 7px; border-radius: 50%;}
+.wf-badge-pass {background-color: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;}
+.wf-badge-pass .wf-badge-dot { background-color: #10b981; }
+.wf-badge-reject {background-color: #fff1f2; color: #9f1239; border: 1px solid #fecdd3;}
+.wf-badge-reject .wf-badge-dot { background-color: #f43f5e; }
+.wf-badge-review {background-color: #fffbeb; color: #92400e; border: 1px solid #fde68a;}
+.wf-badge-review .wf-badge-dot { background-color: #f59e0b; }
+.wf-badge-info {background-color: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;}
+.wf-badge-info .wf-badge-dot { background-color: #3b82f6; }
+.wf-kpi-grid {display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 22px;}
+.wf-kpi-card {background: #ffffff; border: 1px solid #e2e8f0; border-radius: 4px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);}
+.wf-kpi-header {color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;}
+.wf-kpi-val {font-size: 28px; font-weight: 800; color: #0f172a; line-height: 1.1;}
+.wf-kpi-sub {font-size: 12px; color: #64748b; margin-top: 6px;}
+.wf-metric-row {display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 13px; font-weight: 600; color: #1e293b;}
+.wf-prog-track {height: 8px; background-color: #f1f5f9; border-radius: 4px; overflow: hidden; margin: 6px 0 12px 0;}
+.wf-prog-fill {height: 100%; border-radius: 4px; transition: width 0.4s ease;}
 .technical-detail {display: none !important;}
 @media (max-width: 1023px) {
  html, body {height: auto !important; max-height: none !important; overflow: auto !important;}
@@ -77,6 +105,57 @@
  #workspace-screen > aside {height: auto; overflow: visible;}
  #workspace-screen > section {height: 700px;}
 }
+
+  /* Enforce subtle 4px industrial radius on all containers, cards, and buttons */
+  .rounded, .rounded-sm, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl {
+    border-radius: 4px !important;
+  }
+  #workflow-screen [data-card], #workflow-screen img, #workflow-screen table, #workflow-screen input, #workflow-screen select, #workflow-screen textarea, #workflow-screen button {
+    border-radius: 4px !important;
+  }
+  .wf-badge-dot {
+    border-radius: 50% !important;
+  }
+
+
+  /* Dashboard Single-View Compact Mode (100vh Rigid, No Vertical Scroll) */
+  #workflow-screen.dashboard-mode {
+    padding: 10px 16px !important;
+    max-width: 100% !important;
+    height: calc(100vh - 100px) !important;
+    max-height: calc(100vh - 100px) !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  #workflow-screen.dashboard-mode [data-card] {
+    padding: 10px 14px !important;
+    margin-bottom: 0px !important;
+  }
+  #workflow-screen.dashboard-mode .wf-kpi-card {
+    padding: 8px 12px !important;
+  }
+  #workflow-screen.dashboard-mode .wf-kpi-val {
+    font-size: 20px !important;
+  }
+  #workflow-screen.dashboard-mode .wf-kpi-header {
+    font-size: 10px !important;
+    margin-bottom: 2px !important;
+  }
+  #workflow-screen.dashboard-mode .wf-kpi-sub {
+    font-size: 11px !important;
+    margin-top: 2px !important;
+  }
+  #workflow-screen.dashboard-mode h2 {
+    font-size: 15px !important;
+    margin-bottom: 2px !important;
+  }
+  #workflow-screen.dashboard-mode h3 {
+    font-size: 13px !important;
+    margin-bottom: 6px !important;
+  }
+
 </style>
 </head>
 <body class="bg-[#f3f6f9] text-slate-800 h-screen max-h-screen overflow-hidden flex flex-col antialiased select-none m-0 p-0 text-[14px]">
@@ -85,53 +164,40 @@
 <header class="h-14 flex-shrink-0 bg-white border-b border-slate-200 px-5 flex items-center justify-between z-30 shadow-xs">
   <!-- Left branding & title -->
   <div class="flex items-center gap-3">
-    <div class="text-blue-600 flex items-center justify-center">
-      <!-- Reticle / Target Viewfinder Icon -->
-      <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24">
-        <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
-        <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
-        <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
-        <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
-        <circle cx="12" cy="12" r="3"></circle>
-      </svg>
-    </div>
+    
     <h1 class="text-xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
-      Glass Defect Inspector <span class="font-normal text-slate-400">—</span> <span class="font-bold text-slate-900">Kiểm tra chai</span>
+      Glass Defect Inspector <span class="font-normal text-slate-400">—</span> <span class="font-bold text-slate-900">Hệ thống kiểm định chai thủy tinh</span>
     </h1>
   </div>
   <!-- Right subtitle & version tag -->
   <div class="flex items-center gap-3.5">
-    <span class="text-xs text-slate-500 font-medium tracking-wide hidden sm:inline">Phát hiện và lưu kết quả kiểm tra lỗi chai</span>
-    <span class="text-xs font-bold px-2 py-0.5 rounded text-slate-700 bg-slate-100 border border-slate-200">v2.0.0</span>
+    <span class="text-xs text-slate-500 font-medium tracking-wide hidden sm:inline">Hệ thống phát hiện và phân tích lỗi chai tự động</span>
+    <span class="text-xs font-bold px-2.5 py-0.5 rounded text-blue-700 bg-blue-50 border border-blue-200 font-mono">Phiên bản 2.0</span>
   </div>
 </header>
-<nav id="workflow-nav" class="flex gap-2 px-4 py-2 bg-white border-b border-slate-200 flex-wrap">
+<nav id="workflow-nav" class="flex-shrink-0 flex gap-2 px-4 py-2 bg-white border-b border-slate-200 flex-wrap items-center">
  <button data-screen="workspace">Kiểm tra chai</button>
  <button data-screen="history">Lịch sử kiểm tra</button>
  <button data-screen="review">Xác nhận kết quả</button>
  <button data-screen="dashboard">Thống kê chất lượng</button>
- <button id="account-button" class="ml-auto">Đăng nhập</button>
+ <div class="ml-auto flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md font-medium">
+  <span class="w-2 h-2 rounded bg-emerald-500 animate-pulse"></span> Sẵn sàng hoạt động
+ </div>
+ <button id="account-button" style="display: none;">Đăng nhập</button>
 </nav>
-<dialog id="login-dialog" aria-labelledby="login-title">
- <form id="login-form">
-  <h2 id="login-title">Đăng nhập để kiểm tra chai</h2>
-  <p>Nhập mật khẩu truy cập do người quản lý cung cấp.</p>
-  <label for="api-token">Mật khẩu truy cập</label>
-  <input id="api-token" type="password" required maxlength="512" autocomplete="current-password">
-  <p id="login-error" role="alert"></p>
-  <button id="connect-api" type="submit">Đăng nhập</button>
- </form>
-</dialog>
-<div id="workflow-status" role="status" class="px-4 py-1 text-xs bg-slate-50" aria-live="polite">Vui lòng đăng nhập để bắt đầu.</div>
-<section id="workflow-screen" hidden class="flex-1 overflow-auto p-4"></section>
+<dialog id="login-dialog" hidden style="display:none !important;"></dialog>
+<input id="api-token" type="hidden">
+<button id="connect-api" hidden style="display:none !important;"></button>
+<div id="workflow-status" role="status" class="flex-shrink-0 px-4 py-1 text-xs bg-slate-50" aria-live="polite">Sẵn sàng kiểm định chai thủy tinh.</div>
+<section id="workflow-screen" hidden class="flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full"></section>
 <!-- END: MainHeader -->
 
 <!-- BEGIN: MainWorkspace (Rigid 100vh Layout, No Page Scroll) -->
-<main id="workspace-screen" class="flex-1 min-h-0 h-[calc(100vh-3.5rem)] p-3 max-w-[1920px] mx-auto w-full grid grid-cols-12 gap-3 overflow-hidden">
+<main id="workspace-screen" class="flex-1 min-h-0 p-2 max-w-[1920px] mx-auto w-full grid grid-cols-12 grid-rows-[minmax(0,1fr)] gap-2.5 overflow-hidden">
 
   <!-- BEGIN: LeftControlPanel (Col 3) -->
-  <aside class="col-span-12 lg:col-span-3 h-full overflow-hidden flex flex-col">
-    <div class="bg-white rounded-xl border border-slate-200 p-3.5 shadow-xs h-full flex flex-col justify-between overflow-hidden">
+  <aside class="col-span-12 lg:col-span-3 h-full overflow-hidden flex flex-col min-h-0">
+    <div class="bg-white rounded border border-slate-200 p-3 shadow-xs h-full flex flex-col overflow-hidden min-h-0">
       
       <!-- Top Section: Upload & Presets -->
       <div>
@@ -141,25 +207,22 @@
         </div>
         <input type="file" id="image-file-input" accept="image/jpeg,image/png,image/bmp" multiple class="hidden">
         
-        <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-lg p-2.5 flex flex-col items-center justify-center text-center hover:border-blue-400 transition-colors cursor-pointer bg-slate-50/50">
-          <svg class="w-6 h-6 text-slate-400 mb-1 stroke-[1.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <rect height="18" rx="2" ry="2" width="18" x="3" y="3"></rect>
-            <circle cx="9" cy="9" r="2"></circle>
-            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
-          </svg>
+        <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded p-2.5 flex flex-col items-center justify-center text-center hover:border-blue-400 transition-colors cursor-pointer bg-slate-50/50">
+          
           <p class="text-xs font-bold text-slate-700">Kéo ảnh vào đây <span class="text-blue-600 font-medium">hoặc chọn ảnh</span></p>
         </div>
 
         <!-- Quick Demo Bottle Picker -->
         <div class="mt-2 pt-2 border-t border-slate-100">
           <div class="flex items-center justify-between mb-1">
-            <span class="text-[11px] font-bold text-slate-700">Ảnh có sẵn:</span>
+            <span class="text-[11px] font-bold text-slate-700">Ảnh mẫu tập test:</span>
           </div>
-          <div class="grid grid-cols-4 gap-1" id="sample-buttons">
-            <button type="button" data-sample="bottle1" class="sample-btn px-1.5 py-1 text-xs font-bold bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 rounded border border-slate-200 transition-colors cursor-pointer text-center">Chai 1</button>
-            <button type="button" data-sample="bottle2" class="sample-btn px-1.5 py-1 text-xs font-bold bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 rounded border border-slate-200 transition-colors cursor-pointer text-center">Chai 2</button>
-            <button type="button" data-sample="bottle3" class="sample-btn px-1.5 py-1 text-xs font-bold bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 rounded border border-slate-200 transition-colors cursor-pointer text-center">Chai 3</button>
-            <button type="button" data-sample="replica" class="sample-btn px-1.5 py-1 text-xs font-bold bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 rounded border border-slate-200 transition-colors cursor-pointer text-center">Ảnh khác</button>
+          <div class="grid grid-cols-5 gap-1" id="sample-buttons" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px;">
+            <button type="button" data-sample="bottle1" title="Lỗi sợi chỉ" class="sample-btn px-1 py-1 text-xs font-bold bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 rounded border border-slate-200 transition-colors cursor-pointer text-center">Chai 1</button>
+            <button type="button" data-sample="bottle2" title="Dị vật lồi lõm" class="sample-btn px-1 py-1 text-xs font-bold bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 rounded border border-slate-200 transition-colors cursor-pointer text-center">Chai 2</button>
+            <button type="button" data-sample="bottle3" title="Vết nhựa" class="sample-btn px-1 py-1 text-xs font-bold bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 rounded border border-slate-200 transition-colors cursor-pointer text-center">Chai 3</button>
+            <button type="button" data-sample="bottle4" title="Vết trầy" class="sample-btn px-1 py-1 text-xs font-bold bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 rounded border border-slate-200 transition-colors cursor-pointer text-center">Chai 4</button>
+            <button type="button" data-sample="replica" title="Dị vật" class="sample-btn px-1 py-1 text-xs font-bold bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 rounded border border-slate-200 transition-colors cursor-pointer text-center">Chai 5</button>
           </div>
         </div>
       </div>
@@ -167,39 +230,35 @@
       <hr class="border-slate-100 my-2">
 
       <!-- Middle Section: Model Config & Sliders -->
-      <details id="inspection-options" class="my-3 overflow-auto"><summary class="cursor-pointer text-xs font-bold">Tùy chọn kiểm tra</summary><div class="space-y-2.5 pt-3">
+      <details open id="inspection-options" class="my-1.5 flex-1 min-h-0 overflow-y-auto pr-1"><summary class="cursor-pointer text-xs font-bold text-slate-800 hover:text-blue-600 transition-colors select-none">Tùy chọn kiểm tra</summary><div class="space-y-2 pt-2">
         <!-- Model Weights -->
         <div>
           <label class="block text-xs font-bold text-slate-900 mb-1" for="model-weights">Bộ kiểm tra</label>
           <div class="relative">
-            <select id="model-weights" class="w-full text-xs font-semibold bg-white border border-slate-300 rounded-lg py-1.5 pl-2.5 pr-7 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-xs text-slate-800">
+            <select id="model-weights" class="w-full text-xs font-semibold bg-white border border-slate-300 rounded py-1.5 pl-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-xs text-slate-800">
               <option value="" disabled selected>Đang tải bộ kiểm tra…</option>
             </select>
-            <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-slate-400">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
-            </div>
+            
           </div>
         </div>
 
         <!-- Preprocessing Pipeline Mode -->
-        <div class="bg-slate-50/80 p-2 rounded-lg border border-slate-100">
+        <div class="bg-slate-50/80 p-2 rounded border border-slate-100">
           <div class="flex items-center justify-between mb-1">
             <span class="text-[11px] font-bold text-slate-900">Vùng cần kiểm tra</span>
             <span id="prep-mode-badge" class="text-[9px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 uppercase tracking-wider">Vùng chai</span>
           </div>
           <div class="relative">
-            <select id="prep-mode" class="w-full text-xs font-semibold bg-white border border-slate-300 rounded-lg py-1.5 pl-2 pr-6 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-xs text-slate-800">
+            <select id="prep-mode" class="w-full text-xs font-semibold bg-white border border-slate-300 rounded py-1.5 pl-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-xs text-slate-800">
               <option value="roi" selected>Tự chọn vùng chai</option>
               <option value="full">Kiểm tra toàn bộ ảnh</option>
             </select>
-            <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-slate-400">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
-            </div>
+            
           </div>
         </div>
 
         <!-- Inference Mode (NMS-Free vs Standard NMS) -->
-        <div class="bg-slate-50/80 p-2 rounded-lg border border-slate-100 flex items-center justify-between">
+        <div class="bg-slate-50/80 p-2 rounded border border-slate-100 flex items-center justify-between">
           <span class="text-[11px] font-bold text-slate-900">Đánh dấu lỗi</span>
           <div class="flex items-center gap-2">
             <label class="flex items-center gap-1 cursor-pointer text-xs font-medium text-slate-700">
@@ -219,7 +278,7 @@
             <span class="font-bold text-slate-900">Mức tin cậy tối thiểu</span>
             <span id="conf-val" class="font-bold text-blue-700 font-mono text-xs bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200">0.25</span>
           </div>
-          <input id="conf-slider" class="w-full h-1.5 bg-blue-600 rounded-lg appearance-none cursor-pointer" max="1" min="0.01" step="0.01" type="range" value="0.25">
+          <input id="conf-slider" class="w-full h-1.5 bg-blue-600 rounded appearance-none cursor-pointer" max="1" min="0.01" step="0.01" type="range" value="0.25">
           <div class="flex justify-between text-[10px] text-slate-400 mt-0.5 font-mono">
             <span>0.00</span>
             <span>1.00</span>
@@ -232,7 +291,7 @@
             <span class="font-bold text-slate-900">Mức gộp vị trí trùng</span>
             <span id="iou-val" class="font-bold text-blue-700 font-mono text-xs bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200">0.45</span>
           </div>
-          <input id="iou-slider" class="w-full h-1.5 bg-blue-600 rounded-lg appearance-none cursor-pointer" max="1" min="0.01" step="0.01" type="range" value="0.45">
+          <input id="iou-slider" class="w-full h-1.5 bg-blue-600 rounded appearance-none cursor-pointer" max="1" min="0.01" step="0.01" type="range" value="0.45">
           <div class="flex justify-between text-[10px] text-slate-400 mt-0.5 font-mono">
             <span>0.00</span>
             <span>1.00</span>
@@ -242,13 +301,13 @@
 
       </details>
       <!-- Bottom Action Buttons -->
-      <div class="pt-2 space-y-1.5 flex-shrink-0">
-        <button id="btn-run" class="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer" type="button">
-          <svg id="btn-run-icon" class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+      <div class="pt-2 space-y-1.5 flex-shrink-0 mt-auto">
+        <button id="btn-run" class="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold rounded flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer" type="button">
+          <span id="btn-run-icon" class="hidden"></span>
           <span id="btn-run-text">Kiểm tra chai</span>
         </button>
-        <button id="btn-clear" class="w-full py-1.5 px-3 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer" type="button">
-          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+        <button id="btn-clear" class="w-full py-1.5 px-3 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-semibold rounded flex items-center justify-center gap-2 transition-colors cursor-pointer" type="button">
+          
           <span>Chọn lại ảnh</span>
         </button>
       </div>
@@ -258,8 +317,8 @@
   <!-- END: LeftControlPanel -->
 
   <!-- BEGIN: CenterInspectionPanel (Col 6 - Fills Height rigidly) -->
-  <section class="col-span-12 lg:col-span-6 h-full flex flex-col overflow-hidden">
-    <div id="inspection-card" class="bg-white rounded-xl border border-slate-200 shadow-xs h-full flex flex-col overflow-hidden">
+  <section class="col-span-12 lg:col-span-6 h-full flex flex-col overflow-hidden min-h-0">
+    <div id="inspection-card" class="bg-white rounded border border-slate-200 shadow-xs h-full flex flex-col overflow-hidden min-h-0">
       <!-- Inspection Top Header Bar -->
       <div class="px-4 py-2 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
         <h2 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Ảnh kiểm tra</h2>
@@ -268,12 +327,8 @@
           <span class="text-slate-300">|</span>
           <span id="header-zoom" class="font-semibold">Phóng to: 100%</span>
           <div class="flex items-center gap-1 ml-1 text-slate-600">
-            <button id="btn-zoom" class="p-1 hover:bg-slate-100 rounded border border-slate-200 text-slate-700 cursor-pointer" title="Phóng to / thu nhỏ">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" x2="16.65"></line><line x1="11" x2="11" y1="8" y2="14"></line><line x1="8" x2="14" y1="11" y2="11"></line></svg>
-            </button>
-            <button id="btn-fullscreen" class="p-1 hover:bg-slate-100 rounded border border-slate-200 text-slate-700 cursor-pointer" title="Xem toàn màn hình">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
-            </button>
+            <button id="btn-zoom" class="px-2 py-0.5 hover:bg-slate-100 rounded border border-slate-200 text-slate-700 cursor-pointer text-xs font-semibold" title="Phóng to / thu nhỏ">Phóng to</button>
+            <button id="btn-fullscreen" class="px-2 py-0.5 hover:bg-slate-100 rounded border border-slate-200 text-slate-700 cursor-pointer text-xs font-semibold" title="Xem toàn màn hình">Toàn màn hình</button>
           </div>
         </div>
       </div>
@@ -289,13 +344,7 @@
           
           <!-- Placeholder when no image loaded -->
           <div id="placeholder-box" class="flex flex-col items-center justify-center text-slate-500 p-6 text-center">
-            <svg class="w-12 h-12 text-slate-600 mb-2.5 stroke-[1.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
-              <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
-              <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
-              <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
-              <circle cx="12" cy="12" r="3"></circle>
-            </svg>
+            
             <p class="text-sm font-bold text-slate-200">Chưa có ảnh trong khung kiểm định</p>
             <p class="text-xs text-slate-400 mt-1 max-w-sm">Tải ảnh chai lên hoặc chọn nhanh mẫu bên trái để kiểm tra lỗi.</p>
           </div>
@@ -310,17 +359,13 @@
       </div>
 
       <!-- Bottom Xem chi tiết lỗi Box (Compact fixed height bar) -->
-      <div class="p-2.5 border-t border-slate-100 flex-shrink-0">
+      <div class="p-2 border-t border-slate-100 flex-shrink-0">
         <h3 class="text-xs font-bold text-slate-900 mb-1.5">Xem chi tiết lỗi <span class="text-slate-400 font-normal">(chọn vị trí trên ảnh)</span></h3>
         <div class="flex items-center gap-4">
           <!-- Defect Thumbnail -->
-          <div class="w-16 h-16 bg-neutral-800 rounded-lg border border-slate-200 overflow-hidden relative flex-shrink-0 flex items-center justify-center">
+          <div class="w-16 h-16 bg-neutral-800 rounded border border-slate-200 overflow-hidden relative flex-shrink-0 flex items-center justify-center">
             <div id="roi-placeholder" class="text-slate-500 flex flex-col items-center justify-center text-[9px]">
-              <svg class="w-5 h-5 text-slate-600 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <rect height="18" rx="2" ry="2" width="18" x="3" y="3"></rect>
-                <circle cx="9" cy="9" r="2"></circle>
-                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
-              </svg>
+              
               <span>Chưa chọn lỗi</span>
             </div>
             <img id="roi-thumbnail" alt="Ảnh phóng to vị trí lỗi" class="w-full h-full object-cover defect-pixel-preview hidden" src="">
@@ -346,30 +391,30 @@
   <!-- END: CenterInspectionPanel -->
 
   <!-- BEGIN: RightSummaryPanel (Col 3 - Fills Height rigidly) -->
-  <aside class="col-span-12 lg:col-span-3 h-full flex flex-col gap-2.5 overflow-hidden">
+  <aside class="col-span-12 lg:col-span-3 h-full flex flex-col gap-2.5 overflow-hidden min-h-0">
     <!-- Summary Metrics Card -->
-    <section class="bg-white rounded-xl border border-slate-200 p-2.5 shadow-xs flex-shrink-0">
+    <section class="bg-white rounded border border-slate-200 p-2.5 shadow-xs flex-shrink-0">
       <h2 class="text-xs font-bold text-slate-900 mb-1.5 uppercase tracking-wide">Kết quả kiểm tra</h2>
       <p id="quality-decision" class="text-base font-bold mb-1">Chưa kiểm tra</p>
       <p id="quality-explanation" class="text-xs text-slate-500 mb-3">Chọn ảnh rồi nhấn Kiểm tra chai.</p>
       <div class="grid grid-cols-3 gap-1">
         <!-- Metric 1: Total Defects -->
-        <div class="bg-slate-50/70 border border-slate-100 rounded-lg p-1.5 text-center">
+        <div class="bg-slate-50/70 border border-slate-100 rounded p-1.5 text-center">
           <span class="block text-[9px] text-slate-500 font-bold uppercase tracking-wide mb-0.5">Số lỗi</span>
           <span id="metric-total" class="text-xl font-black text-blue-600">0</span>
         </div>
         <!-- Metric 2: Defect Types -->
-        <div class="bg-slate-50/70 border border-slate-100 rounded-lg p-1.5 text-center">
+        <div class="bg-slate-50/70 border border-slate-100 rounded p-1.5 text-center">
           <span class="block text-[9px] text-slate-500 font-bold uppercase tracking-wide mb-0.5">Loại lỗi</span>
           <span id="metric-types" class="text-xl font-black text-blue-600">0</span>
         </div>
         <!-- Metric 3: Latency -->
-        <div class="bg-slate-50/70 border border-slate-100 rounded-lg p-1.5 text-center">
+        <div class="bg-slate-50/70 border border-slate-100 rounded p-1.5 text-center">
           <span class="block text-[9px] text-slate-500 font-bold uppercase tracking-wide mb-0.5">Thời gian</span>
           <span id="metric-latency" class="text-base font-black text-slate-900 leading-tight">-</span>
         </div>
         <!-- Metric 4: Speed (FPS) -->
-        <div class="technical-detail bg-emerald-50/80 border border-emerald-100 rounded-lg p-1.5 text-center">
+        <div class="technical-detail bg-emerald-50/80 border border-emerald-100 rounded p-1.5 text-center">
           <span class="block text-[9px] text-emerald-700 font-bold uppercase tracking-wide mb-0.5">Speed</span>
           <span id="metric-fps" class="text-base font-black text-emerald-600 leading-tight">- <span class="text-[9px] font-normal">FPS</span></span>
         </div>
@@ -384,7 +429,7 @@
     </section>
 
     <!-- Detections Table Card (Fills remaining height) -->
-    <section class="bg-white rounded-xl border border-slate-200 p-3 shadow-xs flex-1 min-h-0 flex flex-col overflow-hidden">
+    <section class="bg-white rounded border border-slate-200 p-3 shadow-xs flex-1 min-h-0 flex flex-col overflow-hidden">
       <h2 class="text-xs font-bold text-slate-900 mb-1.5 flex-shrink-0 uppercase tracking-wide">Lỗi phát hiện (<span id="detections-count">0</span>)</h2>
       <div class="overflow-x-auto flex-1 min-h-0 overflow-y-auto">
         <table class="w-full text-left text-xs">
@@ -410,14 +455,8 @@
 
     <!-- Bottom Action Buttons: Export & Save -->
     <div class="grid grid-cols-2 gap-2 pt-0 flex-shrink-0">
-      <button id="btn-export-json" class="w-full py-2 px-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-bold rounded-lg flex items-center justify-center gap-1 shadow-xs transition-colors cursor-pointer" type="button">
-        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
-        <span>Tải kết quả</span>
-      </button>
-      <button id="btn-save-image" class="w-full py-2 px-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-bold rounded-lg flex items-center justify-center gap-1 shadow-xs transition-colors cursor-pointer" type="button">
-        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect height="18" rx="2" ry="2" width="18" x="3" y="3"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg>
-        <span>Tải ảnh đánh dấu</span>
-      </button>
+      <button id="btn-export-json" class="w-full py-2 px-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-bold rounded flex items-center justify-center shadow-xs transition-colors cursor-pointer" type="button">Tải kết quả (JSON)</button>
+      <button id="btn-save-image" class="w-full py-2 px-2 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-bold rounded flex items-center justify-center shadow-xs transition-colors cursor-pointer" type="button">Tải ảnh đánh dấu</button>
     </div>
   </aside>
   <!-- END: RightSummaryPanel -->
@@ -543,6 +582,16 @@ confSlider.addEventListener('input', (e) => {
   confVal.textContent = parseFloat(e.target.value).toFixed(2);
 });
 
+
+[confSlider, iouSlider].forEach(slider => {
+  if (!slider) return;
+  slider.addEventListener('keydown', (e) => {
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown'].includes(e.key)) {
+      e.stopPropagation();
+    }
+  });
+});
+
 iouSlider.addEventListener('input', (e) => {
   iouVal.textContent = parseFloat(e.target.value).toFixed(2);
 });
@@ -644,10 +693,9 @@ async function apiResponse(endpoint, options = {}) {
   if (!response.ok) {
     let data; try { data = await response.json(); } catch { data = {}; }
     if (response.status === 401) {
-      showLogin();
       throw new Error(endpoint === '/api/session'
         ? 'Mật khẩu chưa đúng. Vui lòng nhập lại.'
-        : 'Vui lòng đăng nhập để tiếp tục.');
+        : 'Phiên kiểm tra hết hạn. Vui lòng tải lại trang.');
     }
     const messages = {403: 'Bạn chưa được phép thực hiện thao tác này.',
       409: 'Kết quả đã thay đổi. Hãy mở lại trước khi xác nhận.',
@@ -716,13 +764,15 @@ function loadBackendData() {
       if (!data.models?.length) modelWeightsSelect.add(new Option('Chưa có bộ kiểm tra sẵn sàng', ''));
       setStatus(data.models?.length ? 'Sẵn sàng. Chọn ảnh rồi nhấn Kiểm tra chai.' : 'Chưa có bộ kiểm tra sẵn sàng. Liên hệ người quản lý.');
       if (data && data.models && data.models.length > 0) {
-        data.models.forEach(m => {
+        const studentOnly = data.models.filter(m => m.id === 'yolo26m-distilled');
+        const activeModels = studentOnly.length ? studentOnly : data.models;
+        activeModels.forEach(m => {
           const opt = document.createElement('option');
           opt.value = m.id;
           opt.dataset.roi = String(m.enable_roi);
           opt.dataset.nms = m.default_nms;
           opt.textContent = modelLabel(m.id);
-          if (m.is_default) opt.selected = true;
+          opt.selected = true;
           modelWeightsSelect.appendChild(opt);
         });
         modelWeightsSelect.dispatchEvent(new Event("change"));
@@ -752,42 +802,10 @@ modelWeightsSelect.addEventListener('change', () => {
 });
 const loginDialog = document.getElementById('login-dialog');
 const accountButton = document.getElementById('account-button');
-let signedIn = false;
+let signedIn = true;
 function showLogin() {
-  signedIn = false;
-  accountButton.textContent = 'Đăng nhập';
-  btnRun.disabled = true;
-  if (!loginDialog.open) loginDialog.showModal();
+  signedIn = true;
 }
-document.getElementById('login-form').addEventListener('submit', async event => {
-  event.preventDefault();
-  const submit = document.getElementById('connect-api');
-  const error = document.getElementById('login-error');
-  submit.disabled = true; error.textContent = '';
-  try {
-    await fetchFromApi('/api/session', {method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({password: document.getElementById('api-token').value.trim()})});
-    document.getElementById('api-token').value = '';
-    loginDialog.close();
-    loadBackendData();
-  } catch (err) { error.textContent = err.message; }
-  finally { submit.disabled = false; }
-});
-accountButton.addEventListener('click', async () => {
-  if (appState.isInspecting) { setStatus('Vui lòng chờ kiểm tra ảnh hoàn tất.'); return; }
-  if (!signedIn) { showLogin(); return; }
-  try {
-    await fetchFromApi('/api/session', {method: 'DELETE'});
-    ++backendEpoch;
-    ++workflowEpoch;
-    finishInspection();
-    clearDetections();
-    clearWorkflow();
-    workspaceScreen.style.display = ''; workflowScreen.hidden = true;
-    showLogin();
-    setStatus('Đã đăng xuất.');
-  } catch (err) { setStatus(err.message, true); }
-});
 // Call on startup
 loadBackendData();
 
@@ -1060,11 +1078,11 @@ function renderDetections(detections) {
     row.className = `detection-row hover:bg-slate-50/80 transition-colors cursor-pointer ${det.id === appState.selectedDefectId ? 'selected' : ''}`;
     row.id = `row-det-${det.id}`;
     row.innerHTML = `
-      <td class="py-3 pr-2 text-slate-400 font-mono text-sm">${det.id}</td>
-      <td class="py-3 px-2 font-bold text-sm ${style.text}">${defectLabel(det.class)}</td>
-      <td class="py-3 px-2 font-mono text-sm font-semibold text-slate-700">${(det.confidence * 100).toFixed(0)}%</td>
-      <td class="technical-detail py-3 px-2 font-mono text-xs text-slate-600 font-semibold">[${det.xyxy.join(', ')}]</td>
-      <td class="technical-detail py-3 pl-2 text-right font-mono text-sm font-semibold text-slate-700">${det.area}</td>
+      <td class="py-2 pr-2 text-slate-400 font-mono text-xs">${det.id}</td>
+      <td class="py-2 px-2 font-bold text-xs ${style.text}">${defectLabel(det.class)}</td>
+      <td class="py-2 px-2 font-mono text-xs font-semibold text-slate-700">${(det.confidence * 100).toFixed(0)}%</td>
+      <td class="technical-detail py-2 px-2 font-mono text-xs text-slate-600 font-semibold">[${det.xyxy.join(', ')}]</td>
+      <td class="technical-detail py-2 pl-2 text-right font-mono text-xs font-semibold text-slate-700">${det.area}</td>
     `;
     row.addEventListener('click', () => selectDefect(det.id));
     detectionsTbody.appendChild(row);
