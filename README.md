@@ -1,6 +1,6 @@
-# Glass Defect Inspector
-
 <div align="center">
+
+<h1 align="center">Glass Defect Inspector</h1>
 
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.x%20CUDA-ee4c2c.svg)](https://pytorch.org/)
 [![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12-3776ab.svg)](pyproject.toml)
