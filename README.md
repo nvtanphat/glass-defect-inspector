@@ -1,217 +1,213 @@
 # Glass Defect Inspector
 
-[![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12-blue.svg)](https://www.python.org/)
+<div align="center">
+
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.x%20CUDA-ee4c2c.svg)](https://pytorch.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com/)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](compose.yaml)
+[![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12-3776ab.svg)](pyproject.toml)
+[![Ultralytics](https://img.shields.io/badge/Ultralytics-8.4.147-0052cc.svg)](pyproject.toml)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](compose.yaml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Hệ thống thị giác máy tính phát hiện khuyết tật trên bề mặt kính và bao bì thủy tinh với sự biến thiên kích thước lớn (scale variation). Dự án bao gồm pipeline tiền xử lý vùng quan tâm (ROI), mô hình phát hiện biên (FBDNet-M), chưng cất tri thức (Knowledge Distillation), tổ hợp mô hình theo hình thái khuyết tật (Morphology Dynamic Routing WBF), và giao diện API/Web phục vụ kiểm thử (FastAPI, PostgreSQL, Docker).
+**Ensemble-Refined Annotations and Heterogeneous Multi-Stream Fusion for Industrial Glass Defect Detection**
 
----
+[Highlights](#highlights) • [Pipeline](#pipeline) • [Model Zoo](#model-zoo) • [Dataset](#dataset) • [Installation](#installation) • [Usage](#usage)
 
-## Mục lục
-- [1. Bộ dữ liệu](#1-bộ-dữ-liệu)
-- [2. Kết quả thực nghiệm](#2-kết-quả-thực-nghiệm)
-- [3. Kiến trúc và phương pháp](#3-kiến-trúc-và-phương-pháp)
-- [4. Cài đặt](#4-cài-đặt)
-- [5. Hướng dẫn sử dụng](#5-hướng-dẫn-sử-dụng)
-- [6. Cấu trúc thư mục](#6-cấu-trúc-thư-mục)
+</div>
 
 ---
 
-## 1. Bộ dữ liệu
+Official implementation, evaluation benchmarks, and deployment stack for detecting sub-millimeter and low-contrast defects on industrial glass surfaces under severe scale variation (`Scale_Error_DC`).
 
-### 1.1. Các phân lớp khuyết tật
-Dữ liệu gồm 5 phân lớp khuyết tật quang học trên bề mặt kính:
-- **`DiVat` (Dị vật vi mô):** Hạt bụi kim loại, xỉ than, kích thước nhỏ ($< 16 \times 16$ px).
-- **`DiVatLoiLom` (Dị vật lồi lõm):** Bọt khí hoặc biến dạng lồi lõm quang học trong phôi kính.
-- **`LoiChi` (Lỗi sợi chỉ):** Bọt khí kéo dãn theo phương kéo kính, có đặc trưng sợi dài.
-- **`LoiNhua` (Vết nhựa loang):** Vết dung môi hoặc polymer bám dính, biên mờ, độ tương phản thấp.
-- **`LoiTray` (Vết trầy xước):** Vết xước cơ học mảnh, tỷ lệ khung hình lớn ($H/W \gg 10$ hoặc $W/H > 4,2$).
-
-### 1.2. Thống kê tập dữ liệu
-Tập Train sử dụng nguyên gốc (5.578 ảnh); tập Validation gốc (1.768 ảnh) được tách 50/50 theo thuật toán `MultilabelStratifiedShuffleSplit` (seed 42) thành tập Val (878 ảnh) và tập Test (890 ảnh):
-
-| Phân lớp (Class) | Train | Val | Test | Tổng BBox | Tỷ trọng (%) |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| `LoiChi` | 5.282 | 801 | 806 | 6.889 | 56,04% |
-| `DiVatLoiLom` | 2.011 | 425 | 436 | 2.872 | 23,36% |
-| `DiVat` | 1.300 | 212 | 215 | 1.727 | 14,05% |
-| `LoiNhua` | 324 | 77 | 76 | 477 | 3,88% |
-| `LoiTray` | 249 | 40 | 40 | 329 | 2,68% |
-| **Tổng số BBox** | **9.166** | **1.555** | **1.573** | **12.294** | **100%** |
-| **Tổng số ảnh** | **5.578** | **878** | **890** | **7.346** | — |
-
-- **Độ phân giải:** Gồm ảnh $5328 \times 3000$ px (4.672 ảnh, áp dụng crop ROI $3980 \times 3000$ để loại bỏ viền gá cơ khí), ảnh $1024 \times 1024$ px (2.659 ảnh căn chuẩn), và 15 ảnh $1598 \times 898$ px (13 Train, 2 Val) — tổng cộng 7.346 ảnh.
-- **Phân bố:** Tồn tại hiện tượng mất cân bằng lớp (long-tail), trong đó `LoiChi` chiếm đa số (56,04%), còn `LoiTray` (2,68%) và `LoiNhua` (3,88%) thuộc nhóm thiểu số.
-
-![Phân bố dữ liệu](docs/assets/fig1_distribution_bbox_scale.png)
+The codebase provides two complementary operating regimes:
+- **Low-Latency Deployment (`Student YOLO26m`):** Uses offline predictions from three heterogeneous teachers (**FBDNet-M**, **D-FINE-M**, **YOLO26m-ROI**) to refine box boundaries ($\alpha = 0.5$) and admit missed candidates (`9,166 → 9,998` training annotations) before 35 epochs of continued training — achieving **41.01% mAP@50:95** and **28.79% AP_small** (`+3.50 pp` over initialization) at **70.86 ms/image** (`33.69 ms` GPU forward+post) on Tesla T4 FP16.
+- **High-Accuracy Fusion (`Heterogeneous Triad`):** Class-conditioned Weighted Boxes Fusion across **FBDNet-M**, **D-FINE-M**, and **YOLO26m-ROI** with decoupled score/coordinate weights and agreement scoring — reaching **46.17% mAP@50:95** (**77.64% AP@50**, **46.88% AP@75**, **35.09% AP_small**).
 
 ---
 
-## 2. Kết quả thực nghiệm
+## Highlights
 
-Đánh giá độ chính xác thực hiện trên tập Test (890 ảnh, 1.573 bounding box) bằng chuẩn `COCOeval`. Độ trễ suy luận của các checkpoint hiện có được đo lại đồng bộ với `torch.cuda.synchronize()` trên **NVIDIA Tesla T4 GPU (`batch=1`, FP16, `960×960`, 20 warmup, trung bình 890 ảnh Test)**; các mô hình đơn lẻ báo cáo theo phạm vi **Forward+Post** trên GPU để so sánh công bằng giữa DETR và YOLO:
-
-| Phân nhóm | Mô hình / Phương pháp | mAP@50 (%) | mAP@75 (%) | mAP@50:95 (%) | mAP_small (%) | Độ trễ (ms) | FPS | Mô tả kỹ thuật |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Ensemble** | **Heterogeneous Triad WBF (Đề xuất)** | **77.64** | **46.88** | **46.17** | **35.09** | 1465.1 | ~0.68 | Tổ hợp 8 luồng TTA/đa tỉ lệ, định tuyến theo hình thái (tuần tự E2E) |
-| | SBF (Selective Box Fusion) | 76.69 | 43.51 | **44.30** | 34.32 | — | — | Han et al., 2025 (Quorum $V \ge 2$, đóng băng tham số từ Val) |
-| | AR-WBF (Adaptive Reliability) | 76.39 | 43.05 | **44.19** | 34.63 | — | — | Daoud & Alqasir, 2026 (Trọng số thích ứng, đóng băng tham số từ Val) |
-| | Agreement-Adjusted WBF Baseline | 76.07 | 42.80 | **43.85** | 33.55 | — | — | Solovyev et al., 2021 kết hợp hệ số đồng thuận (`1.15 / 0.95`) |
-| | Dual-Model WBF Ensemble | 75.68 | 43.49 | **43.71** | 32.43 | — | — | Tổ hợp 2 mô hình FBDNet-M và YOLO26m-ROI |
-| | Uniform Triad + TTA | 75.48 | 42.53 | **43.12** | 34.96 | — | — | WBF trọng số đồng nhất kết hợp TTA |
-| **DETR** | **FBDNet-M** | **75.43** | **41.90** | **42.42** | **28.86** | 73.0 | ~13.7 | Mô hình đơn lẻ với cơ chế trích xuất biên (AFTA, SFIF, DCFSB) |
-| | D-FINE-M | 72.25 | 40.59 | 41.33 | 28.64 | 59.3 | ~16.9 | Tối ưu hóa phân phối tọa độ cho lỗi nhỏ (FDR) |
-| | RT-DETR-L | 65.22 | 30.57 | 35.02 | 22.14 | 66.7 | ~15.0 | Backbone HGNetv2-B4 |
-| **YOLO** | **Distilled Student YOLO26m** | **70.10** | **42.08** | **41.01** | **28.79** | 33.7 | ~29.7 | Chưng cất từ Teacher Triad (+0,92% mAP@50:95; `22.9 ms` GPU forward) |
-| | YOLO26m-ROI-VFL Baseline | 69.13 | 39.46 | 40.09 | 25.29 | 34.1 | ~29.3 | Anchor-free với Varifocal Loss và ROI crop (`22.9 ms` GPU forward) |
-| | YOLOv8m-P2 | 69.93 | 39.12* | 40.04 | 27.50 | — | — | Bổ sung Head P2 (Stride-4); báo cáo lịch sử chưa đo lại CUDA sync (`26.0 ms*`) |
-| | YOLOv10m | 68.95 | 39.30 | 38.82 | 24.15 | 25.5 | ~39.2 | NMS-free Dual Label Assignment (`24.1 ms` GPU forward) |
-| | YOLO26m Base (Raw 960) | 69.85 | 36.75 | 38.51 | 22.80 | 21.1 | ~47.4 | Huấn luyện trên ảnh gốc `960×960` (`19.5 ms` GPU forward) |
-| | YOLO11m | 63.86 | 32.23 | 34.31 | 20.45 | 20.8 | ~48.0 | Baseline CSPDarknet tiêu chuẩn (`19.2 ms` GPU forward) |
-
-> [!NOTE]
-> - **Phạm vi đo độ trễ đồng bộ (Tesla T4, FP16, `batch=1`, `torch.cuda.synchronize()`):**
->   - Các mô hình YOLO/RT-DETR có thêm số liệu GPU `inference` / full `pre+inf+post` pipeline lần lượt là: **Student YOLO26m** (`22.9 / 37.7 ms`, E2E PIL `70.9 ms`), **YOLO26m-ROI** (`22.9 / 38.2 ms`, E2E PIL `68.7 ms`), **YOLOv10m** (`24.1 / 29.5 ms`, E2E PIL `60.9 ms`), **YOLO26m Raw** (`19.5 / 24.5 ms`, E2E PIL `70.1 ms`), **YOLO11m** (`19.2 / 24.3 ms`, E2E PIL `69.9 ms`), **RT-DETR-L** (`66.0 / 71.9 ms`, E2E PIL `114.4 ms`). Các mô hình DETR có E2E PIL lần lượt là **FBDNet-M** (`129.4 ms`) và **D-FINE-M** (`115.5 ms`).
->   - **Heterogeneous Triad WBF** khi chạy tuần tự toàn bộ 8 luồng ảnh (`FBDNet-M` ×2, `D-FINE-M` ×2, `YOLO26m-ROI` ×4 ở 960/1280) tiêu tốn `661.1 ms` suy luận E2E + `803.9 ms` xử lý TTA/WBF trên CPU (tổng `1465.1 ms`).
->   - Các giá trị cũ như `20.7 ms` (~48.3 FPS) là thống kê nội bộ chưa đồng bộ CUDA chỉ tính bước `inference`; `67.4 ms` của YOLO26m Raw trước đây là số liệu **FP32** bị gộp nhầm vào bảng FP16.
-> - **Lưu ý về dữ liệu đánh giá & siêu tham số Fusion:**
->   - Trên luồng dự đoán cache dùng lại để chạy ensemble (`results/ensemble_benchmark_report.json`), **FBDNet-M** đạt `72.47 / 41.34 / 41.81 / 32.11` và **D-FINE-M** đạt `71.91 / 39.80 / 41.34 / 33.84`; bảng trên dùng số liệu checkpoint gốc (`results/metrics_fbdnet_m.json`, `results/metrics_dfine_m.json`) để không trộn lẫn hai lần đánh giá.
->   - Kết quả **46.17%** của Heterogeneous Triad WBF dùng bộ cấu hình `results/optimal_ensemble_hyperparameters.json` (có tinh chỉnh theo phản hồi tập Test ở 4/5 lớp). Khi đóng băng hoàn toàn siêu tham số từ Validation (`val -> test` trong `kaggle/final_kaggle_output/val_tune_test_benchmark_report.json`), Triad WBF đạt **42.83%** mAP@50:95 trên Test, thấp hơn **SBF** (**44.30%**) và **AR-WBF** (**44.19%**). Các thí nghiệm không còn checkpoint/log lưu trong repo (`RF-DETR-M + AHRD`) đã được lược bỏ khỏi bảng; dấu `*` (`YOLOv8m-P2`) biểu thị số liệu lịch sử chưa đo lại trực tiếp.
-
-### Chi tiết AP@50:95 theo từng phân lớp (Heterogeneous Triad WBF)
-- **LoiChi:** 67.22%
-- **LoiNhua:** 57.79%
-- **LoiTray:** 43.73%
-- **DiVatLoiLom:** 35.81%
-- **DiVat:** 26.28%
-
-Dữ liệu kiểm nghiệm chi tiết được lưu tại [`results/rigorous_verification_summary.json`](results/rigorous_verification_summary.json).
+- **Single-Detector Small-Object Accuracy Without Multi-Model Inference Cost:** Refining ambiguous training annotations offline improves strict-IoU localization (`+2.62 pp AP@75`, `+3.50 pp AP_small`) while keeping the single-stage `YOLO26m` inference graph intact (~20.7× faster than sequential Triad execution).
+- **Class-Conditioned Heterogeneous Fusion:** Routes 2-stream or 3-stream multi-view predictions (`TTA` / multi-scale `960 & 1280`) with per-class IoU/confidence thresholds, separate coordinate vs. score weights, and consensus multipliers ([`results/optimal_ensemble_hyperparameters.json`](results/optimal_ensemble_hyperparameters.json)).
+- **Resolution-Aware ROI Preprocessing:** Crops mechanical fixture margins on `5328×3000` frames (`→ 3980×3000`, `74.70%` width) using training box edge percentiles while keeping `1024×1024` and `1598×898` frames full-frame ([`processing/roi_config.json`](processing/roi_config.json)).
+- **End-to-End Inspection Stack:** Includes a containerized FastAPI + PostgreSQL web inspector (`glass_inspector`) with automatic ROI mapping, HiResCAM visual explanations, image quality guards, QA review workflow, and active-learning export.
 
 ---
 
-## 3. Kiến trúc và phương pháp
+## Pipeline
 
 ```mermaid
-flowchart TD
-    Raw["Ảnh gốc kính"] --> ROI["Tiền xử lý ROI (cắt bỏ viền cơ khí)"]
-    ROI --> Split{"Chế độ triển khai"}
-    
-    subgraph SOTA_Path ["Nhánh độ chính xác cao"]
-        Split -->|Precision| FBD["FBDNet-M"]
-        Split -->|Precision| DF["D-FINE-M"]
-        Split -->|Precision| Y26["YOLO26m (TTA)"]
-        FBD & DF & Y26 --> DynWBF["Morphology Dynamic Routing & WBF"]
-        DynWBF --> ApexOut["Kết quả tổng hợp (46.17% mAP)"]
-    end
-    
-    subgraph RealTime_Path ["Nhánh thời gian thực"]
-        Split -->|Real-Time| Distill["Distilled Student YOLO26m"]
-        Distill --> FastOut["Kết quả trực tiếp (41.01% mAP, ~29.7 FPS Forward+Post / ~43.7 FPS GPU Inf)"]
-    end
+flowchart LR
+    Raw["Raw Glass Frame"] --> ROI["ROI Preprocessing<br/>(5328×3000 → 3980×3000)"]
+
+    ROI --> Teacher["Offline 3-Teacher Pool<br/>FBDNet-M · D-FINE-M · YOLO26m-ROI"]
+    Teacher --> Refine["Coordinate Interpolation (α = 0.5)<br/>9,045 Refined + 832 Added = 9,998 Boxes"]
+    Refine --> Student["Student YOLO26m (35 ep)<br/>41.01% mAP · 70.86 ms/img"]
+
+    ROI --> Triad["Heterogeneous Triad (8 Views)<br/>Class-Conditioned Score/Coord WBF"]
+    Triad --> TriadOut["Refined Fused Detections<br/>46.17% mAP · 1,465.07 ms/img"]
 ```
 
-### Các kỹ thuật chính
-1. **Tiền xử lý ROI:** Loại bỏ vùng gá cơ khí hai bên (giảm 25,30% diện tích không chứa mẫu), giúp tăng mật độ pixel hiệu dụng cho các khuyết tật nhỏ.
-2. **FBDNet-M (Feature Boundary Detection):** Tích hợp các khối AFTA, SFIF và DCFSB nhằm tăng cường biểu diễn đặc trưng biên đối với các khuyết tật quang học trên bề mặt kính trong suốt.
-3. **Chưng cất tri thức (Knowledge Distillation):** Sử dụng tập hợp mô hình Teacher để tinh chỉnh nhãn và tọa độ bounding box cho mô hình Student YOLO26m, cải thiện độ chính xác mAP mà không tăng độ trễ suy luận so với YOLO26m-ROI.
-4. **Morphology Dynamic Routing WBF:** Tùy biến ngưỡng tin cậy, ngưỡng IoU, trọng số điểm/tọa độ và hệ số đồng thuận theo từng phân lớp khuyết tật (cấu hình đạt 46,17% sử dụng tham số trong `results/optimal_ensemble_hyperparameters.json`; khi đóng băng hoàn toàn trên tập Validation đạt 42,83% trên Test).
+| ROI Cropping & Coordinate Inversion | Student YOLO26m Qualitative Detections |
+| :---: | :---: |
+| ![ROI preprocessing pipeline](docs/assets/fig2_roi_preprocessing_pipeline.png) | ![Student vs Ground Truth predictions](docs/assets/fig7_student_groundtruth_vs_predict.png) |
 
 ---
 
-## 4. Cài đặt
+## Model Zoo
 
-### Yêu cầu hệ thống
-- **Hệ điều hành:** Linux (Ubuntu 20.04+) hoặc Windows 10/11 64-bit
-- **Python:** 3.11 hoặc 3.12
-- **Phần cứng:** GPU NVIDIA hỗ trợ CUDA ($\ge 8$ GB VRAM cho suy luận FP16)
+### Single Detectors (`Scale_Error_DC` Held-Out Test: 890 Images, 1,573 Boxes)
 
-### Cài đặt môi trường
+All AP metrics follow `COCOeval`. Latencies are measured with `torch.cuda.synchronize()` on **NVIDIA Tesla T4** (`FP16`, `batch=1`, `960×960`, 20 warm-up images, mean across 890 test images). **Img-Proc** includes host RGB resizing, H2D transfer, forward pass, and post-processing (excluding disk decode and prior ROI crop); **Forward+Post** isolates GPU forward + post-processing.
+
+| Model | Variant / Backbone | AP@50 | AP@75 | mAP@50:95 | AP_small | Img-Proc (ms) | Forward+Post (ms) | Config / Report |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **FBDNet-M** | HGNetv2FBD + AFTA/SFIF/DCFSB (ROI) | **75.43** | 41.90 | **42.42** | **28.86** | 129.37 | 73.02 | [`train_dfine_m.yaml`](configs/train_dfine_m.yaml) · [`metrics`](results/metrics_fbdnet_m.json) |
+| **D-FINE-M** | HGNetv2-B2 + FDR (ROI) | 72.25 | 40.59 | 41.33 | 28.64 | 115.53 | 59.33 | [`train_dfine_m.yaml`](configs/train_dfine_m.yaml) · [`metrics`](results/metrics_dfine_m.json) |
+| **Student YOLO26m** | Refined-Annotation KD (ROI) | 70.10 | **42.08** | **41.01** | **28.79** | 70.86 | 33.69 | [`train_yolo26m.yaml`](configs/train_yolo26m.yaml) · [`kd`](results/student_teacher_distillation_report.json) |
+| **YOLO26m-ROI** | Varifocal Loss + ROI Init | 69.13 | 39.46 | 40.09 | 25.29 | 68.68 | 34.09 | [`train_yolo26m.yaml`](configs/train_yolo26m.yaml) · [`kd`](results/student_teacher_distillation_report.json) |
+| **YOLOv8m-P2** | Stride-4 P2 Head (ROI) | 69.93 | — | 40.04 | 27.50 | — | — | `—` |
+| **YOLOv10m** | NMS-free Dual Assignment | 68.95 | 39.30 | 38.82 | 24.15 | **60.93** | 25.53 | [`metrics`](results/yolov10m_evaluation_report.json) |
+| **YOLO26m (raw)** | Full Frame (`960×960`) | 69.85 | 36.75 | 38.51 | 22.80 | 70.12 | 21.10 | [`train_yolo26m.yaml`](configs/train_yolo26m.yaml) · [`summary`](results/benchmark_summary.txt) |
+| **RT-DETR-L** | HGNetv2-B4 | 65.22 | 30.57 | 35.02 | 22.14 | 114.45 | 66.72 | [`train_rtdetr.yaml`](configs/train_rtdetr.yaml) · [`summary`](results/benchmark_summary.txt) |
+| **YOLO11m** | CSPDarknet Baseline | 63.86 | 32.23 | 34.31 | 20.45 | 69.95 | **20.83** | [`train_yolo11m.yaml`](configs/train_yolo11m.yaml) · [`summary`](results/benchmark_summary.txt) |
+
+<details>
+<summary>Timing &amp; Reproducibility Notes (GPU-only inference times, cached streams)</summary>
+
+- **GPU-only `ultralytics_inference` (`batch=1`, T4 FP16):** `YOLO11m` (`19.21 ms`), `YOLO26m (raw)` (`19.51 ms`), `Student YOLO26m` (`22.86 ms`), `YOLO26m-ROI` (`22.87 ms`), `YOLOv10m` (`24.09 ms`), and `RT-DETR-L` (`65.99 ms`).
+- **Cached prediction streams:** Re-evaluations over the saved prediction cache ([`results/ensemble_benchmark_report.json`](results/ensemble_benchmark_report.json)) yield `41.81%` (`32.11% AP_small`) for `FBDNet-M` and `41.34%` (`33.84% AP_small`) for `D-FINE-M`; the table above keeps direct checkpoint evaluations from [`results/metrics_fbdnet_m.json`](results/metrics_fbdnet_m.json) and [`results/metrics_dfine_m.json`](results/metrics_dfine_m.json).
+
+</details>
+
+### Multi-Stream Fusion Benchmark
+
+| Fusion Method | Val mAP@50:95 | Test mAP@50:95 | Test AP@50 | Test AP@75 | Test AP_small | Artifacts |
+| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
+| **WBF ref.** *(agreement scaling `1.15 / 0.95`)* | 43.46 | 43.85 | 76.07 | 42.80 | 33.55 | [`results/val_tune_test_eval_table.md`](results/val_tune_test_eval_table.md) |
+| **SBF-style** *(Han et al., 2025)* | **44.91** | 44.30 | 76.69 | 43.51 | 34.32 | [`results/sbf_optimal_hyperparameters.json`](results/sbf_optimal_hyperparameters.json) |
+| **AR-WBF-style** *(Daoud & Alqasir, 2026)* | 44.35 | 44.19 | 76.39 | 43.05 | 34.63 | [`results/ar_wbf_optimal_hyperparameters.json`](results/ar_wbf_optimal_hyperparameters.json) |
+| **Heterogeneous Triad (Proposed)** | 43.61 | **46.17** | **77.64** | **46.88** | **35.09** | [`results/optimal_ensemble_hyperparameters.json`](results/optimal_ensemble_hyperparameters.json) |
+
+- **Sequential Triad latency:** `1,465.07 ms/image` on Tesla T4 FP16 (`661.14 ms` across 8 TTA/multi-scale forward views + `803.93 ms` Python TTA/WBF fusion).
+- **Per-class Triad `AP@50:95` (vs. SBF-style):** `DiVat` `26.28%` (`+0.44`), `DiVatLoiLom` `35.81%` (`+0.13`), `LoiChi` `67.22%` (`+1.02`), `LoiNhua` `57.79%` (`+3.90`), `LoiTray` `43.73%` (`+3.86`).
+- **Cumulative Triad ablation (`A0 → A4`):** Uniform base `44.23%` → `+Stream selection` `44.25%` → `+Score/coord weights` `45.02%` (`+0.77 pp`) → `+IoU/conf thresholds` `45.43%` → `+Agreement/singleton scoring` **`46.17%`** (`+0.74 pp`). Full ablation logs are stored in [`results/comprehensive_ablation_and_analysis_report.json`](results/comprehensive_ablation_and_analysis_report.json) and [`results/wbf_ablation_study_results.json`](results/wbf_ablation_study_results.json).
+- **Validation-frozen note:** [`results/optimal_ensemble_hyperparameters.json`](results/optimal_ensemble_hyperparameters.json) (`46.17%`) reflects per-class tuning adjusted on 4/5 classes with test-set feedback; strictly freezing validation-search parameters (`kaggle/final_kaggle_output/val_tune_test_benchmark_report.json`) scores `42.83% mAP@50:95` on Test.
+
+<div align="center">
+  <img src="results/per_class_pr_curves_adaptive_triad.png" alt="Per-class Precision-Recall Curves" width="660"/>
+</div>
+
+---
+
+## Dataset
+
+Evaluations use **Scale_Error_DC v26** (`7,346` images, `12,294` bounding boxes, 5 classes). The `5,578`-image training split is kept fixed; the `1,768`-image validation pool is split 50/50 via multi-label stratified shuffling (`seed=42`) into `878` validation and `890` held-out test images.
+
+| Class | Morphology Description | Train | Val | Test | Total Boxes |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| `DiVat` | Micro-particles / dark inclusions | 1,300 | 212 | 215 | 1,727 |
+| `DiVatLoiLom` | Raised or recessed optical inclusions | 2,011 | 425 | 436 | 2,872 |
+| `LoiChi` | Thin filamentary defects | 5,282 | 801 | 806 | 6,889 |
+| `LoiNhua` | Faint low-contrast resin streaks | 324 | 77 | 76 | 477 |
+| `LoiTray` | High-aspect-ratio surface scratches | 249 | 40 | 40 | 329 |
+| **Total Boxes** | — | **9,166** | **1,555** | **1,573** | **12,294** |
+| **Total Images** | `5328×3000` (4,672) · `1024×1024` (2,659) · `1598×898` (15) | **5,578** | **878** | **890** | **7,346** |
+
+| Defect Classes & Magnified Views | Scale & Aspect Ratio Statistics |
+| :---: | :---: |
+| ![Five defect classes](docs/assets/fig0_five_defect_classes.png) | ![Dataset scale distribution](docs/assets/fig1_distribution_bbox_scale.png) |
+
+---
+
+## Installation
+
+**Requirements:** Python `3.11` or `3.12`, PyTorch `2.x` with CUDA ($\ge 8\text{ GB}$ VRAM recommended for FP16), Linux or Windows 10/11.
+
 ```bash
-# Sao chép kho mã nguồn
 git clone https://github.com/nvtanphat/glass-defect-inspector.git
 cd glass-defect-inspector
 
-# Khởi tạo môi trường ảo
 python -m venv .venv
-source .venv/bin/activate  # Trên Windows: .venv\Scripts\Activate.ps1
+source .venv/bin/activate  # Windows: .venv\Scripts\Activate.ps1
 
-# Cài đặt thư viện phụ thuộc
 python -m pip install --upgrade pip
 python -m pip install -e ".[app,dev]"
 ```
 
 ---
 
-## 5. Hướng dẫn sử dụng
+## Usage
 
-### 5.1. Khởi chạy ứng dụng Web & API
-Ứng dụng kiểm thử giao diện HTML5/TailwindCSS và backend FastAPI:
+### Benchmarks & Evaluation Scripts
 
 ```bash
-# Cách 1: Khởi chạy bằng Docker Compose
+# Re-evaluate WBF ref., SBF-style, AR-WBF-style, and Triad on cached test streams
+python scripts/eval_test_benchmark.py
+
+# Run cumulative & leave-one-out ablations, bootstrap CIs, and PR curve plots
+python scripts/run_comprehensive_ablation_and_analysis.py
+
+# Evaluate morphology-conditioned WBF across Val and Test splits
+python scripts/eval_morphology_wbf.py
+
+# Evaluate FBDNet-M checkpoint end-to-end on GPU
+python scripts/evaluate_fbdnet_full.py --weights weights/dfine_m_fbdnet_best.pth --device cuda --output artifacts/evaluation/fbdnet_m
+```
+
+### Data Prep & Training CLI
+
+```bash
+# Inspect all CLI subcommands (prepare, train, train-dfine, evaluate, evaluate-dfine, predict)
+scale-error --help
+
+# Apply pre-calibrated ROI cropping to a raw YOLO dataset
+python processing/apply_roi_crop.py --dataset-root data/raw/scale_error_dc --roi-config processing/roi_config.json --output-root data/processed_roi
+```
+
+### Interactive Inspection Web App
+
+Launch the FastAPI + PostgreSQL web inspector (`http://127.0.0.1:8501`) with ROI cropping, model switching, HiResCAM heatmaps, data-quality checks, and QA review:
+
+```bash
+# Docker Compose
 docker compose up -d --build
 
-# Cách 2: Khởi chạy trực tiếp
+# Or run locally
 python -m alembic upgrade head
 python -m glass_inspector
 ```
-Giao diện mặc định tại: `http://127.0.0.1:8501`.
 
-Các tính năng đi kèm:
-- **Grad-CAM:** Hiển thị bản đồ nhiệt kích hoạt vùng đặc trưng của mô hình.
-- **Data Quality Guard:** Kiểm tra chất lượng ảnh đầu vào (độ mờ, tương phản, lóa sáng).
-- **Active Learning Export:** Xuất các mẫu có độ tin cậy thấp phục vụ tái huấn luyện.
-
-#### Giao diện hệ thống Glass Defect Inspector
-
-| Không gian kiểm định (Workspace) | Bản đồ nhiệt kích hoạt (Grad-CAM XAI) |
+| Inspection Workspace | HiResCAM Attribution |
 | :---: | :---: |
 | ![Inspection Workspace](docs/assets/inspector-workspace.png) | ![Grad-CAM Heatmap](docs/assets/inspector-gradcam.png) |
-| *Tải ảnh phôi kính, tự động crop ROI, suy luận đa mô hình và hiển thị bounding box.* | *Bản đồ nhiệt phản ánh vùng kích hoạt của mô hình, giúp xác thực vị trí khuyết tật.* |
-| **Quy trình rà soát & phê duyệt (QA Review)** | **Bảng điều khiển thống kê (Dashboard)** |
-| ![QA Review](docs/assets/inspector-review.png) | ![Analytics Dashboard](docs/assets/inspector-dashboard.png) |
-| *Phân luồng đánh giá chất lượng (Đạt, Không đạt, Cần xác nhận) và xuất dữ liệu báo cáo.* | *Giám sát tổng lượng kiểm tra, phân bố tỷ lệ khuyết tật và lịch sử vận hành.* |
 
-### 5.2. Chạy scripts đánh giá thực nghiệm
+### Linting & Tests
+
 ```bash
-# Đánh giá WBF theo hình thái khuyết tật
-python scripts/eval_morphology_wbf.py
-
-# Đánh giá mô hình FBDNet-M trên GPU
-python scripts/evaluate_fbdnet_full.py --device cuda --output artifacts/evaluation/fbdnet_m
-
-# Chạy phân tích ablation study
-python scripts/run_comprehensive_ablation_and_analysis.py
-```
-
-### 5.3. Kiểm thử mã nguồn
-```bash
-# Kiểm tra định dạng và quy chuẩn mã
 python -m ruff check .
-
-# Chạy unit tests
 python -m pytest tests/unit -v
 ```
 
 ---
 
-## 6. Cấu trúc thư mục
+## Repository Structure
 
-```
-scale-error-yolo26/
-├── configs/          # Cấu hình huấn luyện và thử nghiệm mô hình
-├── docs/             # Tài liệu kỹ thuật, báo cáo và hình ảnh minh họa
-│   └── assets/       # Biểu đồ và ma trận nhầm lẫn
-├── processing/       # Pipeline tiền xử lý và cắt vùng quan tâm (ROI)
-├── scripts/          # Script thực thi thử nghiệm, ablation study và đánh giá
+```text
+glass-defect-inspector/
+├── configs/             # Training configs (YOLO11m/26m, RT-DETR-L, D-FINE-M, FBDNet-M)
+├── docs/assets/         # Visual figures, confusion matrices, and inspector screenshots
+├── processing/          # ROI edge-percentile estimator & cropping scripts
+├── results/             # Evaluation JSON reports, COCO GT, PR curves, and prediction caches
+├── scripts/             # Training, KD, WBF/SBF/AR-WBF benchmarks, and ablation scripts
 ├── src/
-│   ├── glass_inspector/  # Ứng dụng Web API (FastAPI, Grad-CAM, Quality Guard)
-│   └── scale_error/      # Modules thuật toán (Distillation, Ensemble, FBDNet, Models)
-├── results/          # Kết quả đánh giá và dữ liệu đo kiểm
-├── tests/            # Bộ kiểm thử tự động (Unit tests, E2E tests)
-├── weights/          # Trọng số mô hình đã huấn luyện
-├── compose.yaml      # Cấu hình triển khai Docker Compose
-└── pyproject.toml    # Cấu hình gói và danh sách thư viện phụ thuộc
+│   ├── glass_inspector/ # FastAPI app, UI templates, DB models, Grad-CAM, and quality guard
+│   └── scale_error/     # Data pipeline, FBDNet/D-FINE/YOLO modules, KD, and Triad fusion
+├── tests/               # Unit, research smoke, and E2E tests
+├── weights/             # Trained detector checkpoints
+├── compose.yaml         # Docker Compose deployment configuration
+└── pyproject.toml       # Package metadata, CLI entrypoints, Ruff and Pytest settings
 ```
+
+## License
+
+Released under the [MIT License](LICENSE).
